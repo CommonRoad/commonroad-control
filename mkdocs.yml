@@ -1,0 +1,20 @@
+site_name: CommonRoad Control
+
+theme:
+  name: readthedocs
+  logo: assets/commonroad_white150.png
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: sphinx
+            show_root_heading: false
+            heading_level: 3
+            show_module_names: False
+  - search
+
+nav:
+  - Introduction:
+    - "Introduction": index.md
