@@ -1,0 +1,200 @@
+import numpy as np
+from typing import Callable, Type, Dict, Optional
+import casadi as cas
+from optimalControl.utils import rk4_integrator, Trajectory
+from optimalControl.ocp_dataclasses import State
+
+
+class SolverOptimalControl:
+    def __init__(self, problem_params: Dict, dynamics: Callable, stage_cost: Callable, terminal_cost: Callable,
+                 ineq_con_stage: Callable, ineq_con_terminal: Callable):
+
+        # extract problem data
+        self._system = problem_params['system']
+        self._nx = problem_params['nx']
+        self._nu = problem_params['nu']
+        self._N = problem_params['N']
+        self._n_ineq_con_ca = problem_params['n_ineq_con_ca']
+        self._penaltyWeight = problem_params['n_ineq_con_ca']
+        self._lbx = problem_params['lbx'].convert_to_array()
+        self._ubx = problem_params['ubx'].convert_to_array()
+        self._lbu = problem_params['lbu'].convert_to_array()
+        self._ubu = problem_params['ubu'].convert_to_array()
+
+        # cost and constraint functions
+        # -> dummy variables for using CasADi
+        x = cas.SX.sym('x', (problem_params['nx'], 1))
+        u = cas.SX.sym('u', (problem_params['nu'], 1))
+        xf = cas.SX.sym('x', (problem_params['nx'], 1))
+        # -> setup cost + gradient
+        self._stageCost = cas.Function('stageCost', [x, u], [stage_cost(x, u)])
+        self._terminalCost = cas.Function('terminalCost', [x, xf], [terminal_cost(x, xf)])
+        # -> discretize dynamical system
+        self._dynamicsDT = cas.Function('dynamicsDT', [x, u], [rk4_integrator(x, u, dynamics,
+                                                                              problem_params['dt'])])
+        # -> setup constraints + gradient
+        self._ineqConStage = cas.Function('ineqConStage', [x, u], [cas.vertcat(*ineq_con_stage(x, u))])
+        self._ineqConTerminal = cas.Function('ineqConTerminal', [x], [cas.vertcat(*ineq_con_terminal(x))])
+
+        # todo:initialize constraint factory
+
+        # parameters and variables of the optimal control problem
+        self._varX = None
+        self._varU = None
+        self._x0 = None
+        self._xf = None
+
+        # setup solver
+        self._solver = self.init_solver()
+
+        # current optimal solution
+        self._Xopt = Trajectory(self._N, 'State', self._system)
+        self._Uopt = []
+        self._slackCAopt = []
+
+    def init_solver(self) -> cas.Opti:
+        """
+        Modelling of the optimal control problem (using CasADi's 'opti stack'), i.e, declaration of variables and
+        parameters (e.g. the initial state) as well as the cost and constraint functions.
+        :return: parameterized optimal control problem
+        """
+
+        # optimal control problem
+        opti = cas.Opti()
+
+        # declare variables
+        self._varX = opti.variable(self._nx, self._N+1)
+        self._varU = opti.variable(self._nu, self._N)
+        # self._varSlackCA = opti.variable(self._n_ineq_con_ca,self._N+1)
+
+        # declare parameters
+        # -> initial state
+        self._x0 = opti.parameter(self._nx, 1)
+        self._xf = opti.parameter(self._nx, 1)
+        # -> collision avoidance constraints
+        # self._ca_mat = opti.parameter(self._n_ineq_con_ca,problem_params['nx'],self._N+1)
+        # self._ca_rhs = opti.parameter(self._n_ineq_con_ca,self._N+1)
+
+        # ----------------- cost function -----------------
+        cost = 0
+        for kk in range(self._N):
+            cost += self._stageCost(self._varX[:, kk], self._varU[:, kk])
+
+        cost += self._terminalCost(self._varX[:, -1], self._xf)
+        opti.minimize(cost)
+
+        # ----------------- constraints -----------------
+
+        # initial state
+        opti.subject_to(self._varX[:, 0] == self._x0)
+
+        # stage constraints
+        for kk in range(self._N):
+            # -> dynamic feasibility
+            opti.subject_to(self._varX[:, kk+1] == self._dynamicsDT(self._varX[:, kk], self._varU[:, kk]))
+            # -> collision avoidance constraints
+            # opti.subject_to(self._ca_mat[:, :, kk]*self._varX[:,kk] <= self._ca_rhs[kk] + self._varSlackCA[:, kk])
+            # -> state & input bounds
+            opti.subject_to([self._lbx <= self._varX[:, kk], self._varX[:, kk] <= self._ubx,
+                            self._lbu <= self._varU[:, kk], self._varU[:, kk] <= self._ubu])
+            # -> problem-specific inequality constraints
+            opti.subject_to(self._ineqConStage(self._varX[:, kk], self._varU[:, kk]) <= 0)
+
+        # terminal constraints
+        # -> collision avoidance constraints
+        # opti.subject_to(self._ca_mat[:, :, -1] * self._varX[:, -1] <= self._ca_rhs[-1]  + self._varSlackCA[:, -1])
+        # -> state bounds
+        opti.subject_to(self._lbx <= self._varX[:, -1])
+        opti.subject_to(self._varX[:, -1] <= self._ubx)
+        # -> problem-specific constraints
+        opti.subject_to(self._ineqConTerminal(self._varX[:, -1]) <= 0)
+
+        # positivity of slack variables
+        # opti.subject_to(self._varSlackCA >= 0)
+
+        # ----------------- finalize solver -----------------
+        # set numerical backend
+        opti.solver("ipopt")
+
+        return opti
+
+    def eval_penalized_objective(self) -> float:
+        """
+        Some iterative algorithms for solving non-convex optimal control/optimization problems measure progress towards
+        the solution and determine the step size by evaluating a penalized objective function including the cost as well
+        as all penalties incurred for violating constraints.
+        :return: current cost value including penalties
+        """
+
+        pen_cost = 0
+
+        # iterate over time steps
+        for kk in range(self._N-1):
+            # -> stage cost
+            pen_cost += self._stageCost(self._Xopt[:, kk], self._Uopt[:, kk]).full()
+            # -> dynamic feasibility
+            pen_cost += sum(abs(self._Xopt[:, kk+1] - self._dynamicsDT(self._Xopt[:, kk], self._Uopt[:, kk]).full()))
+            # -> collision avoidance
+            pen_cost += self._penaltyWeight*sum(self._slackCAopt[:, kk])
+
+        # -> terminal cost
+        pen_cost += self._penaltyWeight*self._terminalCost(self._Xopt[:, -1]).full()
+        # -> collision avoidance
+        pen_cost += sum(self._slackCAopt[:, -1])
+
+        return pen_cost
+
+    def solve(self, x0: Type[State], x_init: Optional[Trajectory] = None, u_init: Optional[Trajectory] = None,
+              xf: Optional[State] = None) -> (Trajectory, Trajectory):
+        """
+        Sets all parameters of the instance of the optimal control problem (OCP) to be solved, solves the OCP, and
+        returns the optimal state and control input trajectories.
+        :param x0:      initial state
+        :param x_init:  initial guess for the state trajectory (initial state will be overridden by x0)
+        :param u_init:  initial guess for the control inputs
+        :param xf:      desired final state
+        :return: optimal state and control input trajectories
+        """
+
+        # set initial state
+        self._solver.set_value(self._x0, x0.convert_to_array())
+
+        # set desired final state (set to zero if no desired final state is given)
+        if isinstance(xf, State):
+            self._solver.set_value(self._xf, xf.convert_to_array())
+        else:
+            self._solver.set_value(self._xf, np.zeros((self._nx, 1), dtype=float))
+
+        # initial values for the solver (set to zero if no initial guess is provided)
+        if isinstance(x_init, Trajectory):
+            self._solver.set_initial(self._varX[:, 0], x0.convert_to_array())
+            for kk in range(1, self._N+1):
+                self._solver.set_initial(self._varX[:, kk], x_init.get_point_as_array_at_time_step(kk))
+        else:
+            self._solver.set_initial(self._varX, np.zeros((self._nx, self._N+1), dtype=float))
+        if isinstance(u_init, Trajectory):
+            for kk in range(self._N):
+                self._solver.set_initial(self._varU[:, kk], u_init.get_point_as_array_at_time_step(kk))
+        else:
+            self._solver.set_initial(self._varU, np.zeros((self._nu, self._N), dtype=float))
+
+        # set collision avoidance constraints
+        # ca_mat, ca_rhs = .... # todo: constraint factory
+        # self._solver.set_value(self._ca_mat, ca_mat)
+        # self._solver.set_value(self._ca_rhs, ca_rhs)
+
+        # solve optimal control problem
+        sol = self._solver.solve()
+
+        # extract solution
+        self._Xopt = sol.value(self._varX)
+        self._Uopt = sol.value(self._varU)
+        # self._slackCAopt = sol.value(self._varSlackCA)
+
+        # convert solution back to State/ControlInput dataclasses
+        x_opt = Trajectory(N=self._N, point_type='State', system=self._system)
+        x_opt.set_trajectory_from_array(self._Xopt)
+        u_opt = Trajectory(N=self._N, point_type='ControlInput', system=self._system)
+        u_opt.set_trajectory_from_array(self._Uopt)
+
+        return x_opt, u_opt
