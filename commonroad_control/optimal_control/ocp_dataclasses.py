@@ -33,6 +33,9 @@ class State(TrajectoryPoint):
         self.position_y = x_np[1]
         self.orientation = x_np[2]
 
+    def project_position(self) -> np.array((2, 1)):
+        return np.array([self.position_x,self.position_y])
+
 
 @dataclass
 class ControlInput(TrajectoryPoint):
