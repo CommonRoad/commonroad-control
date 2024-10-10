@@ -19,6 +19,12 @@ class StateConstrainedIntegrator(State):
     velocity_x: float = None
     velocity_y: float = None
     velocity_orientation: float = None
+    idx_position_x: int = 0
+    idx_position_y: int = 1
+    idx_orientation: int = 2
+    idx_velocity_x: int = 3
+    idx_velocity_y: int = 4
+    idx_velocity_orientation: int = 5
 
     def __post_init__(self):
         super().__init__(
@@ -26,26 +32,29 @@ class StateConstrainedIntegrator(State):
             position_x=self.position_x,
             position_y=self.position_y,
             orientation=self.orientation,
+            idx_position_x=self.idx_position_x,
+            idx_position_y=self.idx_position_y,
+            idx_orientation=self.idx_orientation
         )
 
     def convert_to_array(self) -> np.array:
         x_np = np.zeros((self.dim, 1), dtype=float)
-        x_np[0] = self.position_x
-        x_np[1] = self.position_y
-        x_np[2] = self.orientation
-        x_np[3] = self.velocity_x
-        x_np[4] = self.velocity_y
-        x_np[5] = self.velocity_orientation
+        x_np[self.idx_position_x] = self.position_x
+        x_np[self.idx_position_y] = self.position_y
+        x_np[self.idx_orientation] = self.orientation
+        x_np[self.idx_velocity_x] = self.velocity_x
+        x_np[self.idx_velocity_y] = self.velocity_y
+        x_np[self.idx_velocity_orientation] = self.velocity_orientation
 
         return x_np
 
     def set_values_from_array(self, x_np: np.array):
-        self.position_x = x_np[0]
-        self.position_y = x_np[1]
-        self.orientation = x_np[2]
-        self.velocity_x = x_np[3]
-        self.velocity_y = x_np[4]
-        self.velocity_orientation = x_np[5]
+        self.position_x = x_np[self.idx_position_x]
+        self.position_y = x_np[self.idx_position_y]
+        self.orientation = x_np[self.idx_orientation]
+        self.velocity_x = x_np[self.idx_velocity_x]
+        self.velocity_y = x_np[self.idx_velocity_y]
+        self.velocity_orientation = x_np[self.idx_velocity_orientation]
 
 
 @dataclass
