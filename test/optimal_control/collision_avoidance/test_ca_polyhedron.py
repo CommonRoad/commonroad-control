@@ -2,19 +2,19 @@ from math import sqrt
 import numpy as np
 
 from commonroad_control.optimal_control.ocp_dataclasses import State
-from commonroad_control.optimal_control.collision_avoidance.ca_polyhedron import Polyhedron, SupportPoint
+from commonroad_control.optimal_control.collision_avoidance.ca_polyhedron import Polyhedron, Vertex
 
 
 def test_ca_polyhedron() -> bool:
 
-    res = np.full((5, 1), fill_value=False)
+    res = np.full((4, 1), fill_value=False)
 
     # simple test - create a polyhedron that contains all points with y <= 0
     x1 = [0, 0.5]
-    sp1 = SupportPoint(x=x1[0], y=x1[1])
+    v1 = Vertex(x=x1[0], y=x1[1])
     x2 = [2, 0.5]
-    sp2 = SupportPoint(x=x2[0], y=x2[1])
-    poly1 = Polyhedron(hs_support_points=[[sp1, sp2]], orientation=1)
+    v2 = Vertex(x=x2[0], y=x2[1])
+    poly1 = Polyhedron(cand_vertices=[v1, v2], passing_direction=1)
 
     # ... state that is contained in poly1
     x_in = [1, -1]
@@ -41,27 +41,10 @@ def test_ca_polyhedron() -> bool:
             and poly1.contains(projection_state_out):
         res[1] = True
 
-    # check emptiness
-    # ... empty polyhedron
-    x3_e = [2, 1]
-    sp3_e = SupportPoint(x=x3_e[0], y=x3_e[1])
-    x_4e = [0, 1]
-    sp4_e = SupportPoint(x=x_4e[0], y=x_4e[1])
-    poly_e = Polyhedron(hs_support_points=[[sp1, sp2], [sp3_e, sp4_e]], orientation=1)
-    # ... non-empty polhyedron
-    x3_ne = [0, 1]
-    sp3_ne = SupportPoint(x=x3_ne[0], y=x3_ne[1])
-    x_4ne = [2, 1]
-    sp4_ne = SupportPoint(x=x_4ne[0], y=x_4ne[1])
-    poly_ne = Polyhedron(hs_support_points=[[sp1, sp2], [sp3_ne, sp4_ne]], orientation=1)
-    # ... check results
-    if poly_e.is_empty() and not poly_ne.is_empty():
-        res[2] = True
-
     # slightly more complex test
     x3 = [3, 1.5]
-    sp3 = SupportPoint(x=x3[0], y=x3[1])
-    poly2 = Polyhedron(hs_support_points=[[sp1, sp2], [sp2, sp3]], orientation=-1)
+    v3 = Vertex(x=x3[0], y=x3[1])
+    poly2 = Polyhedron(cand_vertices=[v1, v2, v3], passing_direction=-1)
     # ... state that is contained in poly2
     x_in = [2, 1.1]
     state_in = State(position_x=x_in[0], position_y=x_in[1])
@@ -72,7 +55,7 @@ def test_ca_polyhedron() -> bool:
     if (res_cont_in and (hs.A.dot(x_in) >= hs.b)
             and np.linalg.norm(hs.A - [-sqrt(2)/2, sqrt(2)/2]) <= 1e-6
             and poly2.contains(projection_state_in)):
-        res[3] = True
+        res[2] = True
 
     # ... state that is not contained in poly2
     x_out = [2.2, -0.5]
@@ -91,11 +74,27 @@ def test_ca_polyhedron() -> bool:
     if (not res_cont_out and (hs.A.dot(x_out) <= hs.b)
             and np.linalg.norm(projection_state_out.project_position() - np.array([2, 0.5])) <= 1e-6
             and poly2.contains(projection_state_out)):
-        res[4] = True
+        res[3] = True
+
+    # # check emptiness
+    # # ... empty polyhedron
+    # x3_e = [2, 1]
+    # v3_e = Vertex(x=x3_e[0], y=x3_e[1])
+    # x_4e = [0, 1]
+    # v4_e = Vertex(x=x_4e[0], y=x_4e[1])
+    # poly_e = Polyhedron(cand_vertices=[[v1, v2], [v3_e, v4_e]], passing_direction=1)
+    # # ... non-empty polhyedron
+    # x3_ne = [0, 1]
+    # v3_ne = Vertex(x=x3_ne[0], y=x3_ne[1])
+    # x_4ne = [2, 1]
+    # v4_ne = Vertex(x=x_4ne[0], y=x_4ne[1])
+    # poly_ne = Polyhedron(cand_vertices=[v1, v2, v3_ne, v4_ne], passing_direction=1)
+    # # ... check results
+    # if poly_e.is_empty() and not poly_ne.is_empty():
+    #     res[4] = True
 
     return all(res)
 
 
 if __name__ == '__main__':
-    test_ca_polyhedron()
-
+    res = test_ca_polyhedron()

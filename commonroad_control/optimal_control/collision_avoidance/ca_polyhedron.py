@@ -2,86 +2,78 @@ import numpy as np
 import clarabel
 from scipy import sparse
 from math import inf
-from dataclasses import dataclass
 from typing import List
 
 from commonroad_control.optimal_control.ocp_dataclasses import State
-
-
-@dataclass
-class SupportPoint:
-    x: float = None
-    y: float = None
-
-    def convert_to_array(self) -> np.array:
-        x_np = np.zeros(2, dtype=float)
-        x_np[0] = self.x
-        x_np[1] = self.y
-        return x_np
-
-
-@dataclass
-class HalfSpace:
-    A: np.zeros(shape=(1, 2))
-    b: np.zeros(shape=(1, 1))
+from commonroad_control.optimal_control.collision_avoidance.utils import monotone_chain, Vertex, HalfSpace
 
 
 class Polyhedron:
-    def __init__(self, hs_support_points: List[List[SupportPoint]], orientation: int):
+    def __init__(self, cand_vertices: List[Vertex], passing_direction: int):
         """
         Given pairs of points that support the half-spaces of the polyhedron, its halfspace representation is computed
         and the parameters of the projection problem (see project_and_linearize) are set.
-        :param hs_support_points: list of pairs of points supporting the respective half-space
-        :param orientation: orientation of the support vector - "1" if the polyhedron has to be passed on the left,
-        "-1" if it has to be passed on the right
+        :param cand_vertices: list of (candidate) vertices of the polyhedron
+        :param passing_direction: orientation of the support vector - "1" if the polyhedron has to be passed on the
+        left, "-1" if it has to be passed on the right
         """
 
+        # tolerance for checking containment
+        self._tol = 1e-8
+
         # check inputs
-        if orientation not in {1, -1}:
-            raise ValueError("Input argument orientation has to be either 1 or -1")
+        if passing_direction not in {1, -1}:
+            raise ValueError("Input argument passing_direction has to be either 1 or -1")
+
+        # compute convex hull of vertices
+        # ... if passing direction is -1, mirror vertices w.r.t. the horizontal axis before computing the convex hull
+        cand_vertices = [Vertex(v.x, passing_direction*v.y) for v in cand_vertices]
+        # ... compute the convex hull
+        cand_vertices = monotone_chain(cand_vertices)
+        # ... if passing direction is -1, flip back vertices
+        cand_vertices = [Vertex(v.x, passing_direction*v.y) for v in cand_vertices]
+
+        # TODO: include tapering of convex hull
 
         # convert into half-space representation
-        self._A = np.zeros((len(hs_support_points), 2), dtype=np.float64)
+        self._A = np.zeros((len(cand_vertices) - 1, 2), dtype=np.float64)
         # self._b = np.zeros((len(hs_support_points), 1), dtype=np.float64)
-        self._b = np.zeros(len(hs_support_points), dtype=np.float64)
+        self._b = np.zeros(len(cand_vertices) - 1, dtype=np.float64)
         # set oriented vector perpendicular to xy-plane (normal vector of half-space must face outwards, i.e.,
         # x in P <=> self._A*x <= self._b
-        z_vector = np.array([0, 0, orientation])
-        for ii in range(len(hs_support_points)):
+        z_vector = np.array([0, 0, passing_direction])
+        for ii in range(len(cand_vertices) - 1):
             # linear part of the half-space - sort support points by ascending x-coordinate to avoid empty sets
-            if abs(hs_support_points[ii][0].x - hs_support_points[ii][1].x) < 1e-16:
+            if abs(cand_vertices[ii+1].x - cand_vertices[ii].x) < self._tol:
                 raise ValueError("Vertically aligned support points are not supported.")
-            hs_direction = np.hstack((hs_support_points[ii][1].convert_to_array()\
-                                       - hs_support_points[ii][0].convert_to_array(), 0))
+            hs_direction = np.hstack((cand_vertices[ii+1].convert_to_array()
+                                      - cand_vertices[ii].convert_to_array(), 0))
 
-            tmp = np.cross(z_vector, hs_direction, axis=0)
+            tmp = np.cross(z_vector, hs_direction)
             self._A[ii, :] = tmp[0:2]/np.linalg.norm(tmp[0:2])
-            self._b[ii] = self._A[ii, :].dot(hs_support_points[ii][1].convert_to_array())
+            self._b[ii] = self._A[ii, :].dot(cand_vertices[ii].convert_to_array())
 
         # parameters for the projection problem using clarabel as the QP solver
         self._clarabel_P = 2*sparse.identity(2, format='csc')  # (quadratic) cost matrix
         self._clarabel_A = sparse.csc_matrix(self._A)
         self._clarabel_cones = [clarabel.NonnegativeConeT(self._b.size)]  # only inequality constraints
 
-        # post-processing: check whether polyhedron is empty or not
-        self._is_empty = self.is_empty()
+        # # post-processing: check whether polyhedron is empty or not
+        # self._is_empty = self.is_empty()
 
-        # ToDo: how to check convexity? for now assume correct order of support points
-
-    def is_empty(self) -> bool:
-        """
-        Solves a linear feasibility problem using clarabel to check whether the polytope is empty or not.
-        :return: true, if the polytope is empty - false, otherwise
-        """
-        #solver = clarabel.DefaultSolver(sparse.csc_matrix(np.empty((2, 2))), np.zeros(2),
-        #                                self._clarabel_A, self._b, self._clarabel_cones, clarabel.DefaultSettings())
-        solver = clarabel.DefaultSolver(sparse.identity(2, format='csc'), np.zeros(2),
-                                        self._clarabel_A, self._b, self._clarabel_cones, clarabel.DefaultSettings())
-        solution = solver.solve()
-        if str(solution.status) == 'PrimalInfeasible':
-            return True
-        else:
-            return False
+    # def is_empty(self) -> bool:
+    #     """
+    #     Solves a quadratic program using clarabel to check whether the polytope is empty or not.
+    #     :return: true, if the polytope is empty - false, otherwise
+    #     """
+    #
+    #     solver = clarabel.DefaultSolver(sparse.identity(2, format='csc'), np.zeros(2),
+    #                                     self._clarabel_A, self._b, self._clarabel_cones, clarabel.DefaultSettings())
+    #     solution = solver.solve()
+    #     if str(solution.status) == 'PrimalInfeasible':
+    #         return True
+    #     else:
+    #         return False
 
     def contains(self, x: State) -> bool:
         """
@@ -89,7 +81,7 @@ class Polyhedron:
         :param x: current state of the vehicle
         :return: true, if the position is contained - false, otherwise
         """
-        if all(self._A.dot(x.project_position()) <= self._b + 1e-8):
+        if all(self._A.dot(x.project_position()) <= self._b + self._tol):
             return True
         else:
             return False
@@ -116,7 +108,7 @@ class Polyhedron:
         position = x.project_position()
 
         # compute projection of position onto the boundary of the polyhedron
-        if all(self._A.dot(position) <= self._b + 1e-6):
+        if all(self._A.dot(position) <= self._b + self._tol):
             # position is contained in the polyhedron (the polyhedron is enlarged for this check to avoid numerical
             # issues)
             # iterate over all half-spaces and find the one that is closest to position
