@@ -1,4 +1,9 @@
+import scipy
+import numpy as np
+import matplotlib.pyplot as plt
+
 from models.constrained_integrator import (
+    ImplementedModels,
     stage_cost,
     terminal_cost,
     dynamics,
@@ -9,11 +14,6 @@ from models.constrained_integrator import (
 )
 from optimal_control.ocp_solver import SolverOptimalControl
 from optimal_control.utils import Trajectory
-import scipy
-import numpy as np
-
-from commonroad_control.models.constrained_integrator import ImplementedModels
-
 
 # get problem parameters
 params = get_params()
@@ -56,3 +56,7 @@ for kk in range(params["N"] + 1):
 
 # solve optimal control problem
 x_opt, u_opt = solver.solve(params["x0"], x_init, xf=xf_turn_left)
+x_opt_np = np.hstack([x_opt.get_point_as_array_at_time_step(kk) for kk in range(params['N']+1)])
+
+plt.plot(x_opt_np[0, :], x_opt_np[1, :], 'ko-')
+plt.show()

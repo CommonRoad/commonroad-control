@@ -58,8 +58,10 @@ class SolverOptimalControl:
         # initialize constraint factory as well as related variables and parameters
         if self._n_ineq_con_ca == 0:
             self._ca_constraints = False
+            self._max_iter = 1
         else:
             self._ca_constraints = True
+            self._max_iter = 25
             self._constraint_factory = ConstraintFactory(N=self._N, nx=self._nx)
             self._varSlackCA = None
             self._ca_mat = None
@@ -111,9 +113,11 @@ class SolverOptimalControl:
         cost = 0
         for kk in range(self._N):
             cost += self._stageCost(self._varX[:, kk], self._varU[:, kk])
-            cost += self._penaltyWeight * cas.sum1(self._varSlackCA[:, kk])
+            if self._ca_constraints:
+                cost += self._penaltyWeight * cas.sum1(self._varSlackCA[:, kk])
         cost += self._terminalCost(self._varX[:, -1], self._xf)
-        cost += self._penaltyWeight*cas.sum1(self._varSlackCA[:, self._N])
+        if self._ca_constraints:
+            cost += self._penaltyWeight*cas.sum1(self._varSlackCA[:, self._N])
         opti.minimize(cost)
 
         # ----------------- constraints -----------------
@@ -224,43 +228,55 @@ class SolverOptimalControl:
         else:
             self._solver.set_value(self._xf, np.zeros((self._nx, 1), dtype=float))
 
-        # initial values for the solver (set to zero if no initial guess is provided)
-        if isinstance(x_init, Trajectory):
-            self._solver.set_initial(self._varX[:, 0], x0.convert_to_array())
-            for kk in range(1, self._N + 1):
-                self._solver.set_initial(
-                    self._varX[:, kk], x_init.get_point_as_array_at_time_step(kk)
-                )
-        else:
-            self._solver.set_initial(
-                self._varX, np.zeros((self._nx, self._N + 1), dtype=float)
-            )
-        if isinstance(u_init, Trajectory):
-            for kk in range(self._N):
-                self._solver.set_initial(
-                    self._varU[:, kk], u_init.get_point_as_array_at_time_step(kk)
-                )
-        else:
-            self._solver.set_initial(
-                self._varU, np.zeros((self._nu, self._N), dtype=float)
-            )
+        # initial guess (set to zero if none is provided)
+        if not isinstance(x_init, Trajectory):
+            x_init = Trajectory(N=self._N, point_type="State", system=self._system)
+            x_init.set_trajectory_from_array(np.zeros((self._nx,self._N+1), dtype=float))
+        if not isinstance(u_init, Trajectory):
+            u_init = Trajectory(N=self._N, point_type="ControlInput", system=self._system)
+            u_init.set_trajectory_from_array(np.zeros((self._nu,self._N), dtype=float))
 
-        # set collision avoidance constraints
+        # update constraint factory
         if self._ca_constraints:
             self._constraint_factory.set_polyhedral_obstacles(obstacles)
-            for kk in range(self._N+1):
-                [tmp_mat, tmp_rhs] = self._constraint_factory.project_and_linearize_at_time_step(
-                    kk, x_init.get_point_at_time_step(kk))
-                self._solver.set_value(self._ca_mat[kk], tmp_mat)
-                self._solver.set_value(self._ca_rhs[kk], tmp_rhs)
 
-        # solve optimal control problem
-        sol = self._solver.solve()
+        # iterate until convergence
+        iterates = {0: {'x': np.hstack([x_init.get_point_as_array_at_time_step(kk) for kk in range(self._N+1)]),
+                        'u': np.hstack([u_init.get_point_as_array_at_time_step(kk) for kk in range(self._N)])}}
 
-        # extract solution
-        self._Xopt = sol.value(self._varX)
-        self._Uopt = sol.value(self._varU)
-        self._slackCAopt = sol.value(self._varSlackCA)
+        for ii in range(self._max_iter):
+            # set initial values for the solver
+            self._solver.set_initial(self._varX, iterates[0]['x'])
+            self._solver.set_initial(self._varU, iterates[0]['u'])
+
+            # set collision avoidance constraints
+            if self._ca_constraints:
+                for kk in range(self._N+1):
+                    [tmp_mat, tmp_rhs] = self._constraint_factory.project_and_linearize_at_time_step(
+                        kk, x_init.get_point_at_time_step(kk))
+                    self._solver.set_value(self._ca_mat[kk], tmp_mat)
+                    self._solver.set_value(self._ca_rhs[kk], tmp_rhs)
+
+            # solve optimal control problem
+            sol = self._solver.solve()
+
+            # extract solution
+            iterates[ii + 1] = {'x': sol.value(self._varX), 'u': sol.value(self._varU)}
+            if self._ca_constraints:
+                iterates[ii + 1]['slack'] = sol.value(self._varSlackCA)
+            # check convergence
+            if np.linalg.norm(iterates[ii+1]['x'].flatten() - iterates[ii]['x'].flatten()) <= 1e-6 \
+                    and np.linalg.norm(iterates[ii+1]['u'].flatten() - iterates[ii]['u'].flatten()) <= 1e-6:
+                break
+            else:
+                # set initial guess for the next iteration
+                x_init.set_trajectory_from_array(iterates[ii+1]['x'])
+                u_init.set_trajectory_from_array(iterates[ii+1]['u'])
+
+        self._Xopt = iterates[ii+1]['x']
+        self._Uopt = iterates[ii+1]['u']
+        if self._ca_constraints:
+            self._slackCAopt = iterates[ii+1]['slack']
 
         # convert solution back to State/ControlInput dataclasses
         x_opt = Trajectory(N=self._N, point_type="State", system=self._system)
