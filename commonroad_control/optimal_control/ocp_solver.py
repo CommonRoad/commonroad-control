@@ -1,8 +1,11 @@
 import numpy as np
-from typing import Callable, Type, Dict, Optional
+from typing import Callable, Type, Dict, Optional, List
 import casadi as cas
+
 from commonroad_control.optimal_control.utils import rk4_integrator, Trajectory
 from commonroad_control.optimal_control.ocp_dataclasses import State
+from commonroad_control.optimal_control.collision_avoidance.constraint_factory import ConstraintFactory
+from commonroad_control.optimal_control.collision_avoidance.ca_polyhedron import Polyhedron
 
 
 class SolverOptimalControl:
@@ -16,13 +19,15 @@ class SolverOptimalControl:
         ineq_con_terminal: Callable,
     ):
 
+        # problem_params["n_ineq_con_ca"] = 0
+
         # extract problem data
         self._system = problem_params["system"]
         self._nx = problem_params["nx"]
         self._nu = problem_params["nu"]
         self._N = problem_params["N"]
         self._n_ineq_con_ca = problem_params["n_ineq_con_ca"]
-        self._penaltyWeight = problem_params["n_ineq_con_ca"]
+        self._penaltyWeight = problem_params["penaltyWeight"]
         self._lbx = problem_params["lbx"].convert_to_array()
         self._ubx = problem_params["ubx"].convert_to_array()
         self._lbu = problem_params["lbu"].convert_to_array()
@@ -50,7 +55,15 @@ class SolverOptimalControl:
             "ineqConTerminal", [x], [cas.vertcat(*ineq_con_terminal(x))]
         )
 
-        # todo:initialize constraint factory
+        # initialize constraint factory as well as related variables and parameters
+        if self._n_ineq_con_ca == 0:
+            self._ca_constraints = False
+        else:
+            self._ca_constraints = True
+            self._constraint_factory = ConstraintFactory(N=self._N, nx=self._nx)
+            self._varSlackCA = None
+            self._ca_mat = None
+            self._ca_rhs = None
 
         # parameters and variables of the optimal control problem
         self._varX = None
@@ -79,22 +92,28 @@ class SolverOptimalControl:
         # declare variables
         self._varX = opti.variable(self._nx, self._N + 1)
         self._varU = opti.variable(self._nu, self._N)
-        # self._varSlackCA = opti.variable(self._n_ineq_con_ca,self._N+1)
+        if self._ca_constraints:
+            self._varSlackCA = opti.variable(self._n_ineq_con_ca, self._N+1)
 
         # declare parameters
         # -> initial state
         self._x0 = opti.parameter(self._nx, 1)
         self._xf = opti.parameter(self._nx, 1)
         # -> collision avoidance constraints
-        # self._ca_mat = opti.parameter(self._n_ineq_con_ca,problem_params['nx'],self._N+1)
-        # self._ca_rhs = opti.parameter(self._n_ineq_con_ca,self._N+1)
+        if self._ca_constraints:
+            self._ca_mat = dict(zip(range(self._N+1),
+                                    [opti.parameter(self._n_ineq_con_ca, self._nx) for kk in range(self._N+1)]))
+            # self._ca_mat = dict.fromkeys(range(self._N+1), opti.parameter(self._n_ineq_con_ca, self._nx))
+            self._ca_rhs = dict(zip(range(self._N+1),
+                                    [opti.parameter(self._n_ineq_con_ca, 1) for kk in range(self._N+1)]))
 
         # ----------------- cost function -----------------
         cost = 0
         for kk in range(self._N):
             cost += self._stageCost(self._varX[:, kk], self._varU[:, kk])
-
+            cost += self._penaltyWeight * cas.sum1(self._varSlackCA[:, kk])
         cost += self._terminalCost(self._varX[:, -1], self._xf)
+        cost += self._penaltyWeight*cas.sum1(self._varSlackCA[:, self._N])
         opti.minimize(cost)
 
         # ----------------- constraints -----------------
@@ -110,7 +129,9 @@ class SolverOptimalControl:
                 == self._dynamicsDT(self._varX[:, kk], self._varU[:, kk])
             )
             # -> collision avoidance constraints
-            # opti.subject_to(self._ca_mat[:, :, kk]*self._varX[:,kk] <= self._ca_rhs[kk] + self._varSlackCA[:, kk])
+            if self._ca_constraints:
+                opti.subject_to(self._ca_mat[kk]@self._varX[:, kk] <= self._ca_rhs[kk] + self._varSlackCA[:, kk])
+                opti.subject_to(self._varSlackCA[:, kk] >= 0)
             # -> state & input bounds
             opti.subject_to(
                 [
@@ -127,15 +148,15 @@ class SolverOptimalControl:
 
         # terminal constraints
         # -> collision avoidance constraints
-        # opti.subject_to(self._ca_mat[:, :, -1] * self._varX[:, -1] <= self._ca_rhs[-1]  + self._varSlackCA[:, -1])
+        if self._ca_constraints:
+            opti.subject_to(self._ca_mat[self._N]@self._varX[:, self._N]
+                            <= self._ca_rhs[self._N] + self._varSlackCA[:, self._N])
+            opti.subject_to(self._varSlackCA[:, self._N] >= 0)
         # -> state bounds
         opti.subject_to(self._lbx <= self._varX[:, -1])
         opti.subject_to(self._varX[:, -1] <= self._ubx)
         # -> problem-specific constraints
         opti.subject_to(self._ineqConTerminal(self._varX[:, -1]) <= 0)
-
-        # positivity of slack variables
-        # opti.subject_to(self._varSlackCA >= 0)
 
         # ----------------- finalize solver -----------------
         # set numerical backend
@@ -180,6 +201,8 @@ class SolverOptimalControl:
         x_init: Optional[Trajectory] = None,
         u_init: Optional[Trajectory] = None,
         xf: Optional[State] = None,
+        obstacles: Optional[Dict[int, List[Polyhedron]]] = None,
+
     ) -> (Trajectory, Trajectory):
         """
         Sets all parameters of the instance of the optimal control problem (OCP) to be solved, solves the OCP, and
@@ -188,6 +211,7 @@ class SolverOptimalControl:
         :param x_init:  initial guess for the state trajectory (initial state will be overridden by x0)
         :param u_init:  initial guess for the control inputs
         :param xf:      desired final state
+        :param obstacles:
         :return: optimal state and control input trajectories
         """
 
@@ -222,9 +246,13 @@ class SolverOptimalControl:
             )
 
         # set collision avoidance constraints
-        # ca_mat, ca_rhs = .... # todo: constraint factory
-        # self._solver.set_value(self._ca_mat, ca_mat)
-        # self._solver.set_value(self._ca_rhs, ca_rhs)
+        if self._ca_constraints:
+            self._constraint_factory.set_polyhedral_obstacles(obstacles)
+            for kk in range(self._N+1):
+                [tmp_mat, tmp_rhs] = self._constraint_factory.project_and_linearize_at_time_step(
+                    kk, x_init.get_point_at_time_step(kk))
+                self._solver.set_value(self._ca_mat[kk], tmp_mat)
+                self._solver.set_value(self._ca_rhs[kk], tmp_rhs)
 
         # solve optimal control problem
         sol = self._solver.solve()
@@ -232,7 +260,7 @@ class SolverOptimalControl:
         # extract solution
         self._Xopt = sol.value(self._varX)
         self._Uopt = sol.value(self._varU)
-        # self._slackCAopt = sol.value(self._varSlackCA)
+        self._slackCAopt = sol.value(self._varSlackCA)
 
         # convert solution back to State/ControlInput dataclasses
         x_opt = Trajectory(N=self._N, point_type="State", system=self._system)
