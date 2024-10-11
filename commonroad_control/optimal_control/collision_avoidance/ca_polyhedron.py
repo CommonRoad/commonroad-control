@@ -3,6 +3,7 @@ import clarabel
 from scipy import sparse
 from math import inf
 from typing import List
+import matplotlib.pyplot as plt
 
 from commonroad_control.optimal_control.ocp_dataclasses import State
 from commonroad_control.optimal_control.collision_avoidance.utils import monotone_chain, Vertex, HalfSpace
@@ -29,29 +30,28 @@ class Polyhedron:
         # ... if passing direction is -1, mirror vertices w.r.t. the horizontal axis before computing the convex hull
         cand_vertices = [Vertex(v.x, passing_direction*v.y) for v in cand_vertices]
         # ... compute the convex hull
-        cand_vertices = monotone_chain(cand_vertices)
+        vertices = monotone_chain(cand_vertices)
         # ... if passing direction is -1, flip back vertices
-        cand_vertices = [Vertex(v.x, passing_direction*v.y) for v in cand_vertices]
+        self._vertices = [Vertex(v.x, passing_direction*v.y) for v in vertices]
 
         # TODO: include tapering of convex hull
 
         # convert into half-space representation
-        self._A = np.zeros((len(cand_vertices) - 1, 2), dtype=np.float64)
+        self._A = np.zeros((len(self._vertices) - 1, 2), dtype=np.float64)
         # self._b = np.zeros((len(hs_support_points), 1), dtype=np.float64)
-        self._b = np.zeros(len(cand_vertices) - 1, dtype=np.float64)
+        self._b = np.zeros(len(self._vertices) - 1, dtype=np.float64)
         # set oriented vector perpendicular to xy-plane (normal vector of half-space must face outwards, i.e.,
         # x in P <=> self._A*x <= self._b
         z_vector = np.array([0, 0, passing_direction])
-        for ii in range(len(cand_vertices) - 1):
+        for ii in range(len(self._vertices) - 1):
             # linear part of the half-space - sort support points by ascending x-coordinate to avoid empty sets
-            if abs(cand_vertices[ii+1].x - cand_vertices[ii].x) < self._tol:
+            if abs(self._vertices[ii+1].x - self._vertices[ii].x) < self._tol:
                 raise ValueError("Vertically aligned support points are not supported.")
-            hs_direction = np.hstack((cand_vertices[ii+1].convert_to_array()
-                                      - cand_vertices[ii].convert_to_array(), 0))
+            hs_direction = np.hstack((self._vertices[ii+1].convert_to_array() - self._vertices[ii].convert_to_array(), 0))
 
             tmp = np.cross(z_vector, hs_direction)
             self._A[ii, :] = tmp[0:2]/np.linalg.norm(tmp[0:2])
-            self._b[ii] = self._A[ii, :].dot(cand_vertices[ii].convert_to_array())
+            self._b[ii] = self._A[ii, :].dot(self._vertices[ii].convert_to_array())
 
         # parameters for the projection problem using clarabel as the QP solver
         self._clarabel_P = 2*sparse.identity(2, format='csc')  # (quadratic) cost matrix
@@ -60,7 +60,7 @@ class Polyhedron:
 
         # # post-processing: check whether polyhedron is empty or not
         # self._is_empty = self.is_empty()
-
+    #
     # def is_empty(self) -> bool:
     #     """
     #     Solves a quadratic program using clarabel to check whether the polytope is empty or not.
@@ -145,8 +145,10 @@ class Polyhedron:
         rhs_lin = mat_lin.dot(position_projected)
 
         # projected state
-        x_proj = x
-        x_proj.position_x = position_projected[0]
-        x_proj.position_y = position_projected[1]
+        x_proj = State(position_x=position_projected[0], position_y=position_projected[1])
 
         return HalfSpace(A=mat_lin, b=rhs_lin), x_proj
+
+    def plot(self):
+        np_vertices = np.vstack([v.convert_to_array() for v in self._vertices])
+        plt.plot(np_vertices[:, 0], np_vertices[:, 1], 'bo-')
