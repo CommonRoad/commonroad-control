@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_models.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
 @dataclass

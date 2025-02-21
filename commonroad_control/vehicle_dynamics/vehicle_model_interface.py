@@ -3,8 +3,8 @@ import enum
 import numpy as np
 from typing import Tuple
 
-from commonroad_control.vehicle_models.state_interface import StateInterface
-from commonroad_control.vehicle_models.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 
 
 @enum.unique
