@@ -9,15 +9,16 @@ class KSTState(StateInterface):
     """
     State of kinematic single track. [x,y,v,a,psi,delta]
     """
-    x: float
-    y: float
-    v: float
-    a: float
-    psi: float
-    delta: float
+    dim: int = 6
+    x: float = None
+    y: float = None
+    v: float = None
+    a: float = None
+    psi: float = None
+    delta: float = None
 
     def __post_init__(self):
-        super().__init__(dim=6)
+        super().__init__(dim=self.dim)
 
     def convert_to_array(self) -> np.ndarray:
         """
@@ -39,7 +40,7 @@ class KSTState(StateInterface):
         """
         :param np_array: (dim,) array of states
         """
-        if np_array.size() > 1:
+        if np_array.size > 1:
             raise ValueError(f"size of np_array should be (dim,1) but is {np_array}")
 
         if np_array.shape[0] != self.dim:

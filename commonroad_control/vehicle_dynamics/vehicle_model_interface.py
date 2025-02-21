@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import enum
 import numpy as np
-from typing import Tuple, Callable
+from typing import Tuple, Union
 import casadi as cas
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
@@ -10,7 +10,7 @@ from commonroad_control.vehicle_dynamics.utils import rk4_integrator
 
 
 @enum.unique
-class ImplementedModels(enum.Enum):
+class ImplementedVehicleModels(enum.Enum):
     KinematicSingleTrack = "KinematicSingleTrack"
     DynamicSingleTrack = "DynamicSingleTrack"
 
@@ -34,7 +34,7 @@ class VehicleModelInterface(ABC):
         pass
 
     @abstractmethod
-    def _dynamics(self, x: StateInterface, u: InputInterface) -> StateInterface:
+    def _dynamics(self, x: Union[np.array,cas.SX.sym], u: Union[np.array, cas.SX.sym]) -> cas.SX.sym:
         pass
     @abstractmethod
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
@@ -55,8 +55,8 @@ class VehicleModelInterface(ABC):
         :return: time-discretized dynamical system
         """
 
-        xk = cas.SX.sym("xk", self._nx, 1)
-        uk = cas.SX.sym("uk", self._nu, 1)
+        xk = cas.SX.sym("xk", self._nx,1)
+        uk = cas.SX.sym("uk", self._nu,1)
 
         x_next = cas.Function(
             "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics, self._dt)]

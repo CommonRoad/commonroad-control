@@ -9,12 +9,12 @@ class KSTInput(InputInterface):
     """
     Input of kinematic single track. The model input is Jerk (j) and steering angle rate (delta dot)
     """
-    j: float
-    delta_dot: float
-
+    dim: int = 2
+    j: float = None
+    delta_dot: float = None
 
     def __post_init__(self):
-        super().__init__(dim=2)
+        super().__init__(dim=self.dim)
 
     def convert_to_array(self) -> np.ndarray:
         """
