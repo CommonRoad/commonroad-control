@@ -7,9 +7,9 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class KinematicSingleStrack(VehicleModelInterface):
-    def __init__(self, params: VehicleParameters):
+    def __init__(self, params: VehicleParameters, dt: float):
         # init base class
-        super().__init__(nx=6, nu=2)
+        super().__init__(nx=6, nu=2, dt=dt)
 
         # set vehicle parameters
         self._l_wb = params.l_wb
