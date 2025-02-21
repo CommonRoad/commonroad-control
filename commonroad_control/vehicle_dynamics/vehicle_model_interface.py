@@ -16,17 +16,18 @@ class ImplementedModels(enum.Enum):
 
 
 class VehicleModelInterface(ABC):
-    def __init__(self, nx: int, nu: int, dt=float):
+    def __init__(self, nx: int, nu: int, dt:float):
         """
         Initialize abstract baseclass.
         :param nx: dimension of the state space
         :param nu: dimension of the input space
         """
-        self._nx = nx
-        self._nu = nu
+        self._nx: int = nx
+        self._nu: int = nu
+        self._dt: float = dt
 
         # discretize vehicle model
-        self._dynamics_dt = self._discretize(dt)
+        self._dynamics_dt: cas.Function = self._discretize()
 
     @abstractmethod
     def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
@@ -35,24 +36,6 @@ class VehicleModelInterface(ABC):
     @abstractmethod
     def _dynamics(self, x: StateInterface, u: InputInterface) -> StateInterface:
         pass
-
-    def _discretize(self, dt: float) -> cas.Function:
-        """
-        Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
-        [0, dt]
-        :param dt: sampling time
-        :return: time-discretized dynamical system
-        """
-
-        xk = cas.SX.sym("xk", self._nx, 1)
-        uk = cas.SX.sym("uk", self._nu, 1)
-
-        x_next = cas.Function(
-            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics, dt)]
-        )
-
-        return x_next
-
     @abstractmethod
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
@@ -64,3 +47,21 @@ class VehicleModelInterface(ABC):
     @abstractmethod
     def position_to_cartesian(self, x: StateInterface) -> StateInterface:
         pass
+
+    def _discretize(self) -> cas.Function:
+        """
+        Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
+        [0, dt]
+        :return: time-discretized dynamical system
+        """
+
+        xk = cas.SX.sym("xk", self._nx, 1)
+        uk = cas.SX.sym("uk", self._nu, 1)
+
+        x_next = cas.Function(
+            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics, self._dt)]
+        )
+
+        return x_next
+
+
