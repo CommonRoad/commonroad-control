@@ -1,19 +1,15 @@
 from math import atan, tan, sin, cos
-import numpy as np
-import casadi as cas
-
 
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
-from commonroad_control.vehicle_dynamics.utils import rk4_integrator
 
 
 class KinematicSingleStrack(VehicleModelInterface):
     def __init__(self, params: VehicleParameters):
         # init base class
-        super().__init__(nx, nu)
+        super().__init__(nx=6, nu=2)
 
         # set vehicle parameters
         self._l_wb = params.l_wb
@@ -40,17 +36,3 @@ class KinematicSingleStrack(VehicleModelInterface):
         f = [x_dot, y_dot, v_dot, a_dot, psi_dot, delta_dot]
 
         return f
-
-
-    def discretize(self, x0: Union(np.array, cas.SX.sym), u: Union(np.array, cas.SX.sym), dt: float) -> cas.SX.sym:
-        """
-        Discretizes the dynamical system assuming a piece-wise constant control input.
-        :param x:
-        :param u:
-        :param dt:
-        :return:
-        """
-
-        x_next = rk4_integrator(x0 = x0, u = u, ode = self._dynamics, dt)
-
-        return x_next
