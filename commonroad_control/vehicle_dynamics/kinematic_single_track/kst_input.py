@@ -1,23 +1,20 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 
 
 @dataclass
-class KSTState(StateInterface):
+class KSTInput(InputInterface):
     """
-    State of kinematic single track. [x,y,v,a,psi,delta]
+    Input of kinematic single track. The model input is Jerk (j) and steering angle rate (delta dot)
     """
-    x: float
-    y: float
-    v: float
-    a: float
-    psi: float
-    delta: float
+    j: float
+    delta_dot: float
+
 
     def __post_init__(self):
-        super().__init__(dim=6)
+        super().__init__(dim=2)
 
     def convert_to_array(self) -> np.ndarray:
         """
@@ -26,12 +23,8 @@ class KSTState(StateInterface):
         """
         return np.asarray(
             [
-                self.x,
-                self.y,
-                self.v,
-                self.a,
-                self.psi,
-                self.delta
+                self.j,
+                self.delta_dot
             ]
         )
 
@@ -45,12 +38,5 @@ class KSTState(StateInterface):
         if np_array.shape[0] != self.dim:
             raise ValueError(f"input should be ({self.dim},) but is {np_array}")
 
-        self.x = np_array[0]
-        self.y = np_array[1]
-        self.v = np_array[2]
-        self.a = np_array[3]
-        self.psi = np_array[4]
-        self.delta = np_array[5]
-
-
-
+        self.j = np_array[0]
+        self.delta_dot = np_array[1]
