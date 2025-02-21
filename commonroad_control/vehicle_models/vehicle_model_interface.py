@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 import enum
 import numpy as np
+from typing import Tuple
+
+from commonroad_control.vehicle_models.state_interface import StateInterface
+from commonroad_control.vehicle_models.input_interface import InputInterface
 
 
 @enum.unique
@@ -20,21 +24,21 @@ class VehicleModelInterface(ABC):
         self._nu = nu
 
     @abstractmethod
-    def simulate_forward(self, x, u):
+    def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
         pass
 
     @abstractmethod
-    def discretize(self,x,u):
+    def discretize(self, x: StateInterface, u: InputInterface) -> InputInterface:
         pass
 
     @abstractmethod
-    def linearize(self, x, u) -> (np.array, np.array):
+    def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
 
     @abstractmethod
-    def position_to_clcs(self, x):
+    def position_to_clcs(self, x: StateInterface) -> StateInterface:
         pass
 
     @abstractmethod
-    def position_to_cartesian(self, x):
+    def position_to_cartesian(self, x: StateInterface) -> StateInterface:
         pass
