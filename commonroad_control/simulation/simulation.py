@@ -16,7 +16,10 @@ class Simulation:
         x0_num = x0.convert_to_array()
         u_num = u.convert_to_array()
 
-        x_sim = solve_ivp(lambda t, y : self._vehicle_model._dynamics(y,u_num), [0, time_horizon], y0=x0_num)
-        x_end = x_sim[:,-1]
+        res_sim = solve_ivp(lambda t, y: self._vehicle_model._dynamics_ct(y, u_num), [0, time_horizon], y0=x0_num,
+                          method='RK45')
+        x_end = res_sim.y[:, -1]
+
+        # TODO: convert to state interface
 
         return x_end

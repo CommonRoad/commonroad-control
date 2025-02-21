@@ -34,8 +34,16 @@ class VehicleModelInterface(ABC):
         pass
 
     @abstractmethod
-    def _dynamics(self, x: Union[np.array,cas.SX.sym], u: Union[np.array, cas.SX.sym]) -> cas.SX.sym:
+    def _dynamics_ct(self, x: np.array, u: np.array) -> np.array:
         pass
+
+    @abstractmethod
+    def _dynamics_cas(self,
+                      x: Union[cas.SX.sym, np.array],
+                      u: Union[cas.SX.sym, np.array]) \
+            -> cas.SX.sym:
+        pass
+
     @abstractmethod
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
@@ -59,7 +67,7 @@ class VehicleModelInterface(ABC):
         uk = cas.SX.sym("uk", self._nu,1)
 
         x_next = cas.Function(
-            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics, self._dt)]
+            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics_cas, self._dt)]
         )
 
         return x_next
