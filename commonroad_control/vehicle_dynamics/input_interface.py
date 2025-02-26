@@ -18,7 +18,6 @@ class InputInterface(ABC):
     """
     dim: int
 
-
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
