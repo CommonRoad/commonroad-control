@@ -43,7 +43,7 @@ class DBState(StateInterface):
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,1)
+        :return: np.ndarray of dimension (dim,)
         """
 
         x = np.zeros((self.dim,))
@@ -64,7 +64,7 @@ class DBState(StateInterface):
     ) -> None:
         """
         Set values of class from a given array.
-        :param x: state vector - array of dimension (dim,1)
+        :param x: state vector - array of dimension (dim,)
         """
 
         self.position_x = x[DBStateIndices.position_x]
