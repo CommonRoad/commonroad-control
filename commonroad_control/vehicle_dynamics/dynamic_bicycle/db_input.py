@@ -32,8 +32,8 @@ class DBInput(InputInterface):
         """
 
         u = np.zeros((self.dim,))
-        u[DBInput.jerk] = self.jerk
-        u[DBInput.steering_angle_velocity] = self.steering_angle_velocity
+        u[DBInputIndices.jerk] = self.jerk
+        u[DBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
         return u
 

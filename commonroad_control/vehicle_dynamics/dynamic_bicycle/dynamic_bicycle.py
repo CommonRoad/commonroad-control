@@ -72,15 +72,16 @@ class DynamicBicycle(VehicleModelInterface):
         fc_r = -self._C_r*alpha_r
 
         # dynamics
-        f = cas.SX.sym('f', self._nx)
+        position_x_dot = v_bx * cas.cos(psi) - v_by * cas.sin(psi)
+        position_y_dot = v_bx * cas.sin(psi) + v_by * cas.cos(psi)
+        velocity_long_dot = psi_dot * v_by + a
+        velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) * 2 / self._m
+        acceleration_dot = j
+        heading_dot = psi_dot
+        yaw_rate_dot = (self._l_f * fc_f - self._l_r * fc_r) * 2 / self._I_zz
+        steering_angle_dot = delta_dot
 
-        f[DBStateIndices.position_x] = v_bx * cas.cos(psi) - v_by * cas.sin(psi)
-        f[DBStateIndices.position_y] = v_bx * cas.sin(psi) + v_by * cas.cos(psi)
-        f[DBStateIndices.velocity_long] = psi_dot * v_by + a
-        f[DBStateIndices.velocity_lat] = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) * 2 / self._m
-        f[DBStateIndices.acceleration] = j
-        f[DBStateIndices.heading] = psi_dot
-        f[DBStateIndices.yaw_rate] = (self._l_f * fc_f - self._l_r * fc_r) * 2 / self._I_zz
-        f[DBStateIndices.steering_angle] = delta_dot
+        f = cas.vertcat(position_x_dot, position_y_dot, velocity_long_dot, velocity_lat_dot,
+                        acceleration_dot, heading_dot, yaw_rate_dot, steering_angle_dot)
 
         return f
