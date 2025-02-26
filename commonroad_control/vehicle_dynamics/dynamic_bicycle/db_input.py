@@ -1,15 +1,15 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface, InputInterfaceIndex
 
 
 @dataclass(frozen=True)
-class DBInputIndices:
+class DBInputIndices(InputInterfaceIndex):
     """
     Indices of the control inputs.
     """
-    acceleration: int = 0
+    jerk: int = 0
     steering_angle_velocity: int = 1
 
 
@@ -19,7 +19,7 @@ class DBInput(InputInterface):
     Control input of the dynamic bicycle model.
     """
     dim: int = 2
-    acceleration: float = None
+    jerk: float = None
     steering_angle_velocity: float = None
 
     def __post_init__(self):
@@ -32,7 +32,7 @@ class DBInput(InputInterface):
         """
 
         u = np.zeros((self.dim,))
-        u[DBInput.acceleration] = self.acceleration
+        u[DBInput.jerk] = self.jerk
         u[DBInput.steering_angle_velocity] = self.steering_angle_velocity
 
         return u
@@ -43,5 +43,5 @@ class DBInput(InputInterface):
         :param u: input vector - array of dimension (self.dim,)
         """
 
-        self.acceleration = u[DBInputIndices.acceleration]
+        self.jerk = u[DBInputIndices.jerk]
         self.steering_angle_velocity = u[DBInputIndices.steering_angle_velocity]

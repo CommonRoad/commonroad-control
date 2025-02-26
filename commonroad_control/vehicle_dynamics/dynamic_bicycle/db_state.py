@@ -1,11 +1,11 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface, StateInterfaceIndex
 
 
 @dataclass(frozen=True)
-class DBStateIndices:
+class DBStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
@@ -13,9 +13,13 @@ class DBStateIndices:
     position_y: int = 1
     velocity_long: int = 2
     velocity_lat: int = 3
-    heading: int = 4
-    yaw_rate: int = 5
-    steering_angle = 6
+    acceleration: int = 4
+    heading: int = 5
+    yaw_rate: int = 6
+    steering_angle = 7
+
+    def __post_init__(self):
+        super().__init__()
 
 
 @dataclass
@@ -28,6 +32,7 @@ class DBState(StateInterface):
     position_y: float = None
     velocity_long: float = None
     velocity_lat: float = None
+    acceleration: float = None
     heading: float = None
     yaw_rate: float = None
     steering_angle: float = None
@@ -46,6 +51,7 @@ class DBState(StateInterface):
         x[DBStateIndices.position_y] = self.position_y
         x[DBStateIndices.velocity_long] = self.velocity_long
         x[DBStateIndices.velocity_lat] = self.velocity_lat
+        x[DBStateIndices.acceleration] = self.acceleration
         x[DBStateIndices.heading] = self.heading
         x[DBStateIndices.yaw_rate] = self.yaw_rate
         x[DBStateIndices.steering_angle] = self.steering_angle
@@ -60,10 +66,12 @@ class DBState(StateInterface):
         Set values of class from a given array.
         :param x: state vector - array of dimension (dim,1)
         """
+
         self.position_x = x[DBStateIndices.position_x]
         self.position_y = x[DBStateIndices.position_y]
         self.velocity_long = x[DBStateIndices.velocity_long]
         self.velocity_lat = x[DBStateIndices.velocity_lat]
+        self.acceleration = x[DBStateIndices.acceleration]
         self.heading = x[DBStateIndices.heading]
         self.yaw_rate = x[DBStateIndices.yaw_rate]
         self.steering_angle = x[DBStateIndices.steering_angle]
