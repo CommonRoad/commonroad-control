@@ -5,7 +5,7 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
 @dataclass(frozen=True)
-class DSTStateIndices:
+class DBStateIndices:
     """
     Indices of the states.
     """
@@ -19,7 +19,7 @@ class DSTStateIndices:
 
 
 @dataclass
-class DSTState(StateInterface):
+class DBState(StateInterface):
     """
     State of the dynamic bicycle model
     """
@@ -42,13 +42,13 @@ class DSTState(StateInterface):
         """
 
         x = np.zeros((self.dim,))
-        x[DSTStateIndices.position_x] = self.position_x
-        x[DSTStateIndices.position_y] = self.position_y
-        x[DSTStateIndices.velocity_long] = self.velocity_long
-        x[DSTStateIndices.velocity_lat] = self.velocity_lat
-        x[DSTStateIndices.heading] = self.heading
-        x[DSTStateIndices.yaw_rate] = self.yaw_rate
-        x[DSTStateIndices.steering_angle] = self.steering_angle
+        x[DBStateIndices.position_x] = self.position_x
+        x[DBStateIndices.position_y] = self.position_y
+        x[DBStateIndices.velocity_long] = self.velocity_long
+        x[DBStateIndices.velocity_lat] = self.velocity_lat
+        x[DBStateIndices.heading] = self.heading
+        x[DBStateIndices.yaw_rate] = self.yaw_rate
+        x[DBStateIndices.steering_angle] = self.steering_angle
 
         return x
 
@@ -60,10 +60,10 @@ class DSTState(StateInterface):
         Set values of class from a given array.
         :param x: state vector - array of dimension (dim,1)
         """
-        self.position_x = x[DSTStateIndices.position_x]
-        self.position_y = x[DSTStateIndices.position_y]
-        self.velocity_long = x[DSTStateIndices.velocity_long]
-        self.velocity_lat = x[DSTStateIndices.velocity_lat]
-        self.heading = x[DSTStateIndices.heading]
-        self.yaw_rate = x[DSTStateIndices.yaw_rate]
-        self.steering_angle = x[DSTStateIndices.steering_angle]
+        self.position_x = x[DBStateIndices.position_x]
+        self.position_y = x[DBStateIndices.position_y]
+        self.velocity_long = x[DBStateIndices.velocity_long]
+        self.velocity_lat = x[DBStateIndices.velocity_lat]
+        self.heading = x[DBStateIndices.heading]
+        self.yaw_rate = x[DBStateIndices.yaw_rate]
+        self.steering_angle = x[DBStateIndices.steering_angle]
