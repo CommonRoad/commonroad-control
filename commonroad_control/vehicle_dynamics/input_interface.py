@@ -4,6 +4,13 @@ from dataclasses import dataclass
 import numpy as np
 
 
+@dataclass(frozen=True)
+class InputInterfaceIndex(ABC):
+    """
+    Indices of the control inputs.
+    """
+
+
 @dataclass
 class InputInterface(ABC):
     """
