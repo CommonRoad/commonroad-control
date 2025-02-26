@@ -4,54 +4,68 @@ from dataclasses import dataclass
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
+@dataclass(frozen=True)
+class KSTStateIndices:
+    """
+    Indices of the states.
+    """
+    position_x: int = 0
+    position_y: int = 1
+    velocity: int = 2
+    acceleration: int = 3
+    heading: int = 4
+    steering_angle = 5
+
+    def __post_init__(self):
+        super().__init__()
+
+
 @dataclass
 class KSTState(StateInterface):
     """
-    State of kinematic single track. [x,y,v,a,psi,delta]
+    State of the kinematic single track model.
     """
     dim: int = 6
-    x: float = None
-    y: float = None
-    v: float = None
-    a: float = None
-    psi: float = None
-    delta: float = None
+    position_x: float = None
+    position_y: float = None
+    velocity: float = None
+    acceleration: float = None
+    heading: float = None
+    steering_angle: float = None
 
     def __post_init__(self):
         super().__init__(dim=self.dim)
 
     def convert_to_array(self) -> np.ndarray:
         """
-        converts class to numpy array
-        :return: np.ndarray(dim,)
+        Converts instance of class to numpy array.
+        :return: np.ndarray of dimension (dim,)
         """
-        return np.asarray(
-            [
-                self.x,
-                self.y,
-                self.v,
-                self.a,
-                self.psi,
-                self.delta
-            ]
-        )
 
-    def set_values_from_np_array(self, np_array: np.ndarray) -> None:
+        x = np.zeros((self.dim,))
+        x[KSTStateIndices.position_x] = self.position_x
+        x[KSTStateIndices.position_y] = self.position_y
+        x[KSTStateIndices.velocity] = self.velocity
+        x[KSTStateIndices.acceleration] = self.acceleration
+        x[KSTStateIndices.heading] = self.heading
+        x[KSTStateIndices.steering_angle] = self.steering_angle
+
+        return x
+
+    def set_values_from_np_array(self, x: np.array) -> None:
         """
-        :param np_array: (dim,) array of states
+        Set values of class from a given array.
+        :param x: state vector - array of dimension (dim,)
         """
-        if np_array.size > 1:
-            raise ValueError(f"size of np_array should be (dim,1) but is {np_array}")
+        if x.size > 1:
+            raise ValueError(f"size of np_array should be (dim,1) but is {x}")
 
-        if np_array.shape[0] != self.dim:
-            raise ValueError(f"input should be ({self.dim},) but is {np_array}")
+        if x.shape[0] != self.dim:
+            raise ValueError(f"input should be ({self.dim},) but is {x}")
 
-        self.x = np_array[0]
-        self.y = np_array[1]
-        self.v = np_array[2]
-        self.a = np_array[3]
-        self.psi = np_array[4]
-        self.delta = np_array[5]
-
-
-
+        self.position_x = x[KSTStateIndices.position_x]
+        self.position_y = x[KSTStateIndices.position_y]
+        self.velocity = x[KSTStateIndices.velocity]
+        self.acceleration = x[KSTStateIndices.acceleration]
+        self.heading = x[KSTStateIndices.heading]
+        self.steering_angle = x[KSTStateIndices.steering_angle]

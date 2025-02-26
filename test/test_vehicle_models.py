@@ -12,8 +12,8 @@ kst = KinematicSingleStrack(params=BMW3seriesParams, dt=0.1)
 sim = Simulation(kst)
 
 # set initial state and control input
-x0 = KSTState(x=0.0, y=0.0, v=10.0, a=0.0, psi=0.0, delta=0.1)
-u = KSTInput(j=0.0, delta_dot=0.0)
+x0 = KSTState(position_x=0.0, position_y=0.0, velocity=10.0, acceleration=0.0, heading=0.0, steering_angle=0.1)
+u = KSTInput(jerk=0.0, steering_angle_velocity=0.0)
 
 # simulate
 x_sim = sim.simulate(x0, u, time_horizon=1.0)

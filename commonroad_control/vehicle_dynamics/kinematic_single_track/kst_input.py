@@ -1,42 +1,52 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface, InputInterfaceIndex
+
+
+@dataclass(frozen=True)
+class KSTInputIndices(InputInterfaceIndex):
+    """
+    Indices of the control inputs.
+    """
+    jerk: int = 0
+    steering_angle_velocity: int = 1
 
 
 @dataclass
 class KSTInput(InputInterface):
     """
-    Input of kinematic single track. The model input is Jerk (j) and steering angle rate (delta dot)
+    Control input of kinematic single track.
     """
     dim: int = 2
-    j: float = None
-    delta_dot: float = None
+    jerk: float = None
+    steering_angle_velocity: float = None
 
     def __post_init__(self):
         super().__init__(dim=self.dim)
 
     def convert_to_array(self) -> np.ndarray:
         """
-        converts class to numpy array
-        :return: np.ndarray(dim,)
+        Converts instance of class to numpy array.
+        :return: np.ndarray of dimension (self.dim,)
         """
-        return np.asarray(
-            [
-                self.j,
-                self.delta_dot
-            ]
-        )
 
-    def set_values_from_np_array(self, np_array: np.ndarray) -> None:
+        u = np.zeros((self.dim,))
+        u[KSTInputIndices.jerk] = self.jerk
+        u[KSTInputIndices.steering_angle_velocity] = self.steering_angle_velocity
+
+        return u
+
+    def set_values_from_np_array(self, u: np.array) -> None:
         """
-        :param np_array: (dim,) array of states
+        Set values from a given array.
+        :param u: input vector - array of dimension (self.dim,)
         """
-        if np_array.size() > 1:
-            raise ValueError(f"size of np_array should be (dim,1) but is {np_array}")
+        if u.size() > 1:
+            raise ValueError(f"size of np_array should be (dim,1) but is {u}")
 
-        if np_array.shape[0] != self.dim:
-            raise ValueError(f"input should be ({self.dim},) but is {np_array}")
+        if u.shape[0] != self.dim:
+            raise ValueError(f"input should be ({self.dim},) but is {u}")
 
-        self.j = np_array[0]
-        self.delta_dot = np_array[1]
+        self.jerk = u[KSTInputIndices.jerk]
+        self.steering_angle_velocity = u[KSTInputIndices.steering_angle_velocity]

@@ -2,8 +2,8 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput, KSTInputIndices
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState, KSTStateIndices
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
@@ -18,30 +18,6 @@ class KinematicSingleStrack(VehicleModelInterface):
         # init base class
         super().__init__(nx=KSTState.dim, nu=KSTInput.dim, dt=dt)
 
-    def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.array],
-                      u: Union[cas.SX.sym, np.array]) \
-            -> cas.SX.sym:
-
-        v = x[2]
-        a = x[3]
-        psi = x[4]
-        delta = x[5]
-
-        # compute slip angle
-        beta = cas.atan(cas.tan(delta)*self._l_r/self._l_wb)
-
-        x_dot = v*cas.cos(psi + beta)
-        y_dot = v*cas.sin(psi + beta)
-        v_dot = a
-        a_dot = u[0]
-        psi_dot = v*cas.sin(beta) / self._l_r
-        delta_dot = u[1]
-
-        f = cas.vertcat(x_dot, y_dot, v_dot, a_dot, psi_dot, delta_dot)
-
-        return f
-
     def simulate_forward(self, x: KSTState, u: KSTInput) -> KSTState:
         pass
 
@@ -53,3 +29,41 @@ class KinematicSingleStrack(VehicleModelInterface):
 
     def position_to_cartesian(self, x: KSTState) -> KSTState:
         pass
+
+    def _dynamics_cas(self,
+                      x: Union[cas.SX.sym, np.array],
+                      u: Union[cas.SX.sym, np.array]) \
+            -> cas.SX.sym:
+        """
+         Dynamics function of the kinematic single-track model.
+
+        :param x: state - array of dimension (self._nx,1)
+        :param u: control input - array of dimension (self._nu,1)
+        :return: dynamics at (x,u) - casadi symbolic of dimension (self._nx,1)
+        """
+
+        # extract state
+        v = x[KSTStateIndices.velocity]
+        a = x[KSTStateIndices.acceleration]
+        psi = x[KSTStateIndices.heading]
+        delta = x[KSTStateIndices.steering_angle]
+
+        # extract control input
+        j = u[KSTInputIndices.jerk]
+        delta_dot = u[KSTInputIndices.steering_angle_velocity]
+
+        # compute slip angle
+        beta = cas.atan(cas.tan(delta)*self._l_r/self._l_wb)
+
+        # dynamics
+        position_x_dot = v*cas.cos(psi + beta)
+        position_y_dot = v*cas.sin(psi + beta)
+        velocity_dot = a
+        acceleration_dot = j
+        heading_dot = v*cas.sin(beta) / self._l_r
+        steering_angle_dot = delta_dot
+
+        f = cas.vertcat(position_x_dot, position_y_dot, velocity_dot,
+                        acceleration_dot, heading_dot, steering_angle_dot)
+
+        return f

@@ -45,7 +45,7 @@ class VehicleModelInterface(ABC):
         """
 
         x_next = self._dynamics_cas(x, u)
-        x_next = np.reshape(x_next, (1, self._nx)).squeeze()
+        x_next = np.reshape(x_next, (1, self._nx), order='F').squeeze()
 
         return x_next
 
