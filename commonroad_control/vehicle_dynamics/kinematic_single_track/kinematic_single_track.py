@@ -2,8 +2,8 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
@@ -16,7 +16,7 @@ class KinematicSingleStrack(VehicleModelInterface):
         self._l_r = params.l_r
 
         # init base class
-        super().__init__(nx=6, nu=2, dt=dt)
+        super().__init__(nx=KSTState.dim, nu=KSTInput.dim, dt=dt)
 
     def _dynamics_cas(self,
                       x: Union[cas.SX.sym, np.array],
@@ -42,23 +42,14 @@ class KinematicSingleStrack(VehicleModelInterface):
 
         return f
 
-    def _dynamics_ct(self,
-                     x: np.array,
-                     u: np.array) \
-            -> np.array:
-        x_next = self._dynamics_cas(x, u)
-        x_next = np.reshape(x_next, (1, self._nx)).squeeze()
-        return x_next
-
-    def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
+    def simulate_forward(self, x: KSTState, u: KSTInput) -> KSTState:
         pass
 
-    def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
+    def linearize(self, x: KSTState, u: KSTInput) -> Tuple[KSTState, np.array, np.array]:
         pass
 
-    def position_to_clcs(self, x: StateInterface) -> StateInterface:
+    def position_to_clcs(self, x: KSTState) -> KSTState:
         pass
 
-    def position_to_cartesian(self, x: StateInterface) -> StateInterface:
+    def position_to_cartesian(self, x: KSTState) -> KSTState:
         pass
-

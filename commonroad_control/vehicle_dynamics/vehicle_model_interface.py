@@ -33,9 +33,21 @@ class VehicleModelInterface(ABC):
     def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
         pass
 
-    @abstractmethod
-    def _dynamics_ct(self, x: np.array, u: np.array) -> np.array:
-        pass
+    def _dynamics_ct(self,
+                     x: np.array,
+                     u: np.array) \
+            -> np.array:
+        """
+        Continuous-time dynamics of the vehicle model.
+        :param x: state (array of dimension [self._nx,1])
+        :param u: control input (array of dimension [self._nu,1])
+        :return: dynamics function evaluated at (x, u)
+        """
+
+        x_next = self._dynamics_cas(x, u)
+        x_next = np.reshape(x_next, (1, self._nx)).squeeze()
+
+        return x_next
 
     @abstractmethod
     def _dynamics_cas(self,
@@ -60,7 +72,7 @@ class VehicleModelInterface(ABC):
         """
         Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
         [0, dt]
-        :return: time-discretized dynamical system
+        :return: time-discretized dynamical system (CasADi function)
         """
 
         xk = cas.SX.sym("xk", self._nx,1)
@@ -71,5 +83,3 @@ class VehicleModelInterface(ABC):
         )
 
         return x_next
-
-
