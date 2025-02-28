@@ -9,6 +9,7 @@ class DBInputIndices(InputInterfaceIndex):
     """
     Indices of the control inputs.
     """
+    dim: int = 2
     jerk: int = 0
     steering_angle_velocity: int = 1
 
@@ -18,7 +19,7 @@ class DBInput(InputInterface):
     """
     Control input of the dynamic bicycle model.
     """
-    dim: int = 2
+    dim: int = DBInputIndices.dim
     jerk: float = None
     steering_angle_velocity: float = None
 
@@ -36,12 +37,3 @@ class DBInput(InputInterface):
         u[DBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
         return u
-
-    def set_values_from_np_array(self, u: np.array) -> None:
-        """
-        Set values from a given array.
-        :param u: input vector - array of dimension (self.dim,)
-        """
-
-        self.jerk = u[DBInputIndices.jerk]
-        self.steering_angle_velocity = u[DBInputIndices.steering_angle_velocity]

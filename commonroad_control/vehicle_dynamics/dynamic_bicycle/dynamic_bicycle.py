@@ -9,7 +9,7 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DynamicBicycle(VehicleModelInterface):
-    def __init__(self, params: Type[VehicleParameters], dt: float):
+    def __init__(self, params: VehicleParameters, dt: float):
 
         # set vehicle parameters
         self._m = params.m

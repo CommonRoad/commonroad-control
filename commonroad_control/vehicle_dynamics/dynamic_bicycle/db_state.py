@@ -9,6 +9,7 @@ class DBStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
+    dim: int = 8
     position_x: int = 0
     position_y: int = 1
     velocity_long: int = 2
@@ -18,16 +19,13 @@ class DBStateIndices(StateInterfaceIndex):
     yaw_rate: int = 6
     steering_angle = 7
 
-    def __post_init__(self):
-        super().__init__()
-
 
 @dataclass
 class DBState(StateInterface):
     """
     State of the dynamic bicycle model
     """
-    dim: int = 8
+    dim: int = DBStateIndices.dim
     position_x: float = None
     position_y: float = None
     velocity_long: float = None
@@ -57,21 +55,3 @@ class DBState(StateInterface):
         x[DBStateIndices.steering_angle] = self.steering_angle
 
         return x
-
-    def set_values_from_np_array(
-            self,
-            x: np.array
-    ) -> None:
-        """
-        Set values of class from a given array.
-        :param x: state vector - array of dimension (dim,)
-        """
-
-        self.position_x = x[DBStateIndices.position_x]
-        self.position_y = x[DBStateIndices.position_y]
-        self.velocity_long = x[DBStateIndices.velocity_long]
-        self.velocity_lat = x[DBStateIndices.velocity_lat]
-        self.acceleration = x[DBStateIndices.acceleration]
-        self.heading = x[DBStateIndices.heading]
-        self.yaw_rate = x[DBStateIndices.yaw_rate]
-        self.steering_angle = x[DBStateIndices.steering_angle]
