@@ -4,17 +4,18 @@ from typing import Union, Any, Literal
 
 from commonroad.prediction.prediction import TrajectoryPrediction
 
+from commonroad_control.vehicle_dynamics.dst_trajectory import DSTTrajectory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_sit_factory import DSTSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
-class Planning2ControlConverter:
-    # TODO decide if it needs a config? Otherwise methods static.
-    # TODO: Aggregation makes sense?
-
+class PlanningConverterInterface(ABC):
     def __init__(
             self,
             config: int = 0,
@@ -22,7 +23,6 @@ class Planning2ControlConverter:
             dst_factory: Union[DSTSITFactory, Any] = DSTSITFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
-
         self._config: int = config
         self._kst_factory: Union[KSTSITFactory, Any] = kst_factory
         self._dst_factory: Union[DSTSITFactory, Any] = dst_factory
@@ -37,72 +37,68 @@ class Planning2ControlConverter:
     def vehicle_params(self) -> Union[BMW3seriesParams, Any]:
         return self._vehicle_params
 
-    def dummy_trajectory_conversion_to_control(
+    @abstractmethod
+    def trajectory_p2c_kst(
             self,
-            reactive_planner_traj: Any,
+            planner_traj: Any,
             mode: Literal['state', 'input']
     ) -> KSTTrajectory:
-        if mode == 'state':
-            print(f"state conversion")
-        else:
-            print(f"input conversion")
-        warnings.warn(f"Dummy implementation")
-        return reactive_planner_traj
+            pass
 
-    def dummy_trajectory_conversion_from_control(
+    # KST
+    @abstractmethod
+    def trajectory_c2p_kst(
             self,
-            kst_trajectoy: KSTTrajectory,
+            kst_traj: KSTTrajectory,
             mode: Literal['state', 'input']
     ) -> Any:
-        if mode == 'state':
-            print(f"state conversion")
-        else:
-            print(f"input conversion")
-        warnings.warn(f"Dummy implementation")
-        return kst_trajectoy
+        pass
 
-    def dummy_sample_to_control(
+    @abstractmethod
+    def sample_p2c_kst(
             self,
-            reactive_planner_state: Any,
+            planner_state: Any,
             mode: Literal['state', 'input']
-    ) -> KSTState:
-        if mode == 'state':
-            print(f"state conversion")
-        else:
-            print(f"input conversion")
-        warnings.warn(f"Dummy implementation")
-        return reactive_planner_state
+    ) -> Union[KSTState, KSTInput]:
+        pass
 
-
-    def dummy_sample_from_control(
+    @abstractmethod
+    def sample_c2p_kst(
             self,
             kst_state: KSTState,
             mode: Literal['state', 'input']
     ) -> Any:
-        if mode == 'state':
-            print(f"state conversion")
-        else:
-            print(f"input conversion")
-        warnings.warn(f"Dummy implementation")
-        return kst_state
+        pass
 
-
-    def kst_2_cr_reactive_planner(
+    # DST
+    @abstractmethod
+    def trajectory_p2c_dst(
             self,
-            kst_traj: KSTTrajectory
+            planner_traj: Any,
+            mode: Literal['state', 'input']
+    ) -> DSTTrajectory:
+            pass
+
+    @abstractmethod
+    def trajectory_c2p_dst(
+            self,
+            dst_traj: DSTTrajectory,
+            mode: Literal['state', 'input']
     ) -> Any:
         pass
 
-    def cr_qp_planner_2_kst(
+    @abstractmethod
+    def sample_p2c_dst(
             self,
-            qp_planner_traj: Any
-    ) -> KSTTrajectory:
+            planner_state: Any,
+            mode: Literal['state', 'input']
+    ) -> Union[DBState, DBInput]:
         pass
 
-    def kst_2_cr_qp_planner(
+    @abstractmethod
+    def sample_c2p_dst(
             self,
-            kst_traj: KSTTrajectory
+            dst_state: DBState,
+            mode: Literal['state', 'input']
     ) -> Any:
         pass
-
-
