@@ -1,6 +1,6 @@
 import unittest
 
-from commonroad_control.vehicle_dynamics.dst_trajectory import DSTTrajectory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_trajectory import DSTTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle

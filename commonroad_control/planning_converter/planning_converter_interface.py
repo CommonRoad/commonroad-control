@@ -1,10 +1,7 @@
-import warnings
 from abc import ABC, abstractmethod
 from typing import Union, Any, Literal
 
-from commonroad.prediction.prediction import TrajectoryPrediction
-
-from commonroad_control.vehicle_dynamics.dst_trajectory import DSTTrajectory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_trajectory import DSTTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_sit_factory import DSTSITFactory
