@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 
@@ -23,15 +24,5 @@ class InputInterface(ABC):
         """
         Converts state to numpy array
         :return: (dim, 1) np.ndarray
-        """
-        pass
-
-    @abstractmethod
-    def set_values_from_np_array(
-            self,
-            np_array: np.ndarray
-    ) -> None:
-        """
-        Set values of class from np.ndarray
         """
         pass

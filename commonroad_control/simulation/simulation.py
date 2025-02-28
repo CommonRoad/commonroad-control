@@ -1,3 +1,5 @@
+from typing import Union, Any
+
 from scipy.integrate import solve_ivp
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
@@ -11,7 +13,7 @@ class Simulation:
 
         self._vehicle_model = vehicle_model
 
-    def simulate(self, x0: StateInterface, u: InputInterface, time_horizon: float) -> StateInterface:
+    def simulate(self, x0: StateInterface, u: InputInterface, time_horizon: float) -> Union[StateInterface, Any]:
 
         x0_num = x0.convert_to_array()
         u_num = u.convert_to_array()

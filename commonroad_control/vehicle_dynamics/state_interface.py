@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy as np
+from typing_extensions import Optional
 
 
 @dataclass(frozen=True)
@@ -23,16 +24,5 @@ class StateInterface(ABC):
         """
         Converts instance of class to numpy array.
         :return: np.ndarray of dimension (dim,1)
-        """
-        pass
-
-    @abstractmethod
-    def set_values_from_np_array(
-            self,
-            x: np.ndarray
-    ) -> None:
-        """
-        Set values of class from a given array.
-        :param x: state vector - array of dimension (dim,1)
         """
         pass
