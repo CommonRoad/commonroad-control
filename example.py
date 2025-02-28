@@ -1,7 +1,7 @@
 import numpy as np
 
 from commonroad_control.simulation.simulation import Simulation
-from commonroad_control.planning_converter.planning_control_converter import Planning2ControlConverter
+from commonroad_control.planning_converter.dummy_converter import DummyPlanningConverter
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
@@ -15,7 +15,7 @@ from typing import List, Any
 def main(simulate: bool = True) -> None:
     kst_sit_factory = KSTSITFactory()
     params = BMW3seriesParams()
-    traj_converter = Planning2ControlConverter(kst_factory=kst_sit_factory, vehicle_params=params)
+    traj_converter = DummyPlanningConverter(kst_factory=kst_sit_factory, vehicle_params=params)
     model = KinematicSingleStrack(params=params, dt=0.1)
 
     replannings = range(2)
@@ -43,8 +43,8 @@ def main(simulate: bool = True) -> None:
         simulator = Simulation(vehicle_model=model)
 
         # convert trajectory
-        kst_state_traj: KSTTrajectory = traj_converter.dummy_trajectory_conversion_to_control(planner_state_traj, mode='state')
-        kst_input_traj: KSTTrajectory = traj_converter.dummy_trajectory_conversion_to_control(planner_input_traj, mode='input')
+        kst_state_traj: KSTTrajectory = traj_converter.trajectory_p2c_kst(planner_state_traj, mode='state')
+        kst_input_traj: KSTTrajectory = traj_converter.trajectory_p2c_kst(planner_input_traj, mode='input')
 
         print(f"-- Initial State --")
         print(kst_state_traj.initial_state)
@@ -73,7 +73,7 @@ def main(simulate: bool = True) -> None:
 
 
         # input trajectory into planner
-        traj_tr = traj_converter.dummy_trajectory_conversion_from_control(kst_trajectoy=kst_state_traj, mode='state')
+        traj_tr = traj_converter.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
 
 
 
