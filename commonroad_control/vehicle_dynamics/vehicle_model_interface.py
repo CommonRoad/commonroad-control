@@ -27,7 +27,7 @@ class VehicleModelInterface(ABC):
         self._dt: float = dt
 
         # discretize vehicle model
-        self._dynamics_dt: cas.Function = self._discretize()
+        self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
 
     @abstractmethod
     def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
@@ -60,6 +60,21 @@ class VehicleModelInterface(ABC):
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
 
+    def linearize_dt_at(self, x: StateInterface, u: InputInterface) -> Tuple[np.array, np.array, np.array]:
+
+        # convert state and input to arrays
+        x_np = x.convert_to_array()
+        u_np = u.convert_to_array()
+
+        # evaluate discretized dynamics at (x,u)
+        x_next = self._dynamics_ct(x_np, u_np)
+
+        # evaluate linearized dynamics
+        jac_x = self._jac_dynamics_dt_x(x_np)
+        jac_u = self._jac_dynamics_dt_u(u_np)
+
+        return x_next, jac_x, jac_u
+
     @abstractmethod
     def position_to_clcs(self, x: StateInterface) -> StateInterface:
         pass
@@ -68,18 +83,34 @@ class VehicleModelInterface(ABC):
     def position_to_cartesian(self, x: StateInterface) -> StateInterface:
         pass
 
-    def _discretize(self) -> cas.Function:
+    def _discretize(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
         Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
         [0, dt]
-        :return: time-discretized dynamical system (CasADi function)
+        :return: time-discretized dynamical system (CasADi function) and its Jacobian (CasADi function)
         """
 
-        xk = cas.SX.sym("xk", self._nx,1)
-        uk = cas.SX.sym("uk", self._nu,1)
+        xk = cas.SX.sym("xk", self._nx, 1)
+        uk = cas.SX.sym("uk", self._nu, 1)
 
+        # discretize dynamics
         x_next = cas.Function(
             "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics_cas, self._dt)]
         )
 
-        return x_next
+        # compute Jacobian of discretized dynamics
+        jac_x = cas.Function("jac_dynamics_dt", [xk, uk],
+                                  [cas.jacobian(x_next(xk, uk), xk)])
+        jac_u = cas.Function("jac_dynamics_dt", [xk, uk],
+                                  [cas.jacobian(x_next(xk, uk), uk)])
+        return x_next, jac_x, jac_u
+
+    @property
+    def state_dimension(self):
+        return self._nx
+
+    @property
+    def input_dimension(self):
+        return self._nu
+
+

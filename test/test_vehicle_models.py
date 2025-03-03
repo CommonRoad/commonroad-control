@@ -22,7 +22,6 @@ class VehicleModelSimulationTest(unittest.TestCase):
     """
     # TODO: Reasonable values to compare against
 
-
     def test_kst_sim(self) -> None:
         # ----------------- kinematic single track ------------------
         # init vehicle model
@@ -39,7 +38,6 @@ class VehicleModelSimulationTest(unittest.TestCase):
         x_sim = sim.simulate(x0, u, time_horizon=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
-
 
     def test_dst_sim(self) -> None:
         # ----------------- dynamic bicycle ------------------

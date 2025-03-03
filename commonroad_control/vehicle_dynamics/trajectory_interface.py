@@ -3,11 +3,14 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Any, Union, Dict, Optional, Tuple, Literal
 
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+
 
 @dataclass
 class TrajectoryInterface(ABC):
     # TODO Move some stuff to properties for access control as frozen does not work in our case?
-    states: Dict[int, Any]
+    points: Dict[int, Any]
     delta_t: float
     mode: Literal['state', 'input']
     t_0: float = 0
@@ -18,38 +21,37 @@ class TrajectoryInterface(ABC):
 
     def __post_init__(self):
         self.sanity_check()
-        self.dim = self.states[0].dim
-        self.initial_state = self.states[min(self.states.keys())]
-        self.final_state = self.states[max(self.states.keys())]
-        self.t_final = self.t_0 + len(self.states.keys()) * self.delta_t
-
+        self.dim = self.points[0].dim
+        self.initial_state = self.points[min(self.points.keys())]
+        self.final_state = self.points[max(self.points.keys())]
+        self.t_final = self.t_0 + len(self.points.keys()) * self.delta_t
 
     def sanity_check(self) -> None:
         """
         Sanity check
         """
-        if len(self.states.keys()) == 0:
+        if len(self.points.keys()) == 0:
             raise ValueError(f"states must contain more than 0 values")
-        if None in self.states.values():
+        if None in self.points.values():
             raise ValueError(f"states must not contain None")
-        d = self.states[0].dim
-        for state in self.states.values():
+        d = self.points[0].dim
+        for state in self.points.values():
             if state.dim != d:
                 raise ValueError("states have varying dimension")
 
-    def get_state_at_step(
+    def get_point_at_time_step(
             self,
-            step: int
-    ) -> Optional[Any]:
+            time_step: int
+    ) -> Union[StateInterface, InputInterface, None]:
         """
-        Returns State at step or None if not existing
-        :param step: time step
-        :return: Returns State at step or None if not existing
+        Returns the trajectory point at a given time step or None if not existing.
+        :param time_step: time step
+        :return: StateInterface/InputInterface at step or None if not existing
         """
-        return self.states[step] if step in self.states.keys() else None
 
+        return self.points[time_step] if time_step in self.points.keys() else None
 
-    def get_states_before_and_after_time(
+    def get_point_before_and_after_time(
             self,
             time: float
     ) -> Tuple[Any, Any, int, int]:
@@ -63,16 +65,16 @@ class TrajectoryInterface(ABC):
         idx_lower: int = math.floor((time - self.t_0) / self.delta_t)
         idx_upper: int = math.ceil((time - self.t_0) / self.delta_t)
 
-        return self.states[idx_lower], self.states[idx_upper], idx_lower, idx_upper
+        return self.points[idx_lower], self.points[idx_upper], idx_lower, idx_upper
 
     @abstractmethod
-    def get_interpolated_state_at_time(
+    def get_interpolated_point_at_time(
             self,
             time: float
-    ) -> Union[Any]:
+    ) -> Union[StateInterface, InputInterface]:
         """
-        Compute interpolated state at time
-        :param time: time of step
-        :return: State
+        Interpolate trajectory point at given point in time.
+        :param time: point in time
+        :return: StateInterface/InputInterface
         """
         pass

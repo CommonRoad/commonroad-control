@@ -24,7 +24,7 @@ def test_monotone_chain() -> bool:
         clarabel_cones = [clarabel.ZeroConeT(2 + 1), clarabel.NonnegativeConeT(len(conv_hull))]
         solver = clarabel.DefaultSolver(P, q, A, b, clarabel_cones, clarabel.DefaultSettings())
         solution = solver.solve()
-        x_cc = np.array([v.convert_to_array() for v in conv_hull]).T.dot(solution.x)
+        x_cc = np.array([v.convert_to_array() for v in conv_hull]).T.dot(solution._x)
 
         # problem is primal infeasible if the candidate vertex is not contained in the convex hull
         return False if str(solution.status) == 'PrimalInfeasible' else True, x_cc
