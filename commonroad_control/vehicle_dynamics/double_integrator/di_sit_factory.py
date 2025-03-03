@@ -8,7 +8,7 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInp
 
 class DISITFactory(StateInputTrajectoryFactoryInterface):
     """
-    Double integrator model factory fro state, input, and trajectory.
+    Double integrator model factory for state, input, and trajectory.
     """
     def state_from_numpy_array(
             self,

@@ -9,46 +9,46 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import
 
 class KSTSITFactory(StateInputTrajectoryFactoryInterface):
     """
-    Kinematic Single Factory for State, Input and Trajectory
+    Kinematic single track model factory for state, input, and trajectory.
     """
     def state_from_numpy_array(
             self,
-            arr: np.ndarray,
+            x_np: np.array,
     ) -> Union['KSTState']:
         """
         Set values of class from a given array.
-        :param arr: state vector - array of dimension (dim,)
+        :param x_np: state vector - array of dimension (dim,)
         """
-        if int(arr.shape[0]) != 6:
-            raise ValueError(f'Dimension {arr.shape[0]} does not match required {KSTStateIndices.dim}')
-        if arr.ndim > 1:
-            raise ValueError(f"ndim of np_array should be (dim,1) but is {arr.ndim}")
+        if int(x_np.shape[0]) != 6:
+            raise ValueError(f'Dimension {x_np.shape[0]} does not match required {KSTStateIndices.dim}')
+        if x_np.ndim > 1:
+            raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
 
         return KSTState(
-            position_x=arr[KSTStateIndices.position_x],
-            position_y=arr[KSTStateIndices.position_y],
-            velocity=arr[KSTStateIndices.velocity],
-            acceleration=arr[KSTStateIndices.acceleration],
-            heading=arr[KSTStateIndices.heading],
-            steering_angle=arr[KSTStateIndices.steering_angle],
+            position_x=x_np[KSTStateIndices.position_x],
+            position_y=x_np[KSTStateIndices.position_y],
+            velocity=x_np[KSTStateIndices.velocity],
+            acceleration=x_np[KSTStateIndices.acceleration],
+            heading=x_np[KSTStateIndices.heading],
+            steering_angle=x_np[KSTStateIndices.steering_angle],
         )
 
     def input_from_numpy_array(
             self,
-            arr: np.ndarray
+            u_np: np.array
     ) -> Union['KSTInput']:
         """
         Set values from a given array.
-        :param arr: input vector - array of dimension (self.dim,)
+        :param u_np: control input - array of dimension (self.dim,)
         """
-        if arr.ndim > 1:
-            raise ValueError(f"ndim of np_array should be (dim,) but is {arr.ndim}")
-        if arr.shape[0] != KSTInputIndices.dim:
-            raise ValueError(f"input should be ({KSTStateIndices.dim},) but is {arr.shape[0]}")
+        if u_np.ndim > 1:
+            raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
+        if u_np.shape[0] != KSTInputIndices.dim:
+            raise ValueError(f"input should be ({KSTStateIndices.dim},) but is {u_np.shape[0]}")
 
         return KSTInput(
-            jerk=arr[KSTInputIndices.jerk],
-            steering_angle_velocity=arr[KSTInputIndices.steering_angle_velocity]
+            jerk=u_np[KSTInputIndices.jerk],
+            steering_angle_velocity=u_np[KSTInputIndices.steering_angle_velocity]
         )
 
 

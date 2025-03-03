@@ -68,6 +68,7 @@ class DynamicBicycle(VehicleModelInterface):
         alpha_r = cas.atan((v_by - self._l_r*psi_dot)/v_bx)
 
         # tyre forces
+        # TODO: include normal force!
         fc_f = -self._C_f*alpha_f
         fc_r = -self._C_r*alpha_r
 

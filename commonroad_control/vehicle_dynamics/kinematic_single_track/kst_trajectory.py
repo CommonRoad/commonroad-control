@@ -16,7 +16,7 @@ class KSTTrajectory(TrajectoryInterface):
     Kinematic Single Track Trajectory
     """
 
-    def get_interpolated_state_at_time(
+    def get_interpolated_point_at_time(
             self,
             time: float
     ) -> Union['KSTState', 'KSTInput']:

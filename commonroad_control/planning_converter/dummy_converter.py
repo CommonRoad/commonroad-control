@@ -1,10 +1,10 @@
 from typing import Union, Any, Literal
 
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_trajectory import DSTTrajectory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.dst_sit_factory import DSTSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
@@ -20,7 +20,7 @@ class DummyPlanningConverter(PlanningConverterInterface):
             self,
             config: int = 0,
             kst_factory: Union[KSTSITFactory, Any] = KSTSITFactory(),
-            dst_factory: Union[DSTSITFactory, Any] = DSTSITFactory(),
+            dst_factory: Union[DBSITFactory, Any] = DBSITFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         super().__init__(
@@ -67,12 +67,12 @@ class DummyPlanningConverter(PlanningConverterInterface):
             self,
             planner_traj: Any,
             mode: Literal['state', 'input']
-    ) -> DSTTrajectory:
+    ) -> DBTrajectory:
             return planner_traj
 
     def trajectory_c2p_dst(
             self,
-            dst_traj: DSTTrajectory,
+            dst_traj: DBTrajectory,
             mode: Literal['state', 'input']
     ) -> Any:
         return dst_traj

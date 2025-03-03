@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface, InputInterfaceIndex
 
+
 # TODO should be an enum so no initialization?
 @dataclass(frozen=True)
 class KSTInputIndices(InputInterfaceIndex):
@@ -13,6 +14,7 @@ class KSTInputIndices(InputInterfaceIndex):
     jerk: int = 0
     steering_angle_velocity: int = 1
 
+
 # TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass()
 class KSTInput(InputInterface):
@@ -22,7 +24,6 @@ class KSTInput(InputInterface):
     dim: int = KSTInputIndices.dim
     jerk: float = None
     steering_angle_velocity: float = None
-
 
     def convert_to_array(self) -> np.ndarray:
         """
