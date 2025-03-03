@@ -11,6 +11,10 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 
+from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
+from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
+from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
+
 
 class VehicleModelSimulationTest(unittest.TestCase):
     """
@@ -53,6 +57,23 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # simulate
         x_sim = sim.simulate(x0, u, time_horizon=1.0)
 
+        print(f"initial state: {x0}")
+        print(f"x_sim {x_sim}")
+
+    def test_di_sim(self) -> None:
+        # ----------------- double integrator ------------------
+        # init vehicle model
+        di = DoubleIntegrator(params=BMW3seriesParams(), dt=0.1)
+
+        # init simulation
+        sim = Simulation(di)
+
+        # set initial state and control input
+        x0 = DIState(position_long=0.0, position_lat=0.0, velocity_long=10.0, velocity_lat=0.0)
+        u = DIInput(acceleration_long=0.0, acceleration_lat=0.5)
+
+        # simulate
+        x_sim = sim.simulate(x0, u, time_horizon=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
 
