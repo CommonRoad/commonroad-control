@@ -50,8 +50,8 @@ class Polyhedron:
             hs_direction = np.hstack((self._vertices[ii+1].convert_to_array() - self._vertices[ii].convert_to_array(), 0))
 
             tmp = np.cross(z_vector, hs_direction)
-            self._A[ii, :] = tmp[0:2]/np.linalg.norm(tmp[0:2])
-            self._b[ii] = self._A[ii, :].dot(self._vertices[ii].convert_to_array())
+            self._par_A[ii, :] = tmp[0:2] / np.linalg.norm(tmp[0:2])
+            self._b[ii] = self._par_A[ii, :].dot(self._vertices[ii].convert_to_array())
 
         # parameters for the projection problem using clarabel as the QP solver
         self._clarabel_P = 2*sparse.identity(2, format='csc')  # (quadratic) cost matrix
@@ -135,7 +135,7 @@ class Polyhedron:
             solver = clarabel.DefaultSolver(self._clarabel_P, clarabel_q, self._clarabel_A, self._b,
                                             self._clarabel_cones, clarabel.DefaultSettings())
             solution = solver.solve()
-            position_projected = solution.x
+            position_projected = solution._x
 
             # linearize
             mat_lin = position_projected - position
