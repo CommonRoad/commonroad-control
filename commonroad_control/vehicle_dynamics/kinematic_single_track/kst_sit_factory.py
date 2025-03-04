@@ -1,16 +1,63 @@
-from typing import Union, Any
+from typing import Union, Dict, List, Literal
 
 import numpy as np
 
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState, KSTStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput, KSTInputIndices
+
 
 
 class KSTSITFactory(StateInputTrajectoryFactoryInterface):
     """
     Kinematic single track model factory for state, input, and trajectory.
     """
+    def state_from_args(
+            self,
+            position_x: float,
+            position_y: float,
+            velocity: float,
+            acceleration: float,
+            heading: float,
+            steering_angle: float,
+    ) -> Union['KSTState']:
+        """
+        Create KST state from args
+        :param position_x: position x
+        :param position_y: position y
+        :param velocity: velocity
+        :param acceleration: acceleration
+        :param heading: heading from vehicle center
+        :param steering_angle: steering angle
+        :return: KSTState
+        """
+        return KSTState(
+            position_x=position_x,
+            position_y=position_y,
+            velocity=velocity,
+            acceleration=acceleration,
+            heading=heading,
+            steering_angle=steering_angle
+        )
+
+    def input_from_args(
+            self,
+            jerk: float,
+            steering_angle_velocity,
+    ) -> Union['KSTInput']:
+        """
+        Return KST input
+        :param jerk: input jerk
+        :param steering_angle_velocity: input steering angle velocity
+        :return: KSTInput
+        """
+        return KSTInput(
+            jerk=jerk,
+            steering_angle_velocity=steering_angle_velocity
+        )
+
+
     def state_from_numpy_array(
             self,
             x_np: np.array,
@@ -49,6 +96,33 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             acceleration=u_np[KSTInputIndices.acceleration],
             steering_angle_velocity=u_np[KSTInputIndices.steering_angle_velocity]
         )
+
+
+    def trajectory_from_state_or_input(
+            self,
+            kst_dict: Union[Dict[int, KSTState], Dict[int, KSTInput]],
+            mode: Literal['state', 'input'],
+            t_0: float,
+            delta_t: float
+    ) -> KSTTrajectory:
+        """
+        Build trajectory from kst state or input
+        :param kst_dict: dict of time steps to kst points
+        :param mode:
+        :param t_0:
+        :param delta_t:
+        :return: KST-Trajectory
+        """
+        return KSTTrajectory(
+                points=kst_dict,
+                mode=mode,
+                t_0=t_0,
+                delta_t=delta_t
+            )
+
+
+
+
 
 
 

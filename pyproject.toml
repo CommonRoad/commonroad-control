@@ -1,8 +1,8 @@
-[tool.poetry]
+[project]
 name = "commonroad-control"
 version = "0.0.1"
 description = "CommonRoad Control Toolbox"
-authors = ["Lukas Schäfer <lukas.schaefer@tum.de>, Tobias Mascetta <tobias.mascetta@tum.de>"]
+authors = [{name = "Lukas Schäfer", email = "<lukas.schaefer@tum.de>"}, {name="Tobias Mascetta", email = "<tobias.mascetta@tum.de>"}]
 license = "BSD"
 readme = "README.md"
 keywords= ["autonomous", "automated", "vehicles", "driving", "control"]
@@ -14,16 +14,28 @@ classifiers = [
 
 packages = [{include = "commonroad_control"}]
 
+requires-python = "^3.9"
+dynamic = ["dependencies"]
 
 # Dependencies
 [tool.poetry.dependencies]
-python = "^3.9"
-numpy = ">=1.17.4,<2.0"
-matplotlib = "<3.9"
+python = ">=3.9, <3.12"
+numpy = ">=2.0, <3.0"
+matplotlib = ">=3.9"
 casadi = ">=3.6"
 scipy = ">=1.13"
 clarabel = ">= 0.9.0"
 commonroad-io = ">=2022.2"
+
+
+
+# planner
+# test
+[tool.poetry.group.planner]
+optional = true
+
+[tool.poetry.group.planner.dependencies]
+commonroad-reactive-planner = "2025.1"
 
 
 # test

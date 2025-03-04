@@ -85,7 +85,8 @@ class TrajectoryInterface(ABC):
     @abstractmethod
     def get_interpolated_point_at_time(
             self,
-            time: float
+            time: float,
+            factory: Any
     ) -> Union[StateInterface, InputInterface]:
         """
         Interpolate trajectory point at given point in time.
