@@ -1,7 +1,8 @@
-from typing import Union
+from typing import Union, List, Literal
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.double_integrator.di_trajectory import DITrajectory
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
 
@@ -30,6 +31,38 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             position_lat=x_np[DIStateIndices.position_lat],
             velocity_long=x_np[DIStateIndices.velocity_long],
             velocity_lat=x_np[DIStateIndices.velocity_lat]
+        )
+
+    def trajectory_from_numpy_array(
+            self,
+            traj_np: np.array,
+            mode: Literal['state', 'input'],
+            time: List[int],
+            t_0: float,
+            delta_t: float
+    ) -> DITrajectory:
+        """
+
+        :param traj_np:
+        :param mode:
+        :param time:
+        :param t_0:
+        :param delta_t:
+        :return:
+        """
+        # convert trajectory to State/InputInterface
+        points_val = []
+        for kk in range(len(time)):
+            if mode == 'state':
+                points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
+            elif mode == 'input':
+                points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
+
+        return DITrajectory(
+            points=dict(zip(time, points_val)),
+            mode='state',
+            delta_t=delta_t,
+            t_0=t_0
         )
 
     def input_from_numpy_array(

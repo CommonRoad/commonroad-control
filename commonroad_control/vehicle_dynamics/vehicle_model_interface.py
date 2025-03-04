@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import enum
+import inspect
 import numpy as np
 from typing import Tuple, Union
 import casadi as cas
@@ -60,11 +61,18 @@ class VehicleModelInterface(ABC):
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
 
-    def linearize_dt_at(self, x: StateInterface, u: InputInterface) -> Tuple[np.array, np.array, np.array]:
+    def linearize_dt_at(self, x: Union[StateInterface, np.array], u: InputInterface) -> Tuple[np.array, np.array, np.array]:
 
         # convert state and input to arrays
-        x_np = x.convert_to_array()
-        u_np = u.convert_to_array()
+        if isinstance(x, StateInterface):
+            x_np = x.convert_to_array()
+        else:
+            x_np = x
+
+        if isinstance(u, InputInterface):
+            u_np = u.convert_to_array()
+        else:
+            u_np = u
 
         # evaluate discretized dynamics at (x,u)
         x_next = self._dynamics_ct(x_np, u_np)
@@ -104,6 +112,11 @@ class VehicleModelInterface(ABC):
         jac_u = cas.Function("jac_dynamics_dt", [xk, uk],
                                   [cas.jacobian(x_next(xk, uk), uk)])
         return x_next, jac_x, jac_u
+
+    # @abstractmethod
+    # def input_bounds(self) -> Tuple[InputInterface, InputInterface]:
+    #     pass
+
 
     @property
     def state_dimension(self):

@@ -1,7 +1,8 @@
 import math
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import Any, Union, Dict, Optional, Tuple, Literal
+from typing import Any, Union, Dict, Optional, Tuple, Literal, List
+import numpy as np
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
@@ -38,6 +39,18 @@ class TrajectoryInterface(ABC):
         for state in self.points.values():
             if state.dim != d:
                 raise ValueError("states have varying dimension")
+
+    def convert_to_numpy_array(self, time: List) -> np.array:
+        """
+
+        :param time:
+        :return:
+        """
+        traj_np = []
+        for ii in range(len(time)):
+            traj_np.append(self.get_point_at_time_step(time[ii]/self.delta_t))
+
+        return np.hstack(*traj_np)
 
     def get_point_at_time_step(
             self,

@@ -1,7 +1,8 @@
 import casadi as cas
 import numpy as np
 from typing import Tuple, Union
-from control import StateSpace
+# from control import StateSpace
+import scipy.signal as ss
 
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
@@ -77,9 +78,13 @@ class DoubleIntegrator(VehicleModelInterface):
         """
 
         #
-        LTI_ct = StateSpace(self._sys_mat, self._input_mat,
+        # LTI_ct = StateSpace(self._sys_mat, self._input_mat,
+        #                     np.eye(self._nx), np.zeros((self._nx, self._nu)))
+        # LTI_dt = LTI_ct.sample(Ts=self._dt)
+        LTI_ct = ss.lti(self._sys_mat, self._input_mat,
                             np.eye(self._nx), np.zeros((self._nx, self._nu)))
-        LTI_dt = LTI_ct.sample(Ts=self._dt)
+        LTI_dt = LTI_ct.to_discrete(dt=self._dt, method='zoh')
+
         sys_mat_dt = LTI_dt.A
         input_mat_dt = LTI_dt.B
 
