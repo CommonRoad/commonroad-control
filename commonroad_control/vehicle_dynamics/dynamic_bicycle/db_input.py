@@ -10,7 +10,7 @@ class DBInputIndices(InputInterfaceIndex):
     Indices of the control inputs.
     """
     dim: int = 2
-    jerk: int = 0
+    acceleration: int = 0
     steering_angle_velocity: int = 1
 
 
@@ -20,7 +20,7 @@ class DBInput(InputInterface):
     Control input of the dynamic bicycle model.
     """
     dim: int = DBInputIndices.dim
-    jerk: float = None
+    acceleration: float = None
     steering_angle_velocity: float = None
 
     def __post_init__(self):
@@ -33,7 +33,7 @@ class DBInput(InputInterface):
         """
 
         u = np.zeros((self.dim,))
-        u[DBInputIndices.jerk] = self.jerk
+        u[DBInputIndices.acceleration] = self.acceleration
         u[DBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
         return u

@@ -9,15 +9,14 @@ class DBStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
-    dim: int = 8
+    dim: int = 7
     position_x: int = 0
     position_y: int = 1
     velocity_long: int = 2
     velocity_lat: int = 3
-    acceleration: int = 4
-    heading: int = 5
-    yaw_rate: int = 6
-    steering_angle = 7
+    heading: int = 4
+    yaw_rate: int = 5
+    steering_angle = 6
 
 
 @dataclass
@@ -30,7 +29,6 @@ class DBState(StateInterface):
     position_y: float = None
     velocity_long: float = None
     velocity_lat: float = None
-    acceleration: float = None
     heading: float = None
     yaw_rate: float = None
     steering_angle: float = None
@@ -49,7 +47,6 @@ class DBState(StateInterface):
         x[DBStateIndices.position_y] = self.position_y
         x[DBStateIndices.velocity_long] = self.velocity_long
         x[DBStateIndices.velocity_lat] = self.velocity_lat
-        x[DBStateIndices.acceleration] = self.acceleration
         x[DBStateIndices.heading] = self.heading
         x[DBStateIndices.yaw_rate] = self.yaw_rate
         x[DBStateIndices.steering_angle] = self.steering_angle

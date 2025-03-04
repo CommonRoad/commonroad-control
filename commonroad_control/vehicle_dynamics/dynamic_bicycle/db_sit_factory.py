@@ -30,7 +30,6 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
             position_y=x_np[DBStateIndices.position_y],
             velocity_long=x_np[DBStateIndices.velocity_long],
             velocity_lat=x_np[DBStateIndices.velocity_lat],
-            acceleration=x_np[DBStateIndices.acceleration],
             heading=x_np[DBStateIndices.heading],
             yaw_rate=x_np[DBStateIndices.yaw_rate],
             steering_angle=x_np[DBStateIndices.steering_angle]
@@ -51,7 +50,7 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
             raise ValueError(f"input should be ({DBInputIndices.dim},) but is {u_np}")
 
         return DBInput(
-            jerk=u_np[DBInputIndices.jerk],
+            acceleration=u_np[DBInputIndices.acceleration],
             steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity]
         )
 

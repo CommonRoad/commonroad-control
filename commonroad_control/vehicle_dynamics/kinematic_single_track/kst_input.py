@@ -11,7 +11,7 @@ class KSTInputIndices(InputInterfaceIndex):
     Indices of the control inputs.
     """
     dim: int = 2
-    jerk: int = 0
+    acceleration: int = 0
     steering_angle_velocity: int = 1
 
 
@@ -19,10 +19,10 @@ class KSTInputIndices(InputInterfaceIndex):
 @dataclass()
 class KSTInput(InputInterface):
     """
-    Control input of kinematic single track.
+    Control input of the kinematic single track model.
     """
     dim: int = KSTInputIndices.dim
-    jerk: float = None
+    acceleration: float = None
     steering_angle_velocity: float = None
 
     def convert_to_array(self) -> np.ndarray:
@@ -32,7 +32,7 @@ class KSTInput(InputInterface):
         """
 
         u = np.zeros((self.dim,))
-        u[KSTInputIndices.jerk] = self.jerk
+        u[KSTInputIndices.acceleration] = self.acceleration
         u[KSTInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
         return u

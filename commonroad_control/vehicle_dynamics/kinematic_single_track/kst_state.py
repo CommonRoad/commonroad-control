@@ -10,13 +10,13 @@ class KSTStateIndices:
     """
     Indices of the states.
     """
-    dim: int = 6
+    dim: int = 5
     position_x: int = 0
     position_y: int = 1
     velocity: int = 2
-    acceleration: int = 3
-    heading: int = 4
-    steering_angle: int = 5
+    heading: int = 3
+    steering_angle: int = 4
+
 
 # TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass
@@ -28,12 +28,8 @@ class KSTState(StateInterface):
     position_x: float = None
     position_y: float = None
     velocity: float = None
-    acceleration: float = None
     heading: float = None
     steering_angle: float = None
-
-
-
 
     def convert_to_array(self) -> np.ndarray:
         """
@@ -44,7 +40,6 @@ class KSTState(StateInterface):
         x[KSTStateIndices.position_x] = self.position_x
         x[KSTStateIndices.position_y] = self.position_y
         x[KSTStateIndices.velocity] = self.velocity
-        x[KSTStateIndices.acceleration] = self.acceleration
         x[KSTStateIndices.heading] = self.heading
         x[KSTStateIndices.steering_angle] = self.steering_angle
 

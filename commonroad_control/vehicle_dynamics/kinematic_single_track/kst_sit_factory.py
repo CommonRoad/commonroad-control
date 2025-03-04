@@ -28,7 +28,6 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             position_x=x_np[KSTStateIndices.position_x],
             position_y=x_np[KSTStateIndices.position_y],
             velocity=x_np[KSTStateIndices.velocity],
-            acceleration=x_np[KSTStateIndices.acceleration],
             heading=x_np[KSTStateIndices.heading],
             steering_angle=x_np[KSTStateIndices.steering_angle],
         )
@@ -47,7 +46,7 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             raise ValueError(f"input should be ({KSTStateIndices.dim},) but is {u_np.shape[0]}")
 
         return KSTInput(
-            jerk=u_np[KSTInputIndices.jerk],
+            acceleration=u_np[KSTInputIndices.acceleration],
             steering_angle_velocity=u_np[KSTInputIndices.steering_angle_velocity]
         )
 

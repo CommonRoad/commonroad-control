@@ -54,13 +54,12 @@ class DynamicBicycle(VehicleModelInterface):
         # extract state
         v_bx = x[DBStateIndices.velocity_long]
         v_by = x[DBStateIndices.velocity_lat]
-        a = x[DBStateIndices.acceleration]
         psi = x[DBStateIndices.heading]
         psi_dot = x[DBStateIndices.yaw_rate]
         delta = x[DBStateIndices.steering_angle]
 
         # extract control input
-        j = u[DBInputIndices.jerk]
+        a = u[DBInputIndices.acceleration]
         delta_dot = u[DBInputIndices.steering_angle_velocity]
 
         # (tyre) slip angles
@@ -77,12 +76,11 @@ class DynamicBicycle(VehicleModelInterface):
         position_y_dot = v_bx * cas.sin(psi) + v_by * cas.cos(psi)
         velocity_long_dot = psi_dot * v_by + a
         velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) * 2 / self._m
-        acceleration_dot = j
         heading_dot = psi_dot
         yaw_rate_dot = (self._l_f * fc_f - self._l_r * fc_r) * 2 / self._I_zz
         steering_angle_dot = delta_dot
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_long_dot, velocity_lat_dot,
-                        acceleration_dot, heading_dot, yaw_rate_dot, steering_angle_dot)
+                        heading_dot, yaw_rate_dot, steering_angle_dot)
 
         return f

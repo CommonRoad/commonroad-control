@@ -44,12 +44,11 @@ class KinematicSingleStrack(VehicleModelInterface):
 
         # extract state
         v = x[KSTStateIndices.velocity]
-        a = x[KSTStateIndices.acceleration]
         psi = x[KSTStateIndices.heading]
         delta = x[KSTStateIndices.steering_angle]
 
         # extract control input
-        j = u[KSTInputIndices.jerk]
+        a = u[KSTInputIndices.acceleration]
         delta_dot = u[KSTInputIndices.steering_angle_velocity]
 
         # compute slip angle
@@ -59,11 +58,10 @@ class KinematicSingleStrack(VehicleModelInterface):
         position_x_dot = v*cas.cos(psi + beta)
         position_y_dot = v*cas.sin(psi + beta)
         velocity_dot = a
-        acceleration_dot = j
         heading_dot = v*cas.sin(beta) / self._l_r
         steering_angle_dot = delta_dot
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_dot,
-                        acceleration_dot, heading_dot, steering_angle_dot)
+                        heading_dot, steering_angle_dot)
 
         return f
