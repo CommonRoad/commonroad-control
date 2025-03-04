@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
 
@@ -53,6 +53,26 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
             acceleration=u_np[DBInputIndices.acceleration],
             steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity]
         )
+
+
+    def state_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Create State from input args
+        """
+        pass
+
+
+    def input_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Return input
+        """
+        pass
 
 
 

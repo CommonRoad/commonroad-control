@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union, Any, Literal
 
+# own code base
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -38,9 +39,12 @@ class PlanningConverterInterface(ABC):
     def trajectory_p2c_kst(
             self,
             planner_traj: Any,
-            mode: Literal['state', 'input']
+            mode: Literal['state', 'input'],
+            t_0: float,
+            dt: float
     ) -> KSTTrajectory:
-            pass
+        pass
+
 
     # KST
     @abstractmethod
@@ -63,7 +67,8 @@ class PlanningConverterInterface(ABC):
     def sample_c2p_kst(
             self,
             kst_state: KSTState,
-            mode: Literal['state', 'input']
+            mode: Literal['state', 'input'],
+            time_step: int
     ) -> Any:
         pass
 

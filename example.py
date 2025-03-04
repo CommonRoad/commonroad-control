@@ -25,7 +25,7 @@ def main(simulate: bool = True) -> None:
                   1: KSTState(position_x=3, position_y=3, velocity=5, acceleration=3, heading=3, steering_angle=3)}
         planner_state_traj = KSTTrajectory(
             mode='state',
-            states=states,
+            points=states,
             t_0=0,
             delta_t=0.1
         )
@@ -33,7 +33,7 @@ def main(simulate: bool = True) -> None:
         inputs = {0: KSTInput(jerk=5, steering_angle_velocity=5), 1: KSTInput(jerk=3, steering_angle_velocity=3)}
         planner_input_traj = KSTTrajectory(
             mode='input',
-            states=inputs,
+            points=inputs,
             t_0=0,
             delta_t=0.1
         )
@@ -54,7 +54,7 @@ def main(simulate: bool = True) -> None:
         for t in range(2):
             # controller dummy
             controller_state_output = current_state
-            controller_u = kst_input_traj.states[t]
+            controller_u = kst_input_traj.points[t]
 
             if simulate:
                 # simulate
