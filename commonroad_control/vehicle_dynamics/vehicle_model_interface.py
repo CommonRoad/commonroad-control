@@ -75,11 +75,11 @@ class VehicleModelInterface(ABC):
             u_np = u
 
         # evaluate discretized dynamics at (x,u)
-        x_next = self._dynamics_ct(x_np, u_np)
+        x_next = self._dynamics_dt(x_np, u_np).full()
 
         # evaluate linearized dynamics
-        jac_x = self._jac_dynamics_dt_x(x_np)
-        jac_u = self._jac_dynamics_dt_u(u_np)
+        jac_x = self._jac_dynamics_dt_x(x_np, u_np).full()
+        jac_u = self._jac_dynamics_dt_u(x_np, u_np).full()
 
         return x_next, jac_x, jac_u
 

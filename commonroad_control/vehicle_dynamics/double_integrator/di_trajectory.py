@@ -4,7 +4,6 @@ from typing import Union
 
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
-from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
 

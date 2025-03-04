@@ -41,9 +41,9 @@ class ModelPredictiveControl(Controller):
         self._par_u_ref = cp.Parameter((self._nu, self._horizon))
         self._par_x_lin = cp.Parameter((self._nx, self._horizon + 1))
         self._par_u_lin = cp.Parameter((self._nu, self._horizon))
-        self._par_x_next = cp.Parameter((self._nx, self._horizon + 1))
-        self._par_A = cp.Parameter((self._nx, self._nx, self._horizon))
-        self._par_B = cp.Parameter((self._nx, self._nu, self._horizon))
+        self._par_x_next = cp.Parameter((self._nx, self._horizon))
+        self._par_A = cp.Parameter((self._nx, self._nx*self._horizon))
+        self._par_B = cp.Parameter((self._nx, self._nu*self._horizon))
 
         # Create the problem
         self._problem = self._create_problem()
@@ -58,6 +58,9 @@ class ModelPredictiveControl(Controller):
         # Constraints list
         constraints = [self._x[0] == self._par_x0]
 
+        par_A = cp.reshape(self._par_A,(self._nx, self._nx, self._horizon))
+        par_B = cp.reshape(self._par_B,(self._nx, self._nu, self._horizon))
+
         for kk in range(self._horizon):
             # cost function
             cost += (cp.quad_form(self._x[:, kk] - self._par_x_ref[:,kk], self._cost_xx)
@@ -65,8 +68,10 @@ class ModelPredictiveControl(Controller):
 
             # dynamics constraint
             constraints += [self._x[:, kk + 1] == self._par_x_next[:, kk] \
-                            + self._par_A[:, :, kk] @ (self._x[:, kk] - self._par_x_lin[:,kk]) \
-                            + self._par_B[:, :, kk] @ (self._u[:, kk] - self._par_u_lin[:, kk])]
+                            + par_A[:, :, kk] @ (self._x[:, kk] - self._par_x_lin[:, kk]) \
+                            + par_B[:, :, kk] @ (self._u[:, kk] - self._par_u_lin[:, kk])]
+                            # + self._par_A[:, :, kk] @ (self._x[:, kk] - self._par_x_lin[:,kk]) \
+                            # + self._par_B[:, :, kk] @ (self._u[:, kk] - self._par_u_lin[:, kk])]
 
             # Add state and control input bounds
             # x_lb, x_ub = self._vehicle_model.getStateBounds()
@@ -111,27 +116,36 @@ class ModelPredictiveControl(Controller):
         self._iteration_history = []
 
         # set initial state
-        self._par_x0 = x0.convert_to_array()
+        self._par_x0.value = np.reshape(x0.convert_to_array(), (self._nx, 1))
 
         time_state = [t_0 + self._delta_t*kk for kk in range(self._horizon+1)]
         time_input = [t_0 + self._delta_t*kk for kk in range(self._horizon)]
 
         # set reference trajectories (cost function)
-        self._par_x_ref = x_ref.convert_to_numpy_array(time_state)
-        self._par_u_ref = u_ref.convert_to_numpy_array(time_input)
+        self._par_x_ref.value = x_ref.convert_to_numpy_array(time_state)
+        self._par_u_ref.value = u_ref.convert_to_numpy_array(time_input)
 
         # set reference trajectories for linearizing the vehicle model
-        self._par_x_lin = x_init.convert_to_numpy_array(time_state)
-        self._par_u_lin = u_init.convert_to_numpy_array(time_input)
+        self._par_x_lin.value = x_init.convert_to_numpy_array(time_state)
+        self._par_u_lin.value = u_init.convert_to_numpy_array(time_input)
 
         x_sol = []
         u_sol = []
 
         for _ in range(self._max_iterations):
             # linearize the nonlinear vehicle model
+            x_next = []
+            A = []
+            B = []
             for kk in range(self._horizon):
-                self._par_x_next[:, kk], self._par_A[:, :, kk], self._par_B[:, :,kk] \
-                    = self._vehicle_model.linearize_dt_at(self._par_x_lin[:, kk], self._par_u_lin[:, kk])
+                tmp_x, tmp_A, tmp_B = self._vehicle_model.linearize_dt_at(
+                    self._par_x_lin.value[:, kk], self._par_u_lin.value[:, kk])
+                x_next.append(tmp_x)
+                A.append(tmp_A)
+                B.append(tmp_B)
+            self._par_x_next.value = np.hstack(x_next)
+            self._par_A.value = np.hstack(A)
+            self._par_B.value = np.hstack(B)
 
             # solve the optimal control problem
             self._problem.solve()

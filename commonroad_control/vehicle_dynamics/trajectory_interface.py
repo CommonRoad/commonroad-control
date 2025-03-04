@@ -47,10 +47,12 @@ class TrajectoryInterface(ABC):
         :return:
         """
         traj_np = []
+        # TODO: fix time step conversion
         for ii in range(len(time)):
-            traj_np.append(self.get_point_at_time_step(time[ii]/self.delta_t))
+            x_ii = self.get_point_at_time_step(round(time[ii]/self.delta_t))
+            traj_np.append(np.reshape(x_ii.convert_to_array(),(x_ii.dim, 1), order='F'))
 
-        return np.hstack(*traj_np)
+        return np.hstack(traj_np)
 
     def get_point_at_time_step(
             self,
