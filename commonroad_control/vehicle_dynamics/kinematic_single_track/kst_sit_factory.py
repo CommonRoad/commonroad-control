@@ -18,7 +18,6 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             position_x: float,
             position_y: float,
             velocity: float,
-            acceleration: float,
             heading: float,
             steering_angle: float,
     ) -> Union['KSTState']:
@@ -27,7 +26,6 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
         :param position_x: position x
         :param position_y: position y
         :param velocity: velocity
-        :param acceleration: acceleration
         :param heading: heading from vehicle center
         :param steering_angle: steering angle
         :return: KSTState
@@ -36,24 +34,23 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             position_x=position_x,
             position_y=position_y,
             velocity=velocity,
-            acceleration=acceleration,
             heading=heading,
             steering_angle=steering_angle
         )
 
     def input_from_args(
             self,
-            jerk: float,
+            acceleration: float,
             steering_angle_velocity,
     ) -> Union['KSTInput']:
         """
         Return KST input
-        :param jerk: input jerk
+        :param acceleration: input acceleration
         :param steering_angle_velocity: input steering angle velocity
         :return: KSTInput
         """
         return KSTInput(
-            jerk=jerk,
+            acceleration=acceleration,
             steering_angle_velocity=steering_angle_velocity
         )
 

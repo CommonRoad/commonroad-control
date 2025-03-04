@@ -89,13 +89,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 position_x=planner_state.position[0],
                 position_y=planner_state.position[1],
                 velocity=planner_state.velocity,
-                acceleration=planner_state.acceleration,
                 heading=planner_state.orientation,
                 steering_angle=planner_state.steering_angle
             )
         else:
             retval: KSTInput = self._kst_factory.input_from_args(
-                jerk=planner_state.acceleration,
+                acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed,
             )
 
@@ -136,7 +135,6 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 time_step=time_step,
                 position=np.asarray([kst_state.position_x, kst_state.position_y]),
                 velocity=kst_state.velocity,
-                acceleration=kst_state.acceleration,
                 orientation=kst_state.heading,
                 steering_angle=kst_state.steering_angle,
                 yaw_rate=0
@@ -144,7 +142,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         else:
             retval: InputState = InputState(
                 steering_angle_speed=kst_state.steering_angle_velocity,
-                acceleration=kst_state.jerk,
+                acceleration=kst_state.acceleration,
                 time_step=time_step
             )
         return retval
