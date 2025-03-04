@@ -15,6 +15,7 @@ class TrajectoryInterface(ABC):
     delta_t: float
     mode: Literal['state', 'input']
     t_0: float = 0
+    steps: List[int] = None
     t_final: Optional[float] = None
     initial_state: Optional[Any] = None
     final_state: Optional[Any] = None
@@ -25,6 +26,7 @@ class TrajectoryInterface(ABC):
         self.dim = self.points[0].dim
         self.initial_state = self.points[min(self.points.keys())]
         self.final_state = self.points[max(self.points.keys())]
+        self.steps = sorted(self.points.keys())
         self.t_final = self.t_0 + len(self.points.keys()) * self.delta_t
 
     def sanity_check(self) -> None:

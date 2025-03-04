@@ -1,9 +1,16 @@
 # standard imports
 from copy import deepcopy
 import logging
+from typing import List, Tuple
+
+from commonroad.common.file_reader import CommonRoadFileReader
+from commonroad.scenario.state import InputState
+# commonroad
+
 
 # reactive planner
 from commonroad_rp.reactive_planner import ReactivePlanner
+from commonroad_rp.state import ReactivePlannerState
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
 from commonroad_rp.utility.evaluation import run_evaluation
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
@@ -17,7 +24,7 @@ from commonroad_rp.utility.utils_coordinate_system import (
 
 def main(
     config: ReactivePlannerConfiguration
-) -> None:
+) -> Tuple[List[ReactivePlannerState], List[InputState]]:
     # initialize and get logger
     initialize_logger(config)
     logger = logging.getLogger("RP_LOGGER")
@@ -114,15 +121,20 @@ def main(
                                                        planner.record_input_list)
 
 
+    return planner.record_state_list, planner.record_input_list
+
 # *************************************
 # Run planning
 # *************************************
 if __name__ == "__main__":
     filename = "ZAM_Over-1_1.xml"
 
+    scenario, planning_problem_set = CommonRoadFileReader(f"scenarios/ZAM_Over-1_1.xml").open()
+    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
     # Build config object
     rp_config = ReactivePlannerConfiguration.load(f"scenarios/reactive_planner_configs/{filename[:-4]}.yaml", filename)
-    rp_config.update()
+    rp_config.update(scenario=scenario, planning_problem=planning_problem)
+    rp_config.planning_problem_set = planning_problem_set
 
-    main(config=rp_config)
+    rp_states, rp_inputs = main(config=rp_config)
 
