@@ -12,6 +12,7 @@ class DynamicBicycle(VehicleModelInterface):
     def __init__(self, params: VehicleParameters, dt: float):
 
         # set vehicle parameters
+        self._g = params.g
         self._m = params.m
         self._l_wb = params.l_wb
         self._l_f = params.l_f
@@ -66,10 +67,13 @@ class DynamicBicycle(VehicleModelInterface):
         alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
         alpha_r = cas.atan((v_by - self._l_r*psi_dot)/v_bx)
 
-        # tyre forces
-        # TODO: include normal force!
-        fc_f = -self._C_f*alpha_f
-        fc_r = -self._C_r*alpha_r
+        # compute normal forces (no longitudinal load transfer
+        fz_f = self._m*self._g / self._l_wb
+        fz_r = self._m*self._g / self._l_wb
+
+        # lateral tyre forces
+        fc_f = -self._C_f*alpha_f*fz_f
+        fc_r = -self._C_r*alpha_r*fz_r
 
         # dynamics
         position_x_dot = v_bx * cas.cos(psi) - v_by * cas.sin(psi)

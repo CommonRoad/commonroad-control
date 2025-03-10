@@ -49,7 +49,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
 
         # set initial state and control input
         x0 = DBState(position_x=0.0, position_y=0.0, velocity_long=10.0, velocity_lat=0.0,
-                     heading=0.0, yaw_rate=0.0, steering_angle=0.0)
+                     heading=0.0, yaw_rate=0.0, steering_angle=0.1)
         u = DBInput(acceleration=0.0, steering_angle_velocity=0.0)
 
         # simulate

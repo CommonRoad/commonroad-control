@@ -14,3 +14,4 @@ class VehicleParameters(ABC):
     I_zz: float  # moment of inertia around the vertical axis
     C_f: float  # front tyre cornering stiffness
     C_r: float  # rear tyre cornering stiffness
+    g: float = 9.81  # gravitational acceleration
