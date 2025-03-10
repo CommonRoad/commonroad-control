@@ -150,6 +150,9 @@ class ModelPredictiveControl(Controller):
             # solve the optimal control problem
             self._problem.solve()
 
+            #print
+            print(f"{self._problem.status}")
+
             # get the solution
             x_sol = self._x.value
             u_sol = self._u.value

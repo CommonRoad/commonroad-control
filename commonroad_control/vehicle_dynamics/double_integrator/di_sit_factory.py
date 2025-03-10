@@ -1,4 +1,4 @@
-from typing import Union, List, Literal
+from typing import Union, List, Literal, Any
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
@@ -82,3 +82,23 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             acceleration_long=u_np[DIInputIndices.acceleration_long],
             acceleration_lat=u_np[DIInputIndices.acceleration_lat]
         )
+
+
+
+    def state_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Create State from input args
+        """
+        pass
+
+    def input_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Return input
+        """
+        pass
