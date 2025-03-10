@@ -22,23 +22,23 @@ class VehicleModelSimulationTest(unittest.TestCase):
     """
     # TODO: Reasonable values to compare against
 
-    #def test_kst_sim(self) -> None:
+    def test_kst_sim(self) -> None:
         # ----------------- kinematic single track ------------------
-        # TODO: Fix
+
         # init vehicle model
-        #kst = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
+        kst = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
 
         # init simulation
-        #sim = Simulation(kst)
+        sim = Simulation(kst)
 
         # set initial state and control input
-        #x0 = KSTState(position_x=0.0, position_y=0.0, velocity=10.0, heading=0.0, steering_angle=0.1)
-        #u = KSTInput(acceleration=0.0, steering_angle_velocity=0.0)
+        x0 = KSTState(position_x=0.0, position_y=0.0, velocity=10.0, heading=0.0, steering_angle=0.1)
+        u = KSTInput(acceleration=0.0, steering_angle_velocity=0.0)
 
         # simulate
-        #x_sim = sim.simulate(x0, u, time_horizon=1.0)
-        #print(f"initial state: {x0}")
-        #print(f"x_sim {x_sim}")
+        x_sim = sim.simulate(x0, u, time_horizon=1.0)
+        print(f"initial state: {x0}")
+        print(f"x_sim {x_sim}")
 
     def test_dst_sim(self) -> None:
         # ----------------- dynamic bicycle ------------------
