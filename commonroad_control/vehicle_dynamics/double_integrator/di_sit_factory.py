@@ -11,6 +11,45 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
     """
     Double integrator model factory for state, input, and trajectory.
     """
+
+    def state_from_args(
+            self,
+            position_long: float,
+            position_lat: float,
+            velocity_long: float,
+            velocity_lat: float
+    ) -> Union['DIState']:
+        """
+        Create DI state from args.
+        :param position_long: longitudinal position
+        :param position_lat: lateral position
+        :param velocity_long: longitudinal veloctiy
+        :param velocity_lat: lateral velocity
+        :return: DIState
+        """
+        return DIState(
+            position_long=position_long,
+            position_lat=position_lat,
+            velocity_long=velocity_long,
+            velocity_lat=velocity_lat
+        )
+
+    def input_from_args(
+            self,
+            acceleration_long: float,
+            acceleration_lat: float
+    ) -> Union['DIInput']:
+        """
+        Create DI input from args.
+        :param acceleration_long: longitudinal acceleration
+        :param acceleration_lat: lateral acceleration
+        :return: DIInput
+        """
+        return DIInput(
+            acceleration_long=acceleration_long,
+            acceleration_lat=acceleration_lat
+        )
+
     def state_from_numpy_array(
             self,
             x_np: np.array,

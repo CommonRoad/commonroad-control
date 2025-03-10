@@ -11,6 +11,54 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
     """
     Dynamic bicycle model factory for state, input, and trajectory.
     """
+
+    def state_from_args(
+            self,
+            position_x: float,
+            position_y: float,
+            velocity_long: float,
+            velocity_lat: float,
+            heading: float,
+            yaw_rate: float,
+            steering_angle: float
+    ) -> Union['DBState']:
+        """
+        Create DB state from args.
+        :param position_x:
+        :param position_y:
+        :param velocity_long:
+        :param velocity_lat:
+        :param heading:
+        :param yaw_rate:
+        :param steering_angle:
+        :return: DBState
+        """
+        return DBState(
+            position_x=position_x,
+            position_y=position_y,
+            velocity_long=velocity_long,
+            velocity_lat=velocity_lat,
+            heading=heading,
+            yaw_rate=yaw_rate,
+            steering_angle=steering_angle
+        )
+
+    def input_from_args(
+            self,
+            acceleration: float,
+            steering_angle_velocity: float
+    ) -> Union['DBInput']:
+        """
+        Create DB input from args.
+        :param acceleration: longitudinal acceleration
+        :param steering_angle_velocity: lateral acceleration
+        :return: DIInput
+        """
+        return DBInput(
+            acceleration=acceleration,
+            steering_angle_velocity=steering_angle_velocity
+        )
+
     def state_from_numpy_array(
             self,
             x_np: np.array,

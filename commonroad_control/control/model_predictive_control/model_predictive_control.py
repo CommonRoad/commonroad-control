@@ -12,7 +12,7 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 class ModelPredictiveControl(Controller):
     def __init__(self, vehicle_model: VehicleModelInterface, horizon: int, delta_t: float,
                  cost_xx: np.array, cost_uu: np.array, cost_final: np.array,
-                 penalty_weight=1e4, max_iterations=10, tolerance=1e-3):
+                 soft_tr_penalty_weight=0.001, slack_penalty_weight=1000.0, max_iterations=10, tolerance=1e-3):
 
         # init base class
         super().__init__()
@@ -27,16 +27,19 @@ class ModelPredictiveControl(Controller):
         self._cost_xx = cost_xx
         self._cost_uu = cost_uu
         self._cost_final = cost_final
-        self._penalty_weight = penalty_weight
+        self._soft_tr_penalty_weight = soft_tr_penalty_weight
+        self._slack_penalty_weight = slack_penalty_weight
         self._max_iterations = max_iterations
         self._tolerance = tolerance
 
-        # Set up decision variables
+        # optimization variables
         self._x = cp.Variable((self._nx, self._horizon + 1))
         self._u = cp.Variable((self._nu, self._horizon))
+        self._virtual_control_pos = cp.Variable((self._nx, self._horizon))
+        self._virtual_control_neg = cp.Variable((self._nx, self._horizon))
 
-        # Parameters
-        self._par_x0 = cp.Parameter((self._nx,1))
+        # parameters of the optimal control problem
+        self._par_x0 = cp.Parameter((self._nx,))
         self._par_x_ref = cp.Parameter((self._nx, self._horizon + 1))
         self._par_u_ref = cp.Parameter((self._nu, self._horizon))
         self._par_x_lin = cp.Parameter((self._nx, self._horizon + 1))
@@ -46,20 +49,17 @@ class ModelPredictiveControl(Controller):
         self._par_B = cp.Parameter((self._nx, self._nu*self._horizon))
 
         # Create the problem
-        self._problem = self._create_problem()
+        self._ocp = self._create_ocp()
 
         # Initialize history
         self._iteration_history = []
 
-    def _create_problem(self):
-        # Initialize the cost function
+    def _create_ocp(self):
+        # initialize cost function
         cost = 0
 
-        # Constraints list
-        constraints = [self._x[0] == self._par_x0]
-
-        par_A = cp.reshape(self._par_A,(self._nx, self._nx, self._horizon))
-        par_B = cp.reshape(self._par_B,(self._nx, self._nu, self._horizon))
+        # initial state constraint
+        constraints = [self._x[:, 0] == self._par_x0]
 
         for kk in range(self._horizon):
             # cost function
@@ -67,30 +67,40 @@ class ModelPredictiveControl(Controller):
                      + cp.quad_form(self._u[:, kk] - self._par_u_ref[:, kk], self._cost_uu))
 
             # dynamics constraint
-            constraints += [self._x[:, kk + 1] == self._par_x_next[:, kk] \
-                            + par_A[:, :, kk] @ (self._x[:, kk] - self._par_x_lin[:, kk]) \
-                            + par_B[:, :, kk] @ (self._u[:, kk] - self._par_u_lin[:, kk])]
-                            # + self._par_A[:, :, kk] @ (self._x[:, kk] - self._par_x_lin[:,kk]) \
-                            # + self._par_B[:, :, kk] @ (self._u[:, kk] - self._par_u_lin[:, kk])]
+            constraints += [self._x[:, kk + 1] == self._par_x_next[:, kk]
+                            + self._virtual_control_pos[:, kk] - self._virtual_control_neg[:, kk]
+                            + (self._par_A[:, [kk*self._nx + ii for ii in range(self._nx)]]
+                               @ (self._x[:, kk] - self._par_x_lin[:, kk]))
+                            + (self._par_B[:, [kk*self._nu + ii for ii in range(self._nu)]]
+                               @ (self._u[:, kk] - self._par_u_lin[:, kk]))]
 
-            # Add state and control input bounds
-            # x_lb, x_ub = self._vehicle_model.getStateBounds()
-            u_lb, u_ub = self._vehicle_model.input_bounds()
-            # constraints.append(self._x[:,kk] >= x_lb)
-            # constraints.append(self._x[:, kk] <= x_ub)
-            constraints.append(self._u[:, kk] >= u_lb.convert_to_array())
-            constraints.append(self._u[:, kk] <= u_ub.convert_to_array())
-
-            # # Add second-order cone constraints
+            # # add nonlinear constraints
             # soc_constraints = self._vehicle_model.nonlinConstraints(self._x[kk], self._u[kk], kk)
             # constraints += soc_constraints
 
-        # Final state cost
+        # terminal cost
         cost += cp.quad_form(self._x[:, self._horizon] - self._par_x_ref[:, self._horizon], self._cost_final)
 
+        # control input bounds
+        u_lb, u_ub = self._vehicle_model.input_bounds()
+        constraints.append(self._u >= u_lb.convert_to_array())
+        constraints.append(self._u <= u_ub.convert_to_array())
+
+        # state bounds
+        x_mat_lb, x_lb, x_mat_ub, x_ub = self._vehicle_model.state_bounds()
+        constraints += [x_lb <= x_mat_lb @ self._x,
+                        x_mat_ub @ self._x <= x_ub]
+
+        # bounds on virtual control inputs
+        constraints += [self._virtual_control_pos >= 0, self._virtual_control_neg >= 0]
+
+        # penalize virtual control inputs
+        cost += self._slack_penalty_weight*(
+                cp.sum(self._virtual_control_neg) + cp.sum(self._virtual_control_pos))
+
         # (quadratic) soft trust-region penalty
-        penalty = cp.norm(self._x - self._par_x_lin, 'fro') ** 2 + cp.norm(self._u - self._par_u_lin, 'fro') ** 2
-        cost += self._penalty_weight * penalty
+        cost += self._soft_tr_penalty_weight * (cp.sum_squares(cp.vec(self._x - self._par_x_lin, order='F'))
+                                                + cp.sum_squares(cp.vec(self._u - self._par_u_lin, order='F')))
 
         # Define the optimization problem
         problem = cp.Problem(cp.Minimize(cost), constraints)
@@ -116,7 +126,7 @@ class ModelPredictiveControl(Controller):
         self._iteration_history = []
 
         # set initial state
-        self._par_x0.value = np.reshape(x0.convert_to_array(), (self._nx, 1))
+        self._par_x0.value = x0.convert_to_array()
 
         time_state = [t_0 + self._delta_t*kk for kk in range(self._horizon+1)]
         time_input = [t_0 + self._delta_t*kk for kk in range(self._horizon)]
@@ -148,20 +158,18 @@ class ModelPredictiveControl(Controller):
             self._par_B.value = np.hstack(B)
 
             # solve the optimal control problem
-            self._problem.solve()
+            self._ocp.solve(solver='CLARABEL', verbose=True)
 
-            #print
-            print(f"{self._problem.status}")
-
-            # get the solution
+            # extract (candidate) solution
             x_sol = self._x.value
             u_sol = self._u.value
 
             # compute the defect
-            defect = np.linalg.norm(self._par_x_lin.value - x_sol, 'fro')
+            #TODO: compute defect (and include in convergence criterion?)
+            # defect = np.linalg.norm(self._par_x_lin.value - x_sol, 'fro')
 
             # save solution
-            self._iteration_history.append((x_sol.copy(), u_sol.copy(), defect))
+            self._iteration_history.append((x_sol.copy(), u_sol.copy())) #, defect))
 
             # check convergence
             if (np.linalg.norm(x_sol - self._par_x_lin.value) < self._tolerance

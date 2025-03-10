@@ -12,7 +12,7 @@ class KSTStateIndices:
     """
     Indices of the states.
     """
-    dim: int = 4
+    dim: int = 5
     position_x: int = 0
     position_y: int = 1
     velocity: int = 2
