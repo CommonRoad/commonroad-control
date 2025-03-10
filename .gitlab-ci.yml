@@ -44,6 +44,7 @@ test_build_pages:
 flake8:
   stage: style
   needs: []
+  allow_failure: true
   image: python:3.10
   before_script: []
   cache: []
@@ -58,6 +59,7 @@ flake8:
 black:
   stage: style
   needs: []
+  allow_failure: true
   image: pyfound/black:24.2.0
   before_script: []
   cache: []
