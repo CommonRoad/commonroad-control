@@ -169,7 +169,7 @@ class ModelPredictiveControl(Controller):
             # defect = np.linalg.norm(self._par_x_lin.value - x_sol, 'fro')
 
             # save solution
-            self._iteration_history.append((x_sol.copy(), u_sol.copy(), defect))
+            self._iteration_history.append((x_sol.copy(), u_sol.copy())) #, defect))
 
             # check convergence
             if (np.linalg.norm(x_sol - self._par_x_lin.value) < self._tolerance
