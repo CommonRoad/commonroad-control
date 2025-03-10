@@ -32,8 +32,8 @@ class VehicleModelSimulationTest(unittest.TestCase):
         sim = Simulation(kst)
 
         # set initial state and control input
-        x0 = KSTState(position_x=0.0, position_y=0.0, velocity=10.0, heading=0.0, steering_angle=0.1)
-        u = KSTInput(acceleration=0.0, steering_angle_velocity=0.0)
+        x0 = KSTState(position_x=0.0, position_y=0.0, velocity=15.0, heading=0.0, steering_angle=0.0)
+        u = KSTInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
         x_sim = sim.simulate(x0, u, time_horizon=1.0)
@@ -49,9 +49,9 @@ class VehicleModelSimulationTest(unittest.TestCase):
         sim = Simulation(db)
 
         # set initial state and control input
-        x0 = DBState(position_x=0.0, position_y=0.0, velocity_long=10.0, velocity_lat=0.0,
-                     heading=0.0, yaw_rate=0.0, steering_angle=0.1)
-        u = DBInput(acceleration=0.0, steering_angle_velocity=0.0)
+        x0 = DBState(position_x=0.0, position_y=0.0, velocity_long=15.0, velocity_lat=0.0,
+                     heading=0.0, yaw_rate=0.0, steering_angle=0.0)
+        u = DBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
         x_sim = sim.simulate(x0, u, time_horizon=1.0)
