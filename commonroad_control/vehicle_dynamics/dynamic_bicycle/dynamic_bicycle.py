@@ -43,7 +43,7 @@ class DynamicBicycle(VehicleModelInterface):
         """
         Dynamics function of the dynamic bicycle model.
         Equations are taken from
-        - 'R. Rajamani "Vehicle Dynamics and Control", Springer, 2011' (dynamics, p. 27)
+        - 'J. Kabzan et al. "Learning-Based Model Predictive Control for Autonomous Racing", IEEE RA-L, 2019'
         - 'J. M. Snider, "Automatic Steering Methods for Autonomous Automobile Path Tracking", CMU-RI-TR-09-08, 2009'
         (tyre slip angles, p. 29)
 
@@ -65,23 +65,23 @@ class DynamicBicycle(VehicleModelInterface):
 
         # (tyre) slip angles
         alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
-        alpha_r = cas.atan((v_by - self._l_r*psi_dot)/v_bx)
+        alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
 
-        # compute normal forces (no longitudinal load transfer
+        # compute normal forces per axle (no longitudinal load transfer)
         fz_f = self._m*self._g / self._l_wb
         fz_r = self._m*self._g / self._l_wb
 
-        # lateral tyre forces
+        # lateral tyre forces per axle
         fc_f = -self._C_f*alpha_f*fz_f
         fc_r = -self._C_r*alpha_r*fz_r
 
         # dynamics
         position_x_dot = v_bx * cas.cos(psi) - v_by * cas.sin(psi)
         position_y_dot = v_bx * cas.sin(psi) + v_by * cas.cos(psi)
-        velocity_long_dot = psi_dot * v_by + a
-        velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) * 2 / self._m
+        velocity_long_dot = psi_dot * v_by + a - (fc_f * cas.sin(delta)) / self._m
+        velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) / self._m
         heading_dot = psi_dot
-        yaw_rate_dot = (self._l_f * fc_f - self._l_r * fc_r) * 2 / self._I_zz
+        yaw_rate_dot = (self._l_f * fc_f * cas.cos(delta) - self._l_r * fc_r) / self._I_zz
         steering_angle_dot = delta_dot
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_long_dot, velocity_lat_dot,
