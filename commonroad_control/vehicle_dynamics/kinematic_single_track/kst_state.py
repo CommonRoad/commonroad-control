@@ -1,6 +1,8 @@
 import numpy as np
 from dataclasses import dataclass
 
+from commonroad.scenario.state import InitialState, CustomState
+
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
@@ -10,7 +12,7 @@ class KSTStateIndices:
     """
     Indices of the states.
     """
-    dim: int = 5
+    dim: int = 4
     position_x: int = 0
     position_y: int = 1
     velocity: int = 2
@@ -44,3 +46,44 @@ class KSTState(StateInterface):
         x[KSTStateIndices.steering_angle] = self.steering_angle
 
         return x
+
+
+    def to_cr_initial_state(
+            self,
+            time_step: int
+    ) -> InitialState:
+        """
+        Convert to cr initial state
+        :param time_step: time step
+        :return: cr InitialState
+        """
+        return InitialState(
+            position=np.asarray([self.position_x, self.position_y]),
+            velocity=self.velocity,
+            orientation=self.heading,
+            acceleration=0,
+            yaw_rate=0,
+            slip_angle=0,
+            time_step=time_step
+        )
+
+
+    def to_cr_custom_state(
+            self,
+            time_step: int
+    ) -> CustomState:
+        """
+        Convert to cr custom state
+        :param time_step: time step
+        :return: cr custom state
+        """
+        return CustomState(
+            position=np.asarray([self.position_x, self.position_y]),
+            velocity=self.velocity,
+            orientation=self.heading,
+            acceleration=0,
+            yaw_rate=0,
+            slip_angle=0,
+            time_step=time_step
+        )
+
