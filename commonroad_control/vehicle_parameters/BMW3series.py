@@ -16,3 +16,4 @@ class BMW3seriesParams(VehicleParameters):
     I_zz: float = 1791.0
     C_f: float = 20.89
     C_r: float = 20.89
+    h_cog: float = 0.574

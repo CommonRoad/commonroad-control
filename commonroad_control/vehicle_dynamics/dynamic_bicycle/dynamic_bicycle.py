@@ -20,6 +20,7 @@ class DynamicBicycle(VehicleModelInterface):
         self._I_zz = params.I_zz
         self._C_f = params.C_f
         self._C_r = params.C_r
+        self._h_cog = params.h_cog
 
         # init base class
         super().__init__(nx=DBState.dim, nu=DBInput.dim, dt=dt)
@@ -68,8 +69,8 @@ class DynamicBicycle(VehicleModelInterface):
         alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
 
         # compute normal forces per axle (no longitudinal load transfer)
-        fz_f = self._m*self._g / self._l_wb
-        fz_r = self._m*self._g / self._l_wb
+        fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
+        fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
 
         # lateral tyre forces per axle
         fc_f = -self._C_f*alpha_f*fz_f
