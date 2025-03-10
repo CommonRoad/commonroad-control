@@ -121,3 +121,23 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             acceleration_long=u_np[DIInputIndices.acceleration_long],
             acceleration_lat=u_np[DIInputIndices.acceleration_lat]
         )
+
+
+
+    def state_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Create State from input args
+        """
+        pass
+
+    def input_from_args(
+            self,
+            *args
+    ) -> Union[Any]:
+        """
+        Return input
+        """
+        pass

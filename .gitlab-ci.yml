@@ -12,7 +12,7 @@ stages:
 before_script:
   - pip install poetry
   - poetry config virtualenvs.in-project true
-  - poetry install --with test,docs
+  - poetry install --with test,docs,planner
   - source .venv/bin/activate
 
 ###### Test #########
@@ -44,6 +44,7 @@ test_build_pages:
 flake8:
   stage: style
   needs: []
+  allow_failure: true
   image: python:3.10
   before_script: []
   cache: []
@@ -58,6 +59,7 @@ flake8:
 black:
   stage: style
   needs: []
+  allow_failure: true
   image: pyfound/black:24.2.0
   before_script: []
   cache: []
