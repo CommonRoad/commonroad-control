@@ -54,7 +54,7 @@ class TestReactivePlannerConverter(unittest.TestCase):
                 )
 
 
-
+        # -- Subtest for KST Conversion --
         with self.subTest(msg=f"KST Conversion P2C and C2P"):
             rpc = ReactivePlannerConverter()
             kst_state_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
@@ -92,6 +92,7 @@ class TestReactivePlannerConverter(unittest.TestCase):
                                      f"Reconstr. {rec_rp_input_traj[idx]}  --  Original {rp_inputs[idx]}")
 
 
+        # -- Subtest for DST conversion --
         with self.subTest(msg="DST Conversion planning to control"):
             rpc = ReactivePlannerConverter()
             dst_state_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_states, mode='state')
@@ -121,8 +122,30 @@ class TestReactivePlannerConverter(unittest.TestCase):
                     f"Initial inputs {rp_inputs[0]} and reconversion {reconverter_initial_input} do not match"
                 )
 
+            scenario_file = Path(__file__).parents[1] / "scenarios" / "ZAM_Over-1_1.xml"
+            scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
+            planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+
+            # move dst up so it can be seen more easily
+            controller_trajectory = copy.deepcopy(dst_state_traj)
+            for step, state in controller_trajectory.points.items():
+                new_state = state
+                new_state.position_y = state.position_y + 3
+                controller_trajectory.points[step] = new_state
+
+            visualize_trajectories(
+                scenario=scenario,
+                planning_problem=planning_problem,
+                planner_trajectory=kst_state_traj,
+                controller_trajectory=controller_trajectory,
+                use_icons=False
+            )
+
 
     def test_p2c_with_rp_integration(self) -> None:
+        """
+        Tests planning-to-control integration with reactive planner
+        """
         scenario_file = Path(__file__).parents[1] / "scenarios" / "ZAM_Over-1_1.xml"
         config_name = Path(__file__).parents[1] / "scenarios" / "reactive_planner_configs" / "ZAM_Over-1_1.yaml"
         filename = "ZAM_Over-1_1.xml"
