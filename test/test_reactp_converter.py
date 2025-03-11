@@ -12,6 +12,7 @@ from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from rp_test import main as rpmain
 
 from typing import List
@@ -52,42 +53,73 @@ class TestReactivePlannerConverter(unittest.TestCase):
                     )
                 )
 
-        rpc = ReactivePlannerConverter()
-        kst_state_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
-        kst_input_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
-
-        rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
-        rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')
 
 
-        if len(rec_rp_state_traj) != len(rp_states):
-            raise ValueError(f"State and reconstructed conversion have mismatching length: rec={len(rec_rp_state_traj)}"
-                             f"but original was {len(rp_states)}")
+        with self.subTest(msg=f"KST Conversion P2C and C2P"):
+            rpc = ReactivePlannerConverter()
+            kst_state_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
+            kst_input_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
 
-        if len(rec_rp_input_traj) != len(rp_inputs):
-            raise ValueError(f"Input and reconstructed conversion have mismatching length: rec={len(rec_rp_input_traj)}"
-                             f"but original was {len(rp_inputs)}")
-
-        for idx, _ in enumerate(rec_rp_state_traj):
-            if (
-                    not np.isclose(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0]) or
-                    rec_rp_state_traj[idx].position[1] != rp_states[idx].position[1] or
-                    rec_rp_state_traj[idx].velocity != rp_states[idx].velocity or
-                    rec_rp_state_traj[idx].steering_angle != rp_states[idx].steering_angle or
-                    rec_rp_state_traj[idx].orientation != rp_states[idx].orientation or
-                    rec_rp_state_traj[idx].time_step != rp_states[idx].time_step
-            ):
-                print(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0])
-                raise ValueError(f"Mismatching states in reconstruction: "
-                                 f"Reconstr. {rec_rp_state_traj[idx]}  --  Original {rp_states[idx]}")
+            rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
+            rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')
 
 
-        for idx, _ in enumerate(rec_rp_input_traj):
-            if rec_rp_input_traj[idx] != rp_inputs[idx]:
-                raise ValueError(f"Mismatching input in reconstruction: "
-                                 f"Reconstr. {rec_rp_input_traj[idx]}  --  Original {rp_inputs[idx]}")
+            if len(rec_rp_state_traj) != len(rp_states):
+                raise ValueError(f"State and reconstructed conversion have mismatching length: rec={len(rec_rp_state_traj)}"
+                                 f"but original was {len(rp_states)}")
+
+            if len(rec_rp_input_traj) != len(rp_inputs):
+                raise ValueError(f"Input and reconstructed conversion have mismatching length: rec={len(rec_rp_input_traj)}"
+                                 f"but original was {len(rp_inputs)}")
+
+            for idx, _ in enumerate(rec_rp_state_traj):
+                if (
+                        not np.isclose(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0]) or
+                        rec_rp_state_traj[idx].position[1] != rp_states[idx].position[1] or
+                        rec_rp_state_traj[idx].velocity != rp_states[idx].velocity or
+                        rec_rp_state_traj[idx].steering_angle != rp_states[idx].steering_angle or
+                        rec_rp_state_traj[idx].orientation != rp_states[idx].orientation or
+                        rec_rp_state_traj[idx].time_step != rp_states[idx].time_step
+                ):
+                    print(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0])
+                    raise ValueError(f"Mismatching states in reconstruction: "
+                                     f"Reconstr. {rec_rp_state_traj[idx]}  --  Original {rp_states[idx]}")
 
 
+            for idx, _ in enumerate(rec_rp_input_traj):
+                if rec_rp_input_traj[idx] != rp_inputs[idx]:
+                    raise ValueError(f"Mismatching input in reconstruction: "
+                                     f"Reconstr. {rec_rp_input_traj[idx]}  --  Original {rp_inputs[idx]}")
+
+
+        with self.subTest(msg="DST Conversion planning to control"):
+            rpc = ReactivePlannerConverter()
+            dst_state_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_states, mode='state')
+            dst_input_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_inputs, mode='input')
+
+            reconverter_initial_state = rpc.sample_c2p_dst(
+                dst_state_traj.initial_state,
+                mode='state',
+                time_step=min(dst_state_traj.steps)
+            )
+            reconverter_initial_state.acceleration = 0.0
+
+            reconverter_initial_input = rpc.sample_c2p_dst(
+                dst_input_traj.initial_state,
+                mode='input',
+                time_step=min(dst_input_traj.steps)
+            )
+
+
+            if rp_states[0] != reconverter_initial_state:
+                raise ValueError(
+                    f"Initial states {rp_states[0]} and reconversion {reconverter_initial_state} do not match"
+                )
+
+            if (rp_inputs[0] != reconverter_initial_input):
+                raise ValueError(
+                    f"Initial inputs {rp_inputs[0]} and reconversion {reconverter_initial_input} do not match"
+                )
 
 
     def test_p2c_with_rp_integration(self) -> None:
