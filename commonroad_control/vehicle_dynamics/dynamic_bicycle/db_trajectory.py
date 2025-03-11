@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-import numpy as np
 from typing import Union
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
 

@@ -21,8 +21,8 @@ def main(simulate: bool = True) -> None:
     replannings = range(2)
     for replanning in replannings:
         ########## Dummy Trajectory from planner
-        states = {0: KSTState(position_x=5, position_y=0, velocity=5, acceleration=0, heading=0, steering_angle=0),
-                  1: KSTState(position_x=3, position_y=3, velocity=5, acceleration=3, heading=3, steering_angle=3)}
+        states = {0: KSTState(position_x=5, position_y=0, velocity=5, heading=0, steering_angle=0),
+                  1: KSTState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
         planner_state_traj = KSTTrajectory(
             mode='state',
             points=states,
@@ -30,7 +30,7 @@ def main(simulate: bool = True) -> None:
             delta_t=0.1
         )
 
-        inputs = {0: KSTInput(jerk=5, steering_angle_velocity=5), 1: KSTInput(jerk=3, steering_angle_velocity=3)}
+        inputs = {0: KSTInput(acceleration=5, steering_angle_velocity=5), 1: KSTInput(acceleration=3, steering_angle_velocity=3)}
         planner_input_traj = KSTTrajectory(
             mode='input',
             points=inputs,

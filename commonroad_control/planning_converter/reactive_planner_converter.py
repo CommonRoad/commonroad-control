@@ -5,9 +5,12 @@ import numpy as np
 from commonroad.scenario.state import InputState
 from commonroad_rp.state import ReactivePlannerState
 
-
 # own code base
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
+from commonroad_control.util.conversion_util import (
+    compute_velocity_components_from_steering_angle_in_cog,
+    compute_total_velocity_from_components
+)
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -153,29 +156,108 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     # --- DST ---
     def trajectory_p2c_dst(
             self,
-            planner_traj: Any,
-            mode: Literal['state', 'input']
+            planner_traj: Union[List['ReactivePlannerState'], List[InputState]],
+            mode: Literal['state', 'input'],
+            t_0: float = 0.0,
+            dt: float = 0.1
     ) -> DBTrajectory:
-            return planner_traj
+        """
+        Build dynamic-single-track trajectory from reactive planner
+        :param planner_traj:
+        :param mode:
+        :param t_0:
+        :param dt:
+        :return: DBTrajectory
+        """
+        dst_dict: Dict[int, Union[DBState, DBInput]] = dict()
+        for dst_point in planner_traj:
+            dst_dict[dst_point.time_step] = self.sample_p2c_dst(
+                planner_state=dst_point,
+                mode=mode
+            )
+        return self._dst_factory.trajectory_from_state_or_input(
+            dst_dict=dst_dict,
+            mode=mode,
+            t_0=t_0,
+            delta_t=dt
+        )
+
+
+
+    def sample_p2c_dst(
+            self,
+            planner_state: Union[ReactivePlannerState, InputState],
+            mode: Literal['state', 'input']
+    ) -> Union[DBState, DBInput]:
+        """
+        Create dynamic-single-track state or input from reactive planner
+        :param planner_state:
+        :param mode:
+        :return: DBState or DBInput
+        """
+        if mode == 'state':
+            v_lon, v_lat = compute_velocity_components_from_steering_angle_in_cog(
+                steering_angle=planner_state.steering_angle,
+                velocity=planner_state.velocity,
+                wheelbase=self.vehicle_params.l_wb,
+                length_rear=self.vehicle_params.l_r
+            )
+
+            retval: DBState = self._dst_factory.state_from_args(
+                position_x=planner_state.position[0],
+                position_y=planner_state.position[1],
+                velocity_long=v_lon,
+                velocity_lat=v_lat,
+                yaw_rate=planner_state.yaw_rate,
+                steering_angle=planner_state.steering_angle,
+                heading=planner_state.orientation
+            )
+        else:
+            retval: DBInput = self._dst_factory.input_from_args(
+                acceleration=planner_state.acceleration,
+                steering_angle_velocity=planner_state.steering_angle_speed
+            )
+
+        return retval
+
 
     def trajectory_c2p_dst(
             self,
             dst_traj: DBTrajectory,
             mode: Literal['state', 'input']
     ) -> Any:
-        return dst_traj
+        raise NotImplementedError("Currently not implemented")
 
-    def sample_p2c_dst(
-            self,
-            planner_state: Any,
-            mode: Literal['state', 'input']
-    ) -> Union[DBState, DBInput]:
-        return planner_state
 
     def sample_c2p_dst(
             self,
-            dst_state: DBState,
-            mode: Literal['state', 'input']
-    ) -> Any:
-        return dst_state
+            dst_state: Union[DBState, DBInput],
+            mode: Literal['state', 'input'],
+            time_step: int,
+    ) -> Union[ReactivePlannerState, InputState]:
+        """
+        Convert controller output to Reactive planner
+        :param dst_state:
+        :param mode: choose between state and input
+        :param time_step:
+        :return: ReactivePlannerState or InputState
+        """
+        if mode == 'state':
+            retval: ReactivePlannerState = ReactivePlannerState(
+                time_step=time_step,
+                position=np.asarray([dst_state.position_x, dst_state.position_y]),
+                velocity=compute_total_velocity_from_components(
+                    dst_state.velocity_long, dst_state.velocity_lat
+                ),
+                orientation=dst_state.heading,
+                steering_angle=dst_state.steering_angle,
+                yaw_rate=dst_state.yaw_rate
+            )
+        else:
+            retval: InputState = InputState(
+                steering_angle_speed=dst_state.steering_angle_velocity,
+                acceleration=dst_state.acceleration,
+                time_step=time_step
+            )
+        return retval
 

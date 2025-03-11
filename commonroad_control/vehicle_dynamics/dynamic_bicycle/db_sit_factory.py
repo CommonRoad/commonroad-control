@@ -1,9 +1,10 @@
-from typing import Union, Any
+from typing import Union, Any, Dict, Literal
 
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBStateIndices, DBState
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 
 
@@ -105,22 +106,74 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_args(
             self,
-            *args
+            position_x: float,
+            position_y: float,
+            velocity_long: float,
+            velocity_lat: float,
+            heading: float,
+            yaw_rate: float,
+            steering_angle: float
     ) -> Union[Any]:
         """
-        Create State from input args
+
+        :param position_x:
+        :param position_y:
+        :param velocity_long:
+        :param velocity_lat:
+        :param heading:
+        :param yaw_rate:
+        :param steering_angle:
+        :return:
         """
-        pass
+        return DBState(
+            position_x=position_x,
+            position_y=position_y,
+            velocity_long=velocity_long,
+            velocity_lat=velocity_lat,
+            heading=heading,
+            yaw_rate=yaw_rate,
+            steering_angle=steering_angle
+        )
 
 
     def input_from_args(
             self,
-            *args
+            acceleration: float,
+            steering_angle_velocity: float
     ) -> Union[Any]:
         """
-        Return input
+
+        :param acceleration:
+        :param steering_angle_velocity:
+        :return:
         """
-        pass
+        return DBInput(
+            acceleration=acceleration,
+            steering_angle_velocity=steering_angle_velocity
+        )
+
+
+    def trajectory_from_state_or_input(
+            self,
+            dst_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
+            mode: Literal['state', 'input'],
+            t_0: float,
+            delta_t: float
+    ) -> DBTrajectory:
+        """
+        Build trajectory from dst state or input
+        :param dst_dict: dict of time steps to dst points
+        :param mode:
+        :param t_0:
+        :param delta_t:
+        :return: DST-Trajectory
+        """
+        return DBTrajectory(
+                points=dst_dict,
+                mode=mode,
+                t_0=t_0,
+                delta_t=delta_t
+            )
 
 
 

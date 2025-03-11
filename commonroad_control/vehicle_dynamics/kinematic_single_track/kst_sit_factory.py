@@ -63,7 +63,7 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
         Set values of class from a given array.
         :param x_np: state vector - array of dimension (dim,)
         """
-        if int(x_np.shape[0]) != 6:
+        if int(x_np.shape[0]) != KSTStateIndices.dim:
             raise ValueError(f'Dimension {x_np.shape[0]} does not match required {KSTStateIndices.dim}')
         if x_np.ndim > 1:
             raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")

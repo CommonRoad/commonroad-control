@@ -101,6 +101,7 @@ class PlanningConverterInterface(ABC):
     def sample_c2p_dst(
             self,
             dst_state: DBState,
-            mode: Literal['state', 'input']
+            time_step: int,
+            mode: Literal['state', 'input'],
     ) -> Any:
         pass
