@@ -53,7 +53,7 @@ class KSTTrajectory(TrajectoryInterface):
         self,
         vehicle_width: float,
         vehicle_length: float,
-        vehicle_id: int
+        vehicle_id: int,
     ) -> DynamicObstacle:
         """
         Converts trajectory cr dynamic obstacle for plotting
@@ -81,7 +81,7 @@ class KSTTrajectory(TrajectoryInterface):
             )
             # obstacle generation
             return DynamicObstacle(
-                obstacle_id=30000 + vehicle_id,
+                obstacle_id=vehicle_id,
                 obstacle_type=ObstacleType.CAR,
                 obstacle_shape=shape,
                 initial_state=initial_state,
