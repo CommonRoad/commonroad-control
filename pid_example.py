@@ -23,7 +23,7 @@ from rp_test import main as rpmain
 from typing import List, Tuple
 
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
-from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
+from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.pid.pid_controller import PIDController
 
@@ -118,13 +118,14 @@ def main() -> None:
         delta_t=planner_time
     )
 
+    img_save_path = "/home/tmasc/projects/cr-control/output"
+
     visualize_trajectories(
         scenario=scenario,
         planning_problem=planning_problem,
         planner_trajectory=kst_traj,
         controller_trajectory=simulated_traj
     )
-
 
 
 
