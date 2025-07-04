@@ -28,8 +28,8 @@ class TestReactivePlannerConverter(unittest.TestCase):
         """
         Tests conversion from and to reactive planner with txt data
         """
-        input_file = Path(__file__).parents[0] / "reactive_planner_traj/input.txt"
-        state_file = Path(__file__).parents[0] / "reactive_planner_traj/state.txt"
+        input_file = Path(__file__).parents[0] / "reactive_planner_traj/ZAM_Over-1_1/input.txt"
+        state_file = Path(__file__).parents[0] / "reactive_planner_traj/ZAM_Over-1_1/state.txt"
 
         with open(input_file, "r") as f:
             i = [ast.literal_eval(el) for el in f.readlines()]

@@ -31,7 +31,7 @@ from commonroad_control.control.pid.pid_controller import PIDController
 
 
 def main() -> None:
-    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Over-1_1.xml"
+    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Tjunction-1_42_T-1.xml"
 
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
@@ -44,7 +44,7 @@ def main() -> None:
 
     kst_traj, kst_input = execute_planner()
     vehicle_params: VehicleParameters = BMW3seriesParams()
-    vehicle_model: KinematicSingleStrack = KinematicSingleStrack(params=vehicle_params, dt=0.01)
+    vehicle_model: KinematicSingleStrack = KinematicSingleStrack(params=vehicle_params, dt=controller_time)
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model,
         state_input_factory=state_input_factory
@@ -115,7 +115,7 @@ def main() -> None:
         kst_dict=traj_dict,
         mode='input',
         t_0=0,
-        delta_t=0.1
+        delta_t=planner_time
     )
 
     visualize_trajectories(
@@ -140,8 +140,8 @@ def execute_planner() -> Tuple[KSTTrajectory, KSTTrajectory]:
     Dummy loading precomputed Reactive Planner KST Trajectory
     :return: kst trajectory for state and input
     """
-    input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/input.txt"
-    state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/state.txt"
+    input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Tjunction-1_42_T-1/input.txt"
+    state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Tjunction-1_42_T-1/state.txt"
     with open(input_file, "r") as f:
         i = [ast.literal_eval(el) for el in f.readlines()]
         rp_inputs: List[InputState] = list()

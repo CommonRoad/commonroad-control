@@ -123,13 +123,30 @@ def main(
 
     return planner.record_state_list, planner.record_input_list
 
+
+
+def save_planner_outputs(
+    rp_states: List[ReactivePlannerState],
+    rp_inputs: List[InputState],
+    save_root: str
+) -> None:
+    # TODO: Unify this in one piece of code with conversion!
+    with open(save_root + "/state.txt", "w") as f:
+        for state in rp_states:
+            f.writelines(f"{[state.position, float(state.steering_angle), float(state.velocity), float(state.orientation),float(state.acceleration), float(state.yaw_rate)]}\n")
+
+    with open(save_root + "/input.txt", "w") as f:
+        for input in rp_inputs:
+            f.writelines(f"{[float(input.acceleration), float(input.steering_angle_speed)]}\n")
+
 # *************************************
 # Run planning
 # *************************************
 if __name__ == "__main__":
-    filename = "ZAM_Over-1_1.xml"
+    filename = "ZAM_Tjunction-1_42_T-1.xml"
+    save_root = "/home/tmasc/projects/cr-control/test/reactive_planner_traj/ZAM_Tjunction-1_42_T-1"
 
-    scenario, planning_problem_set = CommonRoadFileReader(f"scenarios/ZAM_Over-1_1.xml").open()
+    scenario, planning_problem_set = CommonRoadFileReader(f"scenarios/{filename}").open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
     # Build config object
     rp_config = ReactivePlannerConfiguration.load(f"scenarios/reactive_planner_configs/{filename[:-4]}.yaml", filename)
@@ -137,4 +154,9 @@ if __name__ == "__main__":
     rp_config.planning_problem_set = planning_problem_set
 
     rp_states, rp_inputs = main(config=rp_config)
+    save_planner_outputs(
+        rp_states=rp_states,
+        rp_inputs=rp_inputs ,
+        save_root=save_root
+    )
 
