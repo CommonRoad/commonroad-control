@@ -30,9 +30,13 @@ from commonroad_control.control.pid.pid_controller import PIDController
 
 
 
-def main() -> None:
-    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Tjunction-1_42_T-1.xml"
+def main(
+        scenario_file: Path,
+        img_save_path: str,
+        planner_input_file: Path,
+        planner_state_file: Path
 
+) -> None:
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
@@ -42,7 +46,10 @@ def main() -> None:
 
     state_input_factory = KSTSITFactory()
 
-    kst_traj, kst_input = execute_planner()
+    kst_traj, kst_input = execute_planner(
+        input_file=planner_input_file,
+        state_file=planner_state_file
+    )
     vehicle_params: VehicleParameters = BMW3seriesParams()
     vehicle_model: KinematicSingleStrack = KinematicSingleStrack(params=vehicle_params, dt=controller_time)
     simulation: Simulation = Simulation(
@@ -118,13 +125,21 @@ def main() -> None:
         delta_t=planner_time
     )
 
-    img_save_path = "/home/tmasc/projects/cr-control/output"
+
 
     visualize_trajectories(
         scenario=scenario,
         planning_problem=planning_problem,
         planner_trajectory=kst_traj,
-        controller_trajectory=simulated_traj
+        controller_trajectory=simulated_traj,
+        save_path=img_save_path,
+        save_img=True
+    )
+
+    make_gif(
+        path_to_img_dir=img_save_path,
+        scenario_name=str(scenario.scenario_id),
+        num_imgs=len(kst_traj.points.values())
     )
 
 
@@ -135,14 +150,14 @@ def main() -> None:
 
 
 
-
-def execute_planner() -> Tuple[KSTTrajectory, KSTTrajectory]:
+def execute_planner(
+        input_file: Path,
+        state_file: Path
+) -> Tuple[KSTTrajectory, KSTTrajectory]:
     """
     Dummy loading precomputed Reactive Planner KST Trajectory
     :return: kst trajectory for state and input
     """
-    input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Tjunction-1_42_T-1/input.txt"
-    state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Tjunction-1_42_T-1/state.txt"
     with open(input_file, "r") as f:
         i = [ast.literal_eval(el) for el in f.readlines()]
         rp_inputs: List[InputState] = list()
@@ -173,4 +188,13 @@ def execute_planner() -> Tuple[KSTTrajectory, KSTTrajectory]:
 
 
 if __name__ == "__main__":
-    main()
+    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Over-1_1.xml"
+    planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Over-1_1/input.txt"
+    planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Over-1_1/state.txt"
+    img_save_path = "/home/tmasc/projects/cr-control/output"
+    main(
+        scenario_file=scenario_file,
+        img_save_path=img_save_path,
+        planner_input_file=planner_input_file,
+        planner_state_file=planner_state_file
+    )
