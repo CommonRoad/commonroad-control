@@ -12,10 +12,15 @@ from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
+from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
+from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
+from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 from rp_test import main as rpmain
 
-from typing import List
+from typing import List, Tuple
 
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
@@ -26,14 +31,99 @@ from commonroad_control.control.pid.pid_controller import PIDController
 
 
 def main() -> None:
+    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Over-1_1.xml"
+
+    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
+    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+
+    controller_time: float = 0.01
+    planner_time: float = 0.1
+
+
+    state_input_factory = KSTSITFactory()
+
     kst_traj, kst_input = execute_planner()
-    number_control_cycles_per_planning_cycle: int = 1
+    vehicle_params: VehicleParameters = BMW3seriesParams()
+    vehicle_model: KinematicSingleStrack = KinematicSingleStrack(params=vehicle_params, dt=0.01)
+    simulation: Simulation = Simulation(
+        vehicle_model=vehicle_model,
+        state_input_factory=state_input_factory
+    )
 
-    # TODO: add forward simulation etc. for controller
+    x_measured = kst_traj.initial_state
 
-    for idx, state in enumerate(kst_traj.points):
-        if idx == 0:
-            continue
+    traj_dict = {0: x_measured}
+
+    for step, x_desired in kst_traj.points.items():
+
+        pid_velocity: PIDController = PIDController(
+            kp=1.0,
+            ki=0,
+            kd=0
+        )
+
+        pid_steering_angle: PIDController = PIDController(
+            kp=10.0,
+            ki=0,
+            kd=0
+        )
+
+        u_a = pid_velocity.compute_control_input(
+            measured_state=x_measured.velocity,
+            desired_state=x_desired.velocity,
+            controller_time_step=controller_time
+        )
+
+        u_dv = pid_steering_angle.compute_control_input(
+            measured_state=x_measured.steering_angle,
+            desired_state=x_desired.steering_angle,
+            controller_time_step=controller_time
+        )
+
+        u_now = state_input_factory.input_from_args(
+            acceleration=u_a,
+            steering_angle_velocity=u_dv
+        )
+
+        for control_step in range(int(planner_time/controller_time)):
+            x_measured = simulation.simulate(
+                x0=x_measured,
+                u=u_now,
+                time_horizon=controller_time
+            )
+            traj_dict[step+1] = x_measured
+
+            u_a = pid_velocity.compute_control_input(
+                measured_state=x_measured.velocity,
+                desired_state=x_desired.velocity,
+                controller_time_step=controller_time
+            )
+
+            u_dv = pid_steering_angle.compute_control_input(
+                measured_state=x_measured.steering_angle,
+                desired_state=x_desired.steering_angle,
+                controller_time_step=controller_time
+            )
+
+            u_now = state_input_factory.input_from_args(
+                acceleration=u_a,
+                steering_angle_velocity=u_dv
+            )
+
+
+    simulated_traj = state_input_factory.trajectory_from_state_or_input(
+        kst_dict=traj_dict,
+        mode='input',
+        t_0=0,
+        delta_t=0.1
+    )
+
+    visualize_trajectories(
+        scenario=scenario,
+        planning_problem=planning_problem,
+        planner_trajectory=kst_traj,
+        controller_trajectory=simulated_traj
+    )
 
 
 
@@ -44,10 +134,11 @@ def main() -> None:
 
 
 
-def execute_planner() -> KSTTrajectory:
+
+def execute_planner() -> Tuple[KSTTrajectory, KSTTrajectory]:
     """
     Dummy loading precomputed Reactive Planner KST Trajectory
-    :return: kst trajectory
+    :return: kst trajectory for state and input
     """
     input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/input.txt"
     state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/state.txt"
@@ -73,7 +164,10 @@ def execute_planner() -> KSTTrajectory:
                 )
             )
     rpc = ReactivePlannerConverter()
-    return rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state'), rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='input')
+    return (
+        rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state'),
+        rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+    )
 
 
 
