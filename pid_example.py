@@ -1,4 +1,5 @@
 import copy
+import math
 import random
 import unittest
 import ast
@@ -7,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
+from commonroad_clcs.config import CLCSParams
 from commonroad_rp.state import ReactivePlannerState
 from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
@@ -26,6 +28,7 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory i
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.pid.pid_controller import PIDController
+from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
 
 
@@ -34,7 +37,8 @@ def main(
         scenario_file: Path,
         img_save_path: str,
         planner_input_file: Path,
-        planner_state_file: Path
+        planner_state_file: Path,
+        save_imgs: bool
 
 ) -> None:
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
@@ -57,11 +61,19 @@ def main(
         state_input_factory=state_input_factory
     )
 
+    clcs_traj: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
+        reference_path=np.asarray([[state.position_x, state.position_y] for state in kst_traj.points.values()]),
+        params=CLCSParams()
+    )
+
     x_measured = kst_traj.initial_state
 
     traj_dict = {0: x_measured}
 
     for step, x_desired in kst_traj.points.items():
+
+        if(step > 25):
+            break
 
         pid_velocity: PIDController = PIDController(
             kp=1.0,
@@ -70,9 +82,9 @@ def main(
         )
 
         pid_steering_angle: PIDController = PIDController(
-            kp=10.0,
-            ki=0,
-            kd=0
+            kp=2.0,
+            ki=0.00,
+            kd=1.0
         )
 
         u_a = pid_velocity.compute_control_input(
@@ -100,6 +112,12 @@ def main(
             )
             traj_dict[step+1] = x_measured
 
+            current_position_curv = clcs_traj.convert_to_curvilinear_coords(
+                x=x_measured.position_x,
+                y=x_measured.position_y
+            )
+
+
             u_a = pid_velocity.compute_control_input(
                 measured_state=x_measured.velocity,
                 desired_state=x_desired.velocity,
@@ -107,8 +125,8 @@ def main(
             )
 
             u_dv = pid_steering_angle.compute_control_input(
-                measured_state=x_measured.steering_angle,
-                desired_state=x_desired.steering_angle,
+                measured_state=current_position_curv[1],
+                desired_state=0.0,
                 controller_time_step=controller_time
             )
 
@@ -133,14 +151,15 @@ def main(
         planner_trajectory=kst_traj,
         controller_trajectory=simulated_traj,
         save_path=img_save_path,
-        save_img=True
+        save_img=save_imgs
     )
 
-    make_gif(
-        path_to_img_dir=img_save_path,
-        scenario_name=str(scenario.scenario_id),
-        num_imgs=len(kst_traj.points.values())
-    )
+    if save_imgs:
+        make_gif(
+            path_to_img_dir=img_save_path,
+            scenario_name=str(scenario.scenario_id),
+            num_imgs=len(kst_traj.points.values())
+        )
 
 
 
@@ -196,5 +215,7 @@ if __name__ == "__main__":
         scenario_file=scenario_file,
         img_save_path=img_save_path,
         planner_input_file=planner_input_file,
-        planner_state_file=planner_state_file
+        planner_state_file=planner_state_file,
+        save_imgs=False
     )
+
