@@ -72,12 +72,12 @@ def main(
 
     for step, x_desired in kst_traj.points.items():
 
-        if(step > 25):
+        if(step > 140):
             break
 
         pid_velocity: PIDController = PIDController(
             kp=1.0,
-            ki=0,
+            ki=0.01,
             kd=0
         )
 
@@ -207,15 +207,16 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_file = Path(__file__).parents[0] / "scenarios" / "ZAM_Over-1_1.xml"
-    planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Over-1_1/input.txt"
-    planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj/ZAM_Over-1_1/state.txt"
+    scenario_name = "ZAM_Tjunction-1_42_T-1"
+    scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
+    planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
+    planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
     img_save_path = "/home/tmasc/projects/cr-control/output"
     main(
         scenario_file=scenario_file,
         img_save_path=img_save_path,
         planner_input_file=planner_input_file,
         planner_state_file=planner_state_file,
-        save_imgs=False
+        save_imgs=True
     )
 
