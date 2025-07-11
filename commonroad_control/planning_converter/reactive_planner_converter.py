@@ -87,6 +87,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param mode: state or input
         :return: KSTState or KSTInput object
         """
+        # TODO: Double-check -> ReactivePlanner has position on COG but velocity is rear axle
         if mode == 'state':
             retval: KSTState = self._kst_factory.state_from_args(
                 position_x=planner_state.position[0],
