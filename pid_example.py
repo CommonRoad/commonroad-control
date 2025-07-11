@@ -215,7 +215,7 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Over-1_1"
+    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
