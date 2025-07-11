@@ -95,12 +95,6 @@ def main(
             kd=1.0
         )
 
-        pid_long_pos: PIDController = PIDController(
-            kp=0.01,
-            ki=0,
-            kd=0
-        )
-
         u_steer = pid_steering_angle.compute_control_input(
             measured_state=current_position_curv[1],
             desired_state=0.0,
@@ -113,17 +107,9 @@ def main(
             controller_time_step=controller_time
         )
 
-        u_long = pid_long_pos.compute_control_input(
-            measured_state=current_position_curv[0],
-            desired_state=x_measured.position_x,
-            controller_time_step=controller_time
-        )
-
-        u_a = u_long + u_vel
-
         u_now = state_input_factory.input_from_args(
-            acceleration=u_a,
-            steering_angle_velocity=u_steer
+            acceleration=u_vel + kst_input.points[step].acceleration,
+            steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
         )
 
         for control_step in range(int(planner_time/controller_time)):
@@ -146,14 +132,6 @@ def main(
                 controller_time_step=controller_time
             )
 
-            u_long = pid_long_pos.compute_control_input(
-                measured_state=current_position_curv[0],
-                desired_state=x_measured.position_x,
-                controller_time_step=controller_time
-            )
-
-            u_a = u_long + u_vel
-
             u_steer = pid_steering_angle.compute_control_input(
                 measured_state=current_position_curv[1],
                 desired_state=0.0,
@@ -161,8 +139,8 @@ def main(
             )
 
             u_now = state_input_factory.input_from_args(
-                acceleration=u_a,
-                steering_angle_velocity=u_steer
+                acceleration=u_vel + kst_input.points[step].acceleration,
+                steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
             )
 
 
@@ -237,7 +215,7 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Tjunction-1_42_T-1"
+    scenario_name = "ZAM_Over-1_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
