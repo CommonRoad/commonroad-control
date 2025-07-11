@@ -15,6 +15,7 @@ from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
+from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
@@ -61,8 +62,13 @@ def main(
         state_input_factory=state_input_factory
     )
 
+    clcs_line: np.ndarray = extend_ref_path_with_route_planner(
+        positional_trajectory=np.asarray([[state.position_x, state.position_y] for state in kst_traj.points.values()]),
+        lanelet_network=scenario.lanelet_network,
+    )
+
     clcs_traj: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
-        reference_path=np.asarray([[state.position_x, state.position_y] for state in kst_traj.points.values()]),
+        reference_path=clcs_line,
         params=CLCSParams()
     )
 
@@ -72,8 +78,10 @@ def main(
 
     for step, x_desired in kst_traj.points.items():
 
-        if(step > 140):
-            break
+        current_position_curv = clcs_traj.convert_to_curvilinear_coords(
+            x=x_measured.position_x,
+            y=x_measured.position_y
+        )
 
         pid_velocity: PIDController = PIDController(
             kp=1.0,
@@ -87,21 +95,35 @@ def main(
             kd=1.0
         )
 
-        u_a = pid_velocity.compute_control_input(
+        pid_long_pos: PIDController = PIDController(
+            kp=0.01,
+            ki=0,
+            kd=0
+        )
+
+        u_steer = pid_steering_angle.compute_control_input(
+            measured_state=current_position_curv[1],
+            desired_state=0.0,
+            controller_time_step=controller_time
+        )
+
+        u_vel = pid_velocity.compute_control_input(
             measured_state=x_measured.velocity,
             desired_state=x_desired.velocity,
             controller_time_step=controller_time
         )
 
-        u_dv = pid_steering_angle.compute_control_input(
-            measured_state=x_measured.steering_angle,
-            desired_state=x_desired.steering_angle,
+        u_long = pid_long_pos.compute_control_input(
+            measured_state=current_position_curv[0],
+            desired_state=x_measured.position_x,
             controller_time_step=controller_time
         )
 
+        u_a = u_long + u_vel
+
         u_now = state_input_factory.input_from_args(
             acceleration=u_a,
-            steering_angle_velocity=u_dv
+            steering_angle_velocity=u_steer
         )
 
         for control_step in range(int(planner_time/controller_time)):
@@ -118,13 +140,21 @@ def main(
             )
 
 
-            u_a = pid_velocity.compute_control_input(
+            u_vel = pid_velocity.compute_control_input(
                 measured_state=x_measured.velocity,
                 desired_state=x_desired.velocity,
                 controller_time_step=controller_time
             )
 
-            u_dv = pid_steering_angle.compute_control_input(
+            u_long = pid_long_pos.compute_control_input(
+                measured_state=current_position_curv[0],
+                desired_state=x_measured.position_x,
+                controller_time_step=controller_time
+            )
+
+            u_a = u_long + u_vel
+
+            u_steer = pid_steering_angle.compute_control_input(
                 measured_state=current_position_curv[1],
                 desired_state=0.0,
                 controller_time_step=controller_time
@@ -132,7 +162,7 @@ def main(
 
             u_now = state_input_factory.input_from_args(
                 acceleration=u_a,
-                steering_angle_velocity=u_dv
+                steering_angle_velocity=u_steer
             )
 
 
@@ -211,7 +241,7 @@ if __name__ == "__main__":
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
-    img_save_path = "/home/tmasc/projects/cr-control/output"
+    img_save_path = "/home/tmasc/projects/cr-control/output/" + scenario_name
     main(
         scenario_file=scenario_file,
         img_save_path=img_save_path,
