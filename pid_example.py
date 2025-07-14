@@ -80,25 +80,27 @@ def main(
 
     for step, x_desired in kst_traj.points.items():
 
+        x_look_ahead = kst_traj.points[min(step + 0, len(kst_traj.points.keys())-1)]
+
         current_position_curv = clcs_traj.convert_to_curvilinear_coords(
             x=x_measured.position_x,
             y=x_measured.position_y
         )
         desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
-            x=x_desired.position_x,
-            y=x_desired.position_y
+            x=x_look_ahead.position_x,
+            y=x_look_ahead.position_y
         )
 
         pid_velocity: PIDController = PIDController(
-            kp=1.0,
-            ki=0.1,
+            kp=0.0,
+            ki=0.0,
             kd=0
         )
 
         pid_steering_angle: PIDController = PIDController(
-            kp=0.017,
-            ki=0.0,
-            kd=0.0003
+            kp=0.0,
+            ki=0.000,
+            kd=0.000
         )
 
         u_steer = pid_steering_angle.compute_control_input(
@@ -132,10 +134,6 @@ def main(
             current_position_curv = clcs_traj.convert_to_curvilinear_coords(
                 x=x_measured.position_x,
                 y=x_measured.position_y
-            )
-            desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
-                x=x_desired.position_x,
-                y=x_desired.position_y
             )
 
 
@@ -241,7 +239,7 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
+    scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"

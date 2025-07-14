@@ -143,8 +143,8 @@ def save_planner_outputs(
 # Run planning
 # *************************************
 if __name__ == "__main__":
-    filename = "DEU_AachenFrankenburg-1_2621353_T-21698.xml"
-    save_root = "/home/tmasc/projects/cr-control/test/reactive_planner_traj/DEU_AachenFrankenburg-1_2621353_T-21698"
+    filename = "C-DEU_B471-2_1.xml"
+    save_root = "/home/tmasc/projects/cr-control/test/reactive_planner_traj/C-DEU_B471-2_1"
 
     scenario, planning_problem_set = CommonRoadFileReader(f"scenarios/{filename}").open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     rp_states, rp_inputs = main(config=rp_config)
     save_planner_outputs(
         rp_states=rp_states,
-        rp_inputs=rp_inputs ,
+        rp_inputs=rp_inputs,
         save_root=save_root
     )
 
