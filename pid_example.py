@@ -16,6 +16,7 @@ from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
+from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
@@ -39,8 +40,8 @@ def main(
         img_save_path: str,
         planner_input_file: Path,
         planner_state_file: Path,
-        save_imgs: bool
-
+        save_imgs: bool,
+        create_scenario: bool = True
 ) -> None:
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
@@ -50,6 +51,7 @@ def main(
 
 
     state_input_factory = KSTSITFactory()
+
 
     kst_traj, kst_input = execute_planner(
         input_file=planner_input_file,
@@ -82,22 +84,26 @@ def main(
             x=x_measured.position_x,
             y=x_measured.position_y
         )
+        desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
+            x=x_desired.position_x,
+            y=x_desired.position_y
+        )
 
         pid_velocity: PIDController = PIDController(
             kp=1.0,
-            ki=0.01,
+            ki=0.1,
             kd=0
         )
 
         pid_steering_angle: PIDController = PIDController(
-            kp=2.0,
-            ki=0.00,
-            kd=1.0
+            kp=0.017,
+            ki=0.0,
+            kd=0.0003
         )
 
         u_steer = pid_steering_angle.compute_control_input(
             measured_state=current_position_curv[1],
-            desired_state=0.0,
+            desired_state=desired_position_curv[1],
             controller_time_step=controller_time
         )
 
@@ -112,6 +118,9 @@ def main(
             steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
         )
 
+        u_now.acceleration = np.clip(u_now.acceleration, -3, 6)
+        u_now.steering_angle_velocity = np.clip(u_now.steering_angle_velocity, -0.5, 0.5)
+
         for control_step in range(int(planner_time/controller_time)):
             x_measured = simulation.simulate(
                 x0=x_measured,
@@ -124,6 +133,10 @@ def main(
                 x=x_measured.position_x,
                 y=x_measured.position_y
             )
+            desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
+                x=x_desired.position_x,
+                y=x_desired.position_y
+            )
 
 
             u_vel = pid_velocity.compute_control_input(
@@ -134,7 +147,7 @@ def main(
 
             u_steer = pid_steering_angle.compute_control_input(
                 measured_state=current_position_curv[1],
-                desired_state=0.0,
+                desired_state=desired_position_curv[1],
                 controller_time_step=controller_time
             )
 
@@ -142,6 +155,9 @@ def main(
                 acceleration=u_vel + kst_input.points[step].acceleration,
                 steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
             )
+
+            u_now.acceleration = np.clip(u_now.acceleration, -3, 6)
+            u_now.steering_angle_velocity = np.clip(u_now.steering_angle_velocity, -0.5, 0.5)
 
 
     simulated_traj = state_input_factory.trajectory_from_state_or_input(
@@ -152,22 +168,32 @@ def main(
     )
 
 
-
-    visualize_trajectories(
-        scenario=scenario,
-        planning_problem=planning_problem,
-        planner_trajectory=kst_traj,
-        controller_trajectory=simulated_traj,
-        save_path=img_save_path,
-        save_img=save_imgs
-    )
-
-    if save_imgs:
-        make_gif(
-            path_to_img_dir=img_save_path,
-            scenario_name=str(scenario.scenario_id),
-            num_imgs=len(kst_traj.points.values())
+    if create_scenario:
+        visualize_trajectories(
+            scenario=scenario,
+            planning_problem=planning_problem,
+            planner_trajectory=kst_traj,
+            controller_trajectory=simulated_traj,
+            save_path=img_save_path,
+            save_img=save_imgs
         )
+
+        if save_imgs:
+            make_gif(
+                path_to_img_dir=img_save_path,
+                scenario_name=str(scenario.scenario_id),
+                num_imgs=len(kst_traj.points.values())
+            )
+
+    visualize_desired_vs_actual_states(
+        desired_states=kst_traj,
+        actual_states=simulated_traj,
+        time_steps=list(kst_traj.points.keys()),
+        state_dim=kst_traj.dim,
+        scenario_name=str(scenario.scenario_id),
+        save_img=save_imgs,
+        save_path=img_save_path
+    )
 
 
 
@@ -225,6 +251,7 @@ if __name__ == "__main__":
         img_save_path=img_save_path,
         planner_input_file=planner_input_file,
         planner_state_file=planner_state_file,
-        save_imgs=True
+        save_imgs=True,
+        create_scenario=True
     )
 
