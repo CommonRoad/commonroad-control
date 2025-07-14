@@ -55,10 +55,10 @@ class KinematicSingleStrack(VehicleModelInterface):
         beta = cas.atan(cas.tan(delta)*self._l_r/self._l_wb)
 
         # dynamics
-        position_x_dot = v*cas.cos(psi + beta)
-        position_y_dot = v*cas.sin(psi + beta)
+        position_x_dot = v*cas.cos(psi) # + beta)
+        position_y_dot = v*cas.sin(psi) # + beta)
         velocity_dot = a
-        heading_dot = v*cas.sin(beta) / self._l_r
+        heading_dot = v*cas.tan(delta) / self._l_wb
         steering_angle_dot = delta_dot
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_dot,
