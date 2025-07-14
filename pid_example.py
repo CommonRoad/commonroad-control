@@ -98,7 +98,7 @@ def main(
         )
 
         pid_steering_angle: PIDController = PIDController(
-            kp=0.0,
+            kp=0.001,
             ki=0.000,
             kd=0.000
         )
