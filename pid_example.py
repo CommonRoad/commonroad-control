@@ -46,6 +46,8 @@ def main(
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
+    print(f"solving scnenario {str(scenario.scenario_id)}")
+
     controller_time: float = 0.01
     planner_time: float = 0.1
 
@@ -80,16 +82,19 @@ def main(
 
     for step, x_desired in kst_traj.points.items():
 
-        x_look_ahead = kst_traj.points[min(step + 0, len(kst_traj.points.keys())-1)]
+        x_look_ahead = kst_traj.points[min(step + 2, len(kst_traj.points.keys())-1)]
 
-        current_position_curv = clcs_traj.convert_to_curvilinear_coords(
-            x=x_measured.position_x,
-            y=x_measured.position_y
-        )
-        desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
-            x=x_look_ahead.position_x,
-            y=x_look_ahead.position_y
-        )
+        try:
+            current_position_curv = clcs_traj.convert_to_curvilinear_coords(
+                x=x_measured.position_x,
+                y=x_measured.position_y
+            )
+            desired_position_curv = clcs_traj.convert_to_curvilinear_coords(
+                x=x_look_ahead.position_x,
+                y=x_look_ahead.position_y
+            )
+        except:
+            print(f"failed conversion at planning step {step}")
 
         pid_velocity: PIDController = PIDController(
             kp=0.0,
@@ -99,8 +104,8 @@ def main(
 
         pid_steering_angle: PIDController = PIDController(
             kp=0.00,
-            ki=0.000,
-            kd=0.000
+            ki=0.00,
+            kd=0.00
         )
 
         u_steer = pid_steering_angle.compute_control_input(
@@ -120,8 +125,6 @@ def main(
             steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
         )
 
-        u_now.acceleration = np.clip(u_now.acceleration, -3, 6)
-        u_now.steering_angle_velocity = np.clip(u_now.steering_angle_velocity, -0.5, 0.5)
 
         for control_step in range(int(planner_time/controller_time)):
             x_measured = simulation.simulate(
@@ -131,10 +134,13 @@ def main(
             )
             traj_dict[step+1] = x_measured
 
-            current_position_curv = clcs_traj.convert_to_curvilinear_coords(
-                x=x_measured.position_x,
-                y=x_measured.position_y
-            )
+            try:
+                current_position_curv = clcs_traj.convert_to_curvilinear_coords(
+                    x=x_measured.position_x,
+                    y=x_measured.position_y
+                )
+            except:
+                print(f"failed conversion at planning_step={step} and control-step={control_step}")
 
 
             u_vel = pid_velocity.compute_control_input(
@@ -154,8 +160,6 @@ def main(
                 steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
             )
 
-            u_now.acceleration = np.clip(u_now.acceleration, -3, 6)
-            u_now.steering_angle_velocity = np.clip(u_now.steering_angle_velocity, -0.5, 0.5)
 
 
     simulated_traj = state_input_factory.trajectory_from_state_or_input(
@@ -186,7 +190,7 @@ def main(
     visualize_desired_vs_actual_states(
         desired_states=kst_traj,
         actual_states=simulated_traj,
-        time_steps=list(kst_traj.points.keys()),
+        time_steps=list(simulated_traj.points.keys())[:-2],
         state_dim=kst_traj.dim,
         scenario_name=str(scenario.scenario_id),
         save_img=save_imgs,
@@ -239,7 +243,7 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_name = "C-DEU_B471-2_1"
+    scenario_name = "ZAM_Tjunction-1_42_T-1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
