@@ -33,9 +33,10 @@ def visualize_trajectories(
     size_x: float = 10.0,
     save_img: bool = False,
     save_path: Union[str, Path] = None,
-    opacity_planning: float = 0.7,
-    opacity_control: float = 0.3,
-    use_icons: bool = False,
+    opacity_planning: float = 0.3,
+    opacity_control: float = 1.0,
+    use_icon_controlled_traj: bool = True,
+    use_icon_planned_traj: bool = False
 ) -> None:
     for step in planner_trajectory.steps:
         plt.cla()
@@ -62,33 +63,36 @@ def visualize_trajectories(
         planning_problem.draw(renderer)
 
         draw_params = copy.copy(renderer.draw_params)
-        draw_params.dynamic_obstacle.draw_icon = use_icons
         draw_params.dynamic_obstacle.trajectory.draw_trajectory = False
         draw_params.dynamic_obstacle.show_label = False
         draw_params.planning_problem.initial_state.state.draw_arrow = False
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 50
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_planning
         draw_params.time_begin = step
 
+        # planned
         planner_vehicle = planner_trajectory.to_cr_dynamic_obstacle(
             vehicle_width=vehicle_width,
             vehicle_length=vehicle_length,
             vehicle_id=30000,
         )
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#E37222"
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#9C4100"
+        draw_params.dynamic_obstacle.draw_icon = use_icon_planned_traj
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_planning
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#000000"
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#808080"
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 20
         planner_vehicle.draw(renderer, draw_params=draw_params)
 
+        # controlled
         draw_params = copy.copy(renderer.draw_params)
         controller_vehicle = controller_trajectory.to_cr_dynamic_obstacle(
             vehicle_width=vehicle_width,
             vehicle_length=vehicle_length,
             vehicle_id=30001,
         )
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#000000"
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#808080"
+        draw_params.dynamic_obstacle.draw_icon = use_icon_controlled_traj
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_control
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#E37222"
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#9C4100"
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 50
         controller_vehicle.draw(renderer, draw_params=draw_params)
 
 
