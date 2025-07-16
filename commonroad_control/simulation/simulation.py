@@ -2,6 +2,8 @@ from typing import Union, Any
 
 from scipy.integrate import solve_ivp
 
+from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
@@ -13,11 +15,11 @@ class Simulation:
     def __init__(
             self,
             vehicle_model: VehicleModelInterface,
-            state_input_factory: KSTSITFactory
+            state_input_factory: Union[DISITFactory, KSTSITFactory, DBSITFactory]
     ):
 
         self._vehicle_model: VehicleModelInterface = vehicle_model
-        self._state_input_factory: KSTSITFactory = state_input_factory
+        self._state_input_factory: Union[DISITFactory, KSTSITFactory, DBSITFactory] = state_input_factory
 
     def simulate(self, x0: StateInterface, u: InputInterface, time_horizon: float) -> Union[StateInterface, Any]:
 
@@ -30,13 +32,7 @@ class Simulation:
         x_end = res_sim.y[:, -1]
 
         # TODO: convert to state interface
-        x_forward = self._state_input_factory.state_from_args(
-            position_x=x_end[0],
-            position_y=x_end[1],
-            velocity=x_end[2],
-            heading=x_end[3],
-            steering_angle=x_end[4]
-        )
+        x_forward = self._state_input_factory.state_from_numpy_array(x_np=x_end)
 
 
         return x_forward

@@ -62,7 +62,7 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_numpy_array(
             self,
-            x_np: np.array,
+            x_np: np.ndarray,
     ) -> Union['DBState']:
         """
         Set values of class from a given array.
@@ -71,8 +71,8 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
         """
         if x_np.shape[0] != DBStateIndices.dim:
             raise ValueError(f'Dimension {x_np.shape[0]} does not match')
-        if x_np.size > 1:
-            raise ValueError(f"size of np_array should be (dim,1) but is {x_np}")
+        if x_np.ndim > 1:
+            raise ValueError(f"size of np_array should be (dim,1) but is {x_np.shape}")
 
         return DBState(
             position_x=x_np[DBStateIndices.position_x],

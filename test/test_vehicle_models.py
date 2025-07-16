@@ -1,5 +1,8 @@
 import unittest
 
+from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.simulation.simulation import Simulation
 
@@ -28,8 +31,10 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         kst = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
 
+        kst_factory: KSTSITFactory = KSTSITFactory()
+
         # init simulation
-        sim = Simulation(kst)
+        sim = Simulation(vehicle_model=kst, state_input_factory=kst_factory)
 
         # set initial state and control input
         x0 = KSTState(position_x=0.0, position_y=0.0, velocity=15.0, heading=0.0, steering_angle=0.0)
@@ -45,8 +50,10 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         db = DynamicBicycle(params=BMW3seriesParams(), dt=0.1)
 
+        dst_factory: DBSITFactory = DBSITFactory()
+
         # init simulation
-        sim = Simulation(db)
+        sim = Simulation(vehicle_model=db, state_input_factory=dst_factory)
 
         # set initial state and control input
         x0 = DBState(position_x=0.0, position_y=0.0, velocity_long=15.0, velocity_lat=0.0,
@@ -64,8 +71,10 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         di = DoubleIntegrator(params=BMW3seriesParams(), dt=0.1)
 
+        di_factory = DISITFactory()
+
         # init simulation
-        sim = Simulation(di)
+        sim = Simulation(vehicle_model=di, state_input_factory=di_factory)
 
         # set initial state and control input
         x0 = DIState(position_long=0.0, position_lat=0.0, velocity_long=10.0, velocity_lat=0.0)
