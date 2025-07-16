@@ -155,21 +155,21 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def trajectory_from_state_or_input(
             self,
-            dst_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
+            trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
             mode: Literal['state', 'input'],
             t_0: float,
             delta_t: float
     ) -> DBTrajectory:
         """
         Build trajectory from dst state or input
-        :param dst_dict: dict of time steps to dst points
+        :param trajectory_dict: dict of time steps to dst points
         :param mode:
         :param t_0:
         :param delta_t:
         :return: DST-Trajectory
         """
         return DBTrajectory(
-                points=dst_dict,
+                points=trajectory_dict,
                 mode=mode,
                 t_0=t_0,
                 delta_t=delta_t

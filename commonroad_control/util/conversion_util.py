@@ -1,6 +1,7 @@
 import math
 
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
+
 
 
 def compute_splip_angle_from_steering_angle_in_cog(

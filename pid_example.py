@@ -16,8 +16,12 @@ from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
+from commonroad_control.util.state_conversion import convert_state_kst2dst
 from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
@@ -51,16 +55,14 @@ def main(
     controller_time: float = 0.01
     planner_time: float = 0.1
 
-
-    state_input_factory = KSTSITFactory()
-
-
     kst_traj, kst_input = execute_planner(
         input_file=planner_input_file,
         state_file=planner_state_file
     )
+
+    state_input_factory = DBSITFactory()
     vehicle_params: VehicleParameters = BMW3seriesParams()
-    vehicle_model: KinematicSingleStrack = KinematicSingleStrack(params=vehicle_params, dt=controller_time)
+    vehicle_model = DynamicBicycle(params=vehicle_params, dt=controller_time)
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model,
         state_input_factory=state_input_factory
@@ -76,11 +78,15 @@ def main(
         params=CLCSParams()
     )
 
-    x_measured = kst_traj.initial_state
+    #x_measured = kst_traj.initial_state
+    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_state)
 
     traj_dict = {0: x_measured}
 
-    for step, x_desired in kst_traj.points.items():
+    for step, x_planner in kst_traj.points.items():
+
+        #x_desired = x_planner
+        x_desired = convert_state_kst2dst(x_planner)
 
         x_look_ahead = kst_traj.points[min(step + 2, len(kst_traj.points.keys())-1)]
 
@@ -115,8 +121,8 @@ def main(
         )
 
         u_vel = pid_velocity.compute_control_input(
-            measured_state=x_measured.velocity,
-            desired_state=x_desired.velocity,
+            measured_state=x_measured.velocity_long,
+            desired_state=x_desired.velocity_long,
             controller_time_step=controller_time
         )
 
@@ -144,8 +150,8 @@ def main(
 
 
             u_vel = pid_velocity.compute_control_input(
-                measured_state=x_measured.velocity,
-                desired_state=x_desired.velocity,
+                measured_state=x_measured.velocity_long,
+                desired_state=x_desired.velocity_long,
                 controller_time_step=controller_time
             )
 
@@ -163,7 +169,7 @@ def main(
 
 
     simulated_traj = state_input_factory.trajectory_from_state_or_input(
-        kst_dict=traj_dict,
+        trajectory_dict=traj_dict,
         mode='input',
         t_0=0,
         delta_t=planner_time
@@ -243,7 +249,7 @@ def execute_planner(
 
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Tjunction-1_42_T-1"
+    scenario_name = "ZAM_Over-1_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"

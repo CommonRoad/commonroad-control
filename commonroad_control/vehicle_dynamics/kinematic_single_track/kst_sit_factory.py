@@ -97,21 +97,21 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
 
     def trajectory_from_state_or_input(
             self,
-            kst_dict: Union[Dict[int, KSTState], Dict[int, KSTInput]],
+            trajectory_dict: Union[Dict[int, KSTState], Dict[int, KSTInput]],
             mode: Literal['state', 'input'],
             t_0: float,
             delta_t: float
     ) -> KSTTrajectory:
         """
         Build trajectory from kst state or input
-        :param kst_dict: dict of time steps to kst points
+        :param trajectory_dict: dict of time steps to kst points
         :param mode:
         :param t_0:
         :param delta_t:
         :return: KST-Trajectory
         """
         return KSTTrajectory(
-                points=kst_dict,
+                points=trajectory_dict,
                 mode=mode,
                 t_0=t_0,
                 delta_t=delta_t

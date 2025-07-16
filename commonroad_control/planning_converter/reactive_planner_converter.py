@@ -70,7 +70,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 mode=mode
             )
         return self._kst_factory.trajectory_from_state_or_input(
-            kst_dict=kst_dict,
+            trajectory_dict=kst_dict,
             mode=mode,
             t_0=t_0,
             delta_t=dt
@@ -177,7 +177,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 mode=mode
             )
         return self._dst_factory.trajectory_from_state_or_input(
-            dst_dict=dst_dict,
+            trajectory_dict=dst_dict,
             mode=mode,
             t_0=t_0,
             delta_t=dt
