@@ -9,6 +9,7 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+from commonroad_control.control.model_predictive_control.mpc_controller2vehicle import MPCController2Vehicle
 
 
 class TestModelPredictivecontrol(unittest.TestCase):
