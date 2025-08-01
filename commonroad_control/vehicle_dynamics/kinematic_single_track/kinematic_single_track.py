@@ -30,6 +30,26 @@ class KinematicSingleStrack(VehicleModelInterface):
     def position_to_cartesian(self, x: KSTState) -> KSTState:
         pass
 
+    def input_bounds(self) -> Tuple[KSTInput, KSTInput]:
+        """
+
+        :return:
+        """
+
+        # lower bound
+        u_lb = KSTInput(
+            acceleration=-9.0,
+            steering_angle_velocity=-0.4
+        )
+
+        # upper bound
+        u_ub = KSTInput(
+            acceleration=5.0,
+            steering_angle_velocity=0.4
+        )
+
+        return u_lb, u_ub
+
     def _dynamics_cas(self,
                       x: Union[cas.SX.sym, np.array],
                       u: Union[cas.SX.sym, np.array]) \

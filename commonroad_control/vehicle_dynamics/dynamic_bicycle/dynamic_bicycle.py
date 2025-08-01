@@ -68,7 +68,7 @@ class DynamicBicycle(VehicleModelInterface):
         alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
         alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
 
-        # compute normal forces per axle (no longitudinal load transfer)
+        # compute normal forces per axle (including longitudinal load transfer)
         fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
         fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
 

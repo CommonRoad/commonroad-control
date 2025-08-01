@@ -60,9 +60,9 @@ class DoubleIntegrator(VehicleModelInterface):
         """
 
         # lower bound
-        u_lb = DIInput(acceleration_long=-9.0, acceleration_lat=-2.0)
+        u_lb = DIInput(acceleration_long=-2.0, acceleration_lat=-2.0)
         # upper bound
-        u_ub = DIInput(acceleration_long=5.0, acceleration_lat=2.0)
+        u_ub = DIInput(acceleration_long=2.0, acceleration_lat=2.0)
 
         return u_lb, u_ub
 

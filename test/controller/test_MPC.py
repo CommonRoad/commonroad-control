@@ -36,11 +36,10 @@ class TestModelPredictivecontrol(unittest.TestCase):
         P = np.eye(DIStateIndices.dim)
 
         # Define the initial state
-        x0 = DIState(position_long=0.0, position_lat=2.0, velocity_long=5.0, velocity_lat=0.0)
         # initial state for 1-step - can be steered into the origin for delta t = 0.1
         u = -1.2
         pos = (-0.5*delta_t**2 + delta_t**2)*u
-        v = (-delta_t)*u
+        v = (-delta_t*horizon)*u
         x0 = DIState(position_long=pos, velocity_long=v, position_lat=pos, velocity_lat=v)
 
         time_state = [kk for kk in range(horizon+1)]

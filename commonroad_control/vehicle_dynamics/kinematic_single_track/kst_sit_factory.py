@@ -8,7 +8,6 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput, KSTInputIndices
 
 
-
 class KSTSITFactory(StateInputTrajectoryFactoryInterface):
     """
     Kinematic single track model factory for state, input, and trajectory.
@@ -116,6 +115,38 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
                 t_0=t_0,
                 delta_t=delta_t
             )
+
+    def trajectory_from_numpy_array(
+            self,
+            traj_np: np.array,
+            mode: Literal['state', 'input'],
+            time: List[int],
+            t_0: float,
+            delta_t: float
+    ) -> KSTTrajectory:
+        """
+
+        :param traj_np:
+        :param mode:
+        :param time:
+        :param t_0:
+        :param delta_t:
+        :return:
+        """
+        # convert trajectory to State/InputInterface
+        points_val = []
+        for kk in range(len(time)):
+            if mode == 'state':
+                points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
+            elif mode == 'input':
+                points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
+
+        return KSTTrajectory(
+            points=dict(zip(time, points_val)),
+            mode='state',
+            delta_t=delta_t,
+            t_0=t_0
+        )
 
 
 
