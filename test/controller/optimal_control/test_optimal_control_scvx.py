@@ -102,7 +102,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         # cost matrices
         cost_xx = np.zeros((KSTStateIndices.dim, KSTStateIndices.dim))
-        cost_uu = 0.1*np.eye(KSTInputIndices.dim)
+        cost_uu = 0*np.eye(KSTInputIndices.dim)
         # ... penalize deviation from desired final state
         weights = 10*np.ones((KSTStateIndices.dim,))
         weights[KSTStateIndices.steering_angle] = 0
@@ -195,6 +195,13 @@ class TestOptimalControlSCvx(unittest.TestCase):
                                                        u_ref=u_ref,
                                                        x_init=x_init,
                                                        u_init=u_init)
+
+        # check result
+        self.assertLess(np.linalg.norm(
+            np.vstack((x_sol.final_state.position_x - xf.position_x,
+                       x_sol.final_state.position_y - xf.position_y,
+                       x_sol.final_state.heading - xf.heading,
+                       x_sol.final_state.velocity - xf.velocity))),1e-5)
 
 
 

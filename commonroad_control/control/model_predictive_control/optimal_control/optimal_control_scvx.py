@@ -226,5 +226,5 @@ class OptimalControlSCvx(OptimalControl):
         :param u: candidate control input trajectory
         :return: array storing the defect at each time step
         """
-        err = x[:,1:self._horizon+1]  - np.hstack([self._vehicle_model.simulate_forward_dt(x[:,kk],u[:,kk]).full() for kk in range(self._horizon)])
+        err = x[:,1:self._horizon+1]  - np.hstack([self._vehicle_model.simulate_forward_dt(x[:,kk],u[:,kk]) for kk in range(self._horizon)])
         return np.linalg.norm(err, axis=0)
