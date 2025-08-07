@@ -10,7 +10,7 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 
 
 @dataclass(frozen=True)
-class OCPSolverParameters:
+class OCPSolverParameters(ABC):
     penalty_weight: float = 1000.0
 
 

@@ -1,7 +1,8 @@
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import cvxpy as cp
 from dataclasses import dataclass
+import warnings
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
@@ -16,6 +17,7 @@ class SCvxParameters(OCPSolverParameters):
     max_iterations: int = 10
     soft_tr_penalty_weight: float = 0.001
     convergence_tolerance: float = 1e-3
+    feasibility_tolerance: float = 1e-4
 
     def __post_init__(self):
         super().__init__(penalty_weight=self.penalty_weight)
@@ -23,7 +25,8 @@ class SCvxParameters(OCPSolverParameters):
 
 class OptimalControlSCvx(OptimalControl):
     """"
-    Successive convexification algorithm for optimal control proposed in ...
+    Successive convexification algorithm for optimal control based on
+     T. P. Reynolds et al. "A Real-Time Algorithm for Non-Convex Powered Descent Guidance", AIAA Scitech Forum, 2020
     """
     def __init__(self,
                  vehicle_model: VehicleModelInterface,
@@ -34,6 +37,8 @@ class OptimalControlSCvx(OptimalControl):
                  cost_uu: np.array,
                  cost_final: np.array,
                  ocp_parameters: SCvxParameters = SCvxParameters):
+
+        # TODO: import typehinting issue for solver parameters
 
         # init base class
         super().__init__(vehicle_model=vehicle_model,
@@ -170,27 +175,29 @@ class OptimalControlSCvx(OptimalControl):
             self._par_B.value = np.hstack(B)
 
             # solve the optimal control problem
-            self._ocp.solve(solver='CLARABEL', verbose=True) # abstol=1e-6, reltol=1e-6)
+            self._ocp.solve(solver='CLARABEL', verbose=True)
 
             # extract (candidate) solution
             x_sol = self._x.value
             u_sol = self._u.value
 
-            # compute the defect
-            #TODO: compute defect (and include in convergence criterion?)
-            # defect = np.linalg.norm(self._par_x_lin.value - x_sol, 'fro')
-
             # save solution
-            self._iteration_history.append((x_sol.copy(), u_sol.copy())) #, defect))
+            self._iteration_history.append((x_sol.copy(), u_sol.copy()))
 
             # check convergence
-            if (float(np.linalg.norm(x_sol - self._par_x_lin.value)) < self._ocp_parameters.convergence_tolerance
-                    and float(np.linalg.norm(u_sol - self._par_u_lin.value)) < self._ocp_parameters.convergence_tolerance):
+            if (float(np.max(np.abs(x_sol - self._par_x_lin.value))) < self._ocp_parameters.convergence_tolerance
+                    and float(np.max(np.abs(u_sol - self._par_u_lin.value))) < self._ocp_parameters.convergence_tolerance):
                 break
 
             # Update the initial guess
             self._par_x_lin.value = x_sol
             self._par_u_lin.value = u_sol
+
+        # check feasibility
+        # ... compute the defect
+        defect = self._compute_defect(x_sol, u_sol)
+        if float(np.max(defect)) > self._ocp_parameters.feasibility_tolerance:
+            warnings.warn("SCvx algorithm converged to a dynamically infeasible solution!")
 
         x_sol = self._sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
@@ -209,3 +216,15 @@ class OptimalControlSCvx(OptimalControl):
         )
 
         return x_sol, u_sol, self._iteration_history
+
+    def _compute_defect(self,
+                        x: np.array,
+                        u: np.array) -> np.array:
+        """
+        Computes the defect, which is the error in the predicted state trajectory, at each time step.
+        :param x: predicted state trajectory
+        :param u: candidate control input trajectory
+        :return: array storing the defect at each time step
+        """
+        err = x[:,1:self._horizon+1]  - np.hstack([self._vehicle_model.simulate_forward_dt(x[:,kk],u[:,kk]).full() for kk in range(self._horizon)])
+        return np.linalg.norm(err, axis=0)

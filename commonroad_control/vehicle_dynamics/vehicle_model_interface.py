@@ -34,6 +34,27 @@ class VehicleModelInterface(ABC):
     def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
         pass
 
+    def simulate_forward_dt(self,
+                            x: Union[StateInterface, np.array],
+                            u: Union[InputInterface, np.array]) \
+            -> np.array:
+
+        # convert state and input to arrays
+        if isinstance(x, StateInterface):
+            x_np = x.convert_to_array()
+        else:
+            x_np = x
+
+        if isinstance(u, InputInterface):
+            u_np = u.convert_to_array()
+        else:
+            u_np = u
+
+        # evaluate discretized dynamics at (x,u)
+        x_next = self._dynamics_dt(x_np, u_np).full()
+
+        return x_next
+
     def _dynamics_ct(self,
                      x: np.array,
                      u: np.array) \
@@ -112,11 +133,6 @@ class VehicleModelInterface(ABC):
         jac_u = cas.Function("jac_dynamics_dt", [xk, uk],
                                   [cas.jacobian(x_next(xk, uk), uk)])
         return x_next, jac_x, jac_u
-
-    # @abstractmethod
-    # def input_bounds(self) -> Tuple[InputInterface, InputInterface]:
-    #     pass
-
 
     @property
     def state_dimension(self):
