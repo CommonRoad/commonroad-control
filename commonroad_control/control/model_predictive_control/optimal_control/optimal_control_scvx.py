@@ -8,6 +8,8 @@ from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleM
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
+
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import OptimalControl, OCPSolverParameters
 
 
@@ -136,7 +138,7 @@ class OptimalControlSCvx(OptimalControl):
               u_ref: TrajectoryInterface,
               x_init: TrajectoryInterface,
               u_init: TrajectoryInterface,
-              ) -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array, np.array]]]:
+              ) -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
 
         # reset iteration history
         self._iteration_history = []
@@ -201,7 +203,7 @@ class OptimalControlSCvx(OptimalControl):
 
         x_sol = self._sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
-            mode='state',
+            mode=TrajectoryMode.State,
             time=time_state,
             t_0=t_0,
             delta_t=self._delta_t
@@ -209,7 +211,7 @@ class OptimalControlSCvx(OptimalControl):
 
         u_sol = self._sit_factory.trajectory_from_numpy_array(
             traj_np=u_sol,
-            mode='input',
+            mode=TrajectoryMode.Input,
             time=time_input,
             t_0=t_0,
             delta_t=self._delta_t

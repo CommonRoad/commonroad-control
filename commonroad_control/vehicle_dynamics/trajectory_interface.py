@@ -1,11 +1,12 @@
 import math
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import Any, Union, Dict, Optional, Tuple, Literal, List
+from typing import Any, Union, Dict, Optional, Tuple, List
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 
 @dataclass
@@ -13,7 +14,7 @@ class TrajectoryInterface(ABC):
     # TODO Move some stuff to properties for access control as frozen does not work in our case?
     points: Dict[int, Any]
     delta_t: float
-    mode: Literal['state', 'input']
+    mode: TrajectoryMode
     t_0: float = 0
     steps: List[int] = None
     t_final: Optional[float] = None

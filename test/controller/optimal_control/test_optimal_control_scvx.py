@@ -6,6 +6,8 @@ import scipy as sp
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
 
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
+
 from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
@@ -52,15 +54,35 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         # reference trajectory
         x_ref_np = np.zeros((DIStateIndices.dim, horizon+1))
-        x_ref = sit_factory.trajectory_from_numpy_array(traj_np=x_ref_np, mode='state', time=time_state,  t_0=0, delta_t=delta_t)
+        x_ref = sit_factory.trajectory_from_numpy_array(
+            traj_np=x_ref_np,
+            mode=TrajectoryMode.State,
+            time=time_state,
+            t_0=0,
+            delta_t=delta_t)
         u_ref_np = np.zeros((DIInputIndices.dim, horizon))
-        u_ref = sit_factory.trajectory_from_numpy_array(traj_np=u_ref_np, mode='input', time=time_input,t_0=0, delta_t=delta_t)
+        u_ref = sit_factory.trajectory_from_numpy_array(
+            traj_np=u_ref_np,
+            mode=TrajectoryMode.Input,
+            time=time_input,
+            t_0=0,
+            delta_t=delta_t)
 
         # initial guess/ reference for linearization
         x_init_np = np.zeros((DIStateIndices.dim, horizon+1))
-        x_init = sit_factory.trajectory_from_numpy_array(traj_np=x_init_np, mode='state', time=time_state, t_0=0, delta_t=delta_t)
+        x_init = sit_factory.trajectory_from_numpy_array(
+            traj_np=x_init_np,
+            mode=TrajectoryMode.State,
+            time=time_state,
+            t_0=0,
+            delta_t=delta_t)
         u_init_np = np.zeros((DIInputIndices.dim, horizon))
-        u_init = sit_factory.trajectory_from_numpy_array(traj_np=u_init_np, mode='input', time=time_input, t_0=0, delta_t=delta_t)
+        u_init = sit_factory.trajectory_from_numpy_array(
+            traj_np=u_init_np,
+            mode=TrajectoryMode.Input,
+            time=time_input,
+            t_0=0,
+            delta_t=delta_t)
 
         # solver parameters
         ocp_parameters = SCvxParameters(max_iterations=1,
@@ -132,14 +154,14 @@ class TestOptimalControlSCvx(unittest.TestCase):
         x_ref_np[:,-1] = xf.convert_to_array()
         x_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=x_ref_np,
-            mode='state',
+            mode=TrajectoryMode.State,
             time=time_state,
             t_0=0,
             delta_t=delta_t)
         u_ref_np = np.zeros((KSTInputIndices.dim, horizon))
         u_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=u_ref_np,
-            mode='input',
+            mode=TrajectoryMode.Input,
             time=time_input,
             t_0=0,
             delta_t=delta_t)
@@ -157,7 +179,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
             x_init_np[:,kk] = x_init_interp_fun(kk / horizon)
         x_init = sit_factory.trajectory_from_numpy_array(
             traj_np=x_init_np,
-            mode='state',
+            mode=TrajectoryMode.State,
             time=time_state,
             t_0=0,
             delta_t=delta_t
@@ -166,12 +188,11 @@ class TestOptimalControlSCvx(unittest.TestCase):
         u_init_np = np.zeros((KSTInputIndices.dim, horizon))
         u_init = sit_factory.trajectory_from_numpy_array(
             traj_np=u_init_np,
-            mode='input',
+            mode=TrajectoryMode.Input,
             time=time_input,
             t_0=0,
             delta_t=delta_t
         )
-
 
         # solver parameters
         ocp_parameters = SCvxParameters(

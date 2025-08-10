@@ -1,6 +1,13 @@
 from typing import Union, Callable
 import numpy as np
 import casadi as cas
+import enum
+
+
+@enum.unique
+class TrajectoryMode(enum.Enum):
+    State = 'state'
+    Input = 'mode'
 
 
 def rk4_integrator(

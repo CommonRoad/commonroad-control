@@ -39,6 +39,6 @@ class OptimalControl(ABC):
               u_ref: TrajectoryInterface,
               x_init: TrajectoryInterface,
               u_init: TrajectoryInterface) \
-            -> Tuple[np.array, np.array, List[Tuple[np.array, np.array, np.array]]]:
+            -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
         pass
 

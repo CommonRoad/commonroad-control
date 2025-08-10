@@ -1,11 +1,14 @@
-from typing import Union, Any, Dict, Literal
+from typing import Union, Dict, List
 
 import numpy as np
+
+from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBStateIndices, DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 
 
 class DBSITFactory(StateInputTrajectoryFactoryInterface):
@@ -103,60 +106,43 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
             steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity]
         )
 
-
-    def state_from_args(
+    def trajectory_from_numpy_array(
             self,
-            position_x: float,
-            position_y: float,
-            velocity_long: float,
-            velocity_lat: float,
-            heading: float,
-            yaw_rate: float,
-            steering_angle: float
-    ) -> Union[Any]:
+            traj_np: np.array,
+            mode: TrajectoryMode,
+            time: List[int],
+            t_0: float,
+            delta_t: float
+    ) -> TrajectoryInterface:
         """
 
-        :param position_x:
-        :param position_y:
-        :param velocity_long:
-        :param velocity_lat:
-        :param heading:
-        :param yaw_rate:
-        :param steering_angle:
+        :param traj_np:
+        :param mode:
+        :param time:
+        :param t_0:
+        :param delta_t:
         :return:
         """
-        return DBState(
-            position_x=position_x,
-            position_y=position_y,
-            velocity_long=velocity_long,
-            velocity_lat=velocity_lat,
-            heading=heading,
-            yaw_rate=yaw_rate,
-            steering_angle=steering_angle
+
+        points = []
+        for kk in range(len(time)):
+            if mode == TrajectoryMode.State:
+                points.append(self.state_from_numpy_array(traj_np[:, kk]))
+            elif mode == TrajectoryMode.Input:
+                points.append(self.input_from_numpy_array(traj_np[:, kk]))
+
+
+        return DBTrajectory(
+            points=dict(zip(time, points)),
+            mode=mode,
+            delta_t=delta_t,
+            t_0=t_0
         )
-
-
-    def input_from_args(
-            self,
-            acceleration: float,
-            steering_angle_velocity: float
-    ) -> Union[Any]:
-        """
-
-        :param acceleration:
-        :param steering_angle_velocity:
-        :return:
-        """
-        return DBInput(
-            acceleration=acceleration,
-            steering_angle_velocity=steering_angle_velocity
-        )
-
 
     def trajectory_from_state_or_input(
             self,
             trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             t_0: float,
             delta_t: float
     ) -> DBTrajectory:

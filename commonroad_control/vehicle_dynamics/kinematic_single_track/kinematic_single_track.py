@@ -50,6 +50,39 @@ class KinematicSingleStrack(VehicleModelInterface):
 
         return u_lb, u_ub
 
+    def _dynamics_cas_clcs(self,
+                           x: Union[cas.SX.sym, np.array],
+                           u: Union[cas.SX.sym, np.array],
+                           p: Union[cas.SX.sym, np.array]):
+        """
+
+        :param x:
+        :param u:
+        :param p: reference parameters, e.g.
+        :return:
+        """
+
+        # compute cartesian dynamics
+        f = self._dynamics_cas(x, u)
+
+        # extract state
+        pos_y = x[KSTStateIndices.position_y]
+        v = x[KSTStateIndices.velocity]
+        psi = x[KSTStateIndices.heading]
+        delta = x[KSTStateIndices.steering_angle]
+
+        # extract parameters
+        kappa_ref = p.curvature
+
+        # compute slip angle
+        beta = cas.atan(cas.tan(delta) * self._l_r / self._l_wb)
+
+        # dynamics
+        f[KSTStateIndices.position_x] = v*cas.cos(psi-psi_ref)/(1 - pos_y*kappa_ref)
+        f[KSTStateIndices.position_y] = v * cas.sin(psi - psi_ref)
+
+        return f
+
     def _dynamics_cas(self,
                       x: Union[cas.SX.sym, np.array],
                       u: Union[cas.SX.sym, np.array]) \
