@@ -4,7 +4,7 @@ import random
 import unittest
 import ast
 from pathlib import Path
-
+import os
 
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
@@ -13,6 +13,7 @@ from commonroad_rp.state import ReactivePlannerState
 from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
@@ -170,7 +171,7 @@ def main(
 
     simulated_traj = state_input_factory.trajectory_from_state_or_input(
         trajectory_dict=traj_dict,
-        mode='input',
+        mode=TrajectoryMode.Input,
         t_0=0,
         delta_t=planner_time
     )
@@ -242,8 +243,12 @@ def execute_planner(
             )
     rpc = ReactivePlannerConverter()
     return (
-        rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state'),
-        rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+        rpc.trajectory_p2c_kst(
+            planner_traj=rp_states,
+            mode=TrajectoryMode.State),
+        rpc.trajectory_p2c_kst(
+            planner_traj=rp_inputs,
+            mode=TrajectoryMode.Input)
     )
 
 
@@ -253,7 +258,8 @@ if __name__ == "__main__":
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
-    img_save_path = "/home/tmasc/projects/cr-control/output/" + scenario_name
+    dirname = os.path.dirname(__file__)
+    img_save_path = dirname + "/output/" + scenario_name
     main(
         scenario_file=scenario_file,
         img_save_path=img_save_path,

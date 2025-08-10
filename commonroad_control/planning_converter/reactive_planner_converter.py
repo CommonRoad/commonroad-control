@@ -11,6 +11,7 @@ from commonroad_control.util.conversion_util import (
     compute_velocity_components_from_steering_angle_in_cog,
     compute_total_velocity_from_components
 )
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -51,7 +52,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def trajectory_p2c_kst(
             self,
             planner_traj: Union[List['ReactivePlannerState'], List[InputState]],
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             t_0: float = 0.0,
             dt: float = 0.1
     ) -> KSTTrajectory:
@@ -79,7 +80,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def sample_p2c_kst(
             self,
             planner_state: Union[ReactivePlannerState, InputState],
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[KSTState, KSTInput]:
         """
         Convert one state or input of reactive planner to kst
@@ -88,7 +89,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :return: KSTState or KSTInput object
         """
         # TODO: Double-check -> ReactivePlanner has position on COG but velocity is rear axle
-        if mode == 'state':
+        if mode == TrajectoryMode.State:
             retval: KSTState = self._kst_factory.state_from_args(
                 position_x=planner_state.position[0],
                 position_y=planner_state.position[1],
@@ -96,7 +97,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 heading=planner_state.orientation,
                 steering_angle=planner_state.steering_angle
             )
-        else:
+        elif mode == TrajectoryMode.Input:
             retval: KSTInput = self._kst_factory.input_from_args(
                 acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed,
@@ -109,22 +110,23 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def trajectory_c2p_kst(
             self,
             kst_traj: KSTTrajectory,
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
     ) -> Union[List[ReactivePlannerState], List[InputState]]:
         ordered_points_by_step = dict(sorted(kst_traj.points.items()))
         retval: List[ReactivePlannerState] = list()
         for step, point in ordered_points_by_step.items():
             retval.append(
-                self.sample_c2p_kst(kst_state=point, mode=mode, time_step=step)
+                self.sample_c2p_kst(
+                    kst_state=point,
+                    mode=mode,
+                    time_step=step)
             )
         return retval
-
-
 
     def sample_c2p_kst(
             self,
             kst_state: Union[KSTState, KSTInput],
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             time_step: int
     ) -> Union[ReactivePlannerState, InputState]:
         """
@@ -134,7 +136,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return:
         """
-        if mode == 'state':
+        if mode == TrajectoryMode.State:
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
                 position=np.asarray([kst_state.position_x, kst_state.position_y]),
@@ -143,7 +145,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 steering_angle=kst_state.steering_angle,
                 yaw_rate=0
             )
-        else:
+        elif mode == TrajectoryMode.Input:
             retval: InputState = InputState(
                 steering_angle_speed=kst_state.steering_angle_velocity,
                 acceleration=kst_state.acceleration,
@@ -151,14 +153,11 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             )
         return retval
 
-
-
-
     # --- DST ---
     def trajectory_p2c_dst(
             self,
             planner_traj: Union[List['ReactivePlannerState'], List[InputState]],
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             t_0: float = 0.0,
             dt: float = 0.1
     ) -> DBTrajectory:
@@ -188,7 +187,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def sample_p2c_dst(
             self,
             planner_state: Union[ReactivePlannerState, InputState],
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[DBState, DBInput]:
         """
         Create dynamic-single-track state or input from reactive planner
@@ -196,7 +195,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param mode:
         :return: DBState or DBInput
         """
-        if mode == 'state':
+        if mode == TrajectoryMode.State:
             v_lon, v_lat = compute_velocity_components_from_steering_angle_in_cog(
                 steering_angle=planner_state.steering_angle,
                 velocity=planner_state.velocity,
@@ -213,7 +212,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 steering_angle=planner_state.steering_angle,
                 heading=planner_state.orientation
             )
-        else:
+        elif TrajectoryMode.Input:
             retval: DBInput = self._dst_factory.input_from_args(
                 acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed
@@ -225,7 +224,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def trajectory_c2p_dst(
             self,
             dst_traj: DBTrajectory,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         raise NotImplementedError("Currently not implemented")
 
@@ -233,7 +232,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def sample_c2p_dst(
             self,
             dst_state: Union[DBState, DBInput],
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             time_step: int,
     ) -> Union[ReactivePlannerState, InputState]:
         """
@@ -243,7 +242,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return: ReactivePlannerState or InputState
         """
-        if mode == 'state':
+        if mode == TrajectoryMode.State:
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
                 position=np.asarray([dst_state.position_x, dst_state.position_y]),
@@ -254,11 +253,10 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 steering_angle=dst_state.steering_angle,
                 yaw_rate=dst_state.yaw_rate
             )
-        else:
+        elif mode == TrajectoryMode.Input:
             retval: InputState = InputState(
                 steering_angle_speed=dst_state.steering_angle_velocity,
                 acceleration=dst_state.acceleration,
                 time_step=time_step
             )
         return retval
-
