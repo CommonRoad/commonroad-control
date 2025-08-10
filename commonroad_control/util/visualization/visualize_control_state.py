@@ -13,7 +13,6 @@ def visualize_desired_vs_actual_states(
     actual_states: Union[TrajectoryInterface, KSTTrajectory],
     time_steps: List[int],
     state_dim: int,
-    scenario_name: str,
     state_names: Optional[List[str]] = None,
     save_img: bool = False,
     save_path: Union[str, Path] = None,
@@ -47,9 +46,9 @@ def visualize_desired_vs_actual_states(
 
 
     if save_img:
-        save_dir = os.path.join(save_path, str(scenario_name), "control")
+        save_dir = os.path.join(save_path, "control")
         save_file: str = os.path.join(
-            save_path, str(scenario_name),  "control", "states.png"
+            save_path, "control", "states.png"
         )
         os.makedirs(save_dir, exist_ok=True)  # Ensure the directory exists
         plt.savefig(save_file, format="png")
@@ -78,7 +77,7 @@ def visualize_desired_vs_actual_states(
 
 
     if save_img:
-        save_dir = os.path.join(save_path, str(scenario_name), "control")
+        save_dir = os.path.join(save_path, "control")
         save_file: str = os.path.join(
             save_dir, "error.png"
         )

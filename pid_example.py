@@ -42,7 +42,7 @@ from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
 def main(
         scenario_file: Path,
-        img_save_path: str,
+        img_save_path: Path,
         planner_input_file: Path,
         planner_state_file: Path,
         save_imgs: bool,
@@ -199,7 +199,6 @@ def main(
         actual_states=simulated_traj,
         time_steps=list(simulated_traj.points.keys())[:-2],
         state_dim=kst_traj.dim,
-        scenario_name=str(scenario.scenario_id),
         save_img=save_imgs,
         save_path=img_save_path
     )
@@ -258,8 +257,7 @@ if __name__ == "__main__":
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
     planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
-    dirname = os.path.dirname(__file__)
-    img_save_path = dirname + "/output/" + scenario_name
+    img_save_path = Path(__file__).parents[0] / "output" / scenario_name
     main(
         scenario_file=scenario_file,
         img_save_path=img_save_path,
@@ -268,4 +266,3 @@ if __name__ == "__main__":
         save_imgs=True,
         create_scenario=True
     )
-
