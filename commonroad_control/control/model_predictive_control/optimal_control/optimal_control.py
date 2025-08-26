@@ -14,7 +14,7 @@ class OCPSolverParameters(ABC):
     penalty_weight: float = 1000.0
 
 
-class OptimalControl(ABC):
+class OptimalControlSolver(ABC):
     def __init__(self,
                  vehicle_model: VehicleModelInterface,
                  sit_factory: StateInputTrajectoryFactoryInterface,
@@ -22,15 +22,15 @@ class OptimalControl(ABC):
                  delta_t: float,
                  ocp_parameters: OCPSolverParameters):
 
-        self._vehicle_model = vehicle_model
-        self._sit_factory = sit_factory
+        self.vehicle_model = vehicle_model
+        self.sit_factory = sit_factory
         self._ocp_parameters = ocp_parameters
-        self._delta_t = delta_t
+        self.delta_t = delta_t
 
         # problem parameters
-        self._horizon = horizon
-        self._nx = self._vehicle_model.state_dimension
-        self._nu = self._vehicle_model.input_dimension
+        self.horizon = horizon
+        self._nx = self.vehicle_model.state_dimension
+        self._nu = self.vehicle_model.input_dimension
 
     @abstractmethod
     def solve(self,

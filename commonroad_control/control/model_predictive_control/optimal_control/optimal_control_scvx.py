@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Union
+from typing import List, Tuple
 import cvxpy as cp
 from dataclasses import dataclass
 import warnings
@@ -10,7 +10,8 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
-from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import OptimalControl, OCPSolverParameters
+from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import (OptimalControlSolver,
+                                                                                                 OCPSolverParameters)
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class SCvxParameters(OCPSolverParameters):
         super().__init__(penalty_weight=self.penalty_weight)
 
 
-class OptimalControlSCvx(OptimalControl):
+class OptimalControlSCvx(OptimalControlSolver):
     """"
     Successive convexification algorithm for optimal control based on
      T. P. Reynolds et al. "A Real-Time Algorithm for Non-Convex Powered Descent Guidance", AIAA Scitech Forum, 2020
@@ -51,8 +52,8 @@ class OptimalControlSCvx(OptimalControl):
 
         # optimal control problem parameters
         self._horizon = horizon
-        self._nx = self._vehicle_model.state_dimension
-        self._nu = self._vehicle_model.input_dimension
+        self._nx = self.vehicle_model.state_dimension
+        self._nu = self.vehicle_model.input_dimension
         self._cost_xx = cost_xx
         self._cost_uu = cost_uu
         self._cost_final = cost_final
@@ -100,19 +101,19 @@ class OptimalControlSCvx(OptimalControl):
                                @ (self._u[:, kk] - self._par_u_lin[:, kk]))]
 
             # # add nonlinear constraints
-            # soc_constraints = self._vehicle_model.nonlinConstraints(self._x[kk], self._u[kk], kk)
+            # soc_constraints = self.vehicle_model.nonlinConstraints(self._x[kk], self._u[kk], kk)
             # constraints += soc_constraints
 
         # terminal cost
         cost += cp.quad_form(self._x[:, self._horizon] - self._par_x_ref[:, self._horizon], self._cost_final)
 
         # control input bounds
-        u_lb, u_ub = self._vehicle_model.input_bounds()
+        u_lb, u_ub = self.vehicle_model.input_bounds()
         constraints.append(self._u >= np.tile(np.reshape(u_lb.convert_to_array(),(2,1)), (1,self._horizon)))
         constraints.append(self._u <= np.tile(np.reshape(u_ub.convert_to_array(), (2,1)), (1,self._horizon)))
 
         # # state bounds
-        # x_mat_lb, x_lb, x_mat_ub, x_ub = self._vehicle_model.state_bounds()
+        # x_mat_lb, x_lb, x_mat_ub, x_ub = self.vehicle_model.state_bounds()
         # constraints += [x_lb <= x_mat_lb @ self._x,
         #                 x_mat_ub @ self._x <= x_ub]
 
@@ -147,8 +148,8 @@ class OptimalControlSCvx(OptimalControl):
         self._par_x0.value = x0.convert_to_array()
 
         t_0 = x_ref.t_0
-        time_state = [t_0 + self._delta_t*kk for kk in range(self._horizon+1)]
-        time_input = [t_0 + self._delta_t*kk for kk in range(self._horizon)]
+        time_state = [t_0 + self.delta_t * kk for kk in range(self._horizon + 1)]
+        time_input = [t_0 + self.delta_t * kk for kk in range(self._horizon)]
 
         # set reference trajectories (cost function)
         self._par_x_ref.value = x_ref.convert_to_numpy_array(time_state)
@@ -167,7 +168,7 @@ class OptimalControlSCvx(OptimalControl):
             A = []
             B = []
             for kk in range(self._horizon):
-                tmp_x, tmp_A, tmp_B = self._vehicle_model.linearize_dt_at(
+                tmp_x, tmp_A, tmp_B = self.vehicle_model.linearize_dt_at(
                     self._par_x_lin.value[:, kk], self._par_u_lin.value[:, kk])
                 x_next.append(tmp_x)
                 A.append(tmp_A)
@@ -201,32 +202,33 @@ class OptimalControlSCvx(OptimalControl):
         if float(np.max(defect)) > self._ocp_parameters.feasibility_tolerance:
             warnings.warn("SCvx algorithm converged to a dynamically infeasible solution!")
 
-        x_sol = self._sit_factory.trajectory_from_numpy_array(
+        x_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
             mode=TrajectoryMode.State,
             time=time_state,
             t_0=t_0,
-            delta_t=self._delta_t
+            delta_t=self.delta_t
         )
 
-        u_sol = self._sit_factory.trajectory_from_numpy_array(
+        u_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=u_sol,
             mode=TrajectoryMode.Input,
             time=time_input,
             t_0=t_0,
-            delta_t=self._delta_t
+            delta_t=self.delta_t
         )
 
         return x_sol, u_sol, self._iteration_history
 
     def _compute_defect(self,
                         x: np.array,
-                        u: np.array) -> np.array:
+                        u: np.array) \
+            -> np.array:
         """
         Computes the defect, which is the error in the predicted state trajectory, at each time step.
         :param x: predicted state trajectory
         :param u: candidate control input trajectory
         :return: array storing the defect at each time step
         """
-        err = x[:,1:self._horizon+1]  - np.hstack([self._vehicle_model.simulate_forward_dt(x[:,kk],u[:,kk]) for kk in range(self._horizon)])
+        err = x[:,1:self._horizon+1]  - np.hstack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk]) for kk in range(self._horizon)])
         return np.linalg.norm(err, axis=0)
