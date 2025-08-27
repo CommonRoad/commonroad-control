@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 import scipy as sp
 
-from commonroad_control.control.controller import Controller
+from commonroad_control.control.control import Control
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import OptimalControlSolver
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
@@ -10,7 +10,7 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 
-class ModelPredictiveControl(Controller):
+class ModelPredictiveControl(Control):
     def __init__(self,
                  ocp_solver: OptimalControlSolver):
 

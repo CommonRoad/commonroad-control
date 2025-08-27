@@ -65,7 +65,7 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_numpy_array(
             self,
-            x_np: np.ndarray,
+            x_np: np.array,
     ) -> Union['DBState']:
         """
         Set values of class from a given array.
@@ -105,6 +105,28 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
             acceleration=u_np[DBInputIndices.acceleration],
             steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity]
         )
+
+    def trajectory_from_state_or_input(
+            self,
+            trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
+            mode: TrajectoryMode,
+            t_0: float,
+            delta_t: float
+   ) -> DBTrajectory:
+        """
+        Build trajectory from db state or input
+        :param trajectory_dict: dict of time steps to kst points
+        :param mode:
+        :param t_0:
+        :param delta_t:
+        :return: KST-Trajectory
+        """
+        return DBTrajectory(
+                points=trajectory_dict,
+                mode=mode,
+                t_0=t_0,
+                delta_t=delta_t
+            )
 
     def trajectory_from_numpy_array(
             self,

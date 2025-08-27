@@ -6,7 +6,7 @@ from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from typing import Any
 
 
-class Controller(ABC):
+class Control(ABC):
     def __init__(self):
         pass
 

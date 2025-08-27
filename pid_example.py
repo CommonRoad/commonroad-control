@@ -34,7 +34,7 @@ from typing import List, Tuple
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
-from commonroad_control.control.pid.pid_controller import PIDController
+from commonroad_control.control.pid.pid_controller import PIDControl
 from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
 
@@ -103,13 +103,13 @@ def main(
         except:
             print(f"failed conversion at planning step {step}")
 
-        pid_velocity: PIDController = PIDController(
+        pid_velocity: PIDControl = PIDControl(
             kp=0.0,
             ki=0.0,
             kd=0
         )
 
-        pid_steering_angle: PIDController = PIDController(
+        pid_steering_angle: PIDControl = PIDControl(
             kp=0.00,
             ki=0.00,
             kd=0.00

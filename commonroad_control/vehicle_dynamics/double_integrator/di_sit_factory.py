@@ -1,6 +1,7 @@
-from typing import Union, List, Any
+from typing import Union, List, Any, Dict
 import numpy as np
 
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
@@ -72,6 +73,28 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             position_lat=x_np[DIStateIndices.position_lat],
             velocity_long=x_np[DIStateIndices.velocity_long],
             velocity_lat=x_np[DIStateIndices.velocity_lat]
+        )
+
+    def trajectory_from_state_or_input(
+            self,
+            trajectory_dict: Union[Dict[int, DIState], Dict[int, DIInput]],
+            mode: TrajectoryMode,
+            t_0: float,
+            delta_t: float
+    ) -> DBTrajectory:
+        """
+        Build trajectory from di state or input
+        :param trajectory_dict: dict of time steps to kst points
+        :param mode:
+        :param t_0:
+        :param delta_t:
+        :return: KST-Trajectory
+        """
+        return DBTrajectory(
+            points=trajectory_dict,
+            mode=mode,
+            t_0=t_0,
+            delta_t=delta_t
         )
 
     def trajectory_from_numpy_array(

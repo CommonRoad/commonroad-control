@@ -19,7 +19,7 @@ class DBStateIndices(StateInterfaceIndex):
     velocity_lat: int = 3
     heading: int = 4
     yaw_rate: int = 5
-    steering_angle = 6
+    steering_angle: int = 6
 
 
 @dataclass
