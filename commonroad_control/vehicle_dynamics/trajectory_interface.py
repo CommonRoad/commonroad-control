@@ -18,15 +18,15 @@ class TrajectoryInterface(ABC):
     t_0: float = 0
     steps: List[int] = None
     t_final: Optional[float] = None
-    initial_state: Optional[Any] = None
-    final_state: Optional[Any] = None
+    initial_point: Optional[Any] = None
+    final_point: Optional[Any] = None
     dim: Optional[int] = None
 
     def __post_init__(self):
         self.sanity_check()
         self.dim = self.points[0].dim
-        self.initial_state = self.points[min(self.points.keys())]
-        self.final_state = self.points[max(self.points.keys())]
+        self.initial_point = self.points[min(self.points.keys())]
+        self.final_point = self.points[max(self.points.keys())]
         self.steps = sorted(self.points.keys())
         self.t_final = self.t_0 + len(self.points.keys()) * self.delta_t
 

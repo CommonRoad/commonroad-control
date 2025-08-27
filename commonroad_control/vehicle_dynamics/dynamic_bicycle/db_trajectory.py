@@ -47,7 +47,7 @@ class DBTrajectory(TrajectoryInterface):
 
         else:
             # convert to CR obstacle
-            initial_state: InitialState = self.initial_state.to_cr_initial_state(time_step=min(self.points.keys()))
+            initial_state: InitialState = self.initial_point.to_cr_initial_state(time_step=min(self.points.keys()))
             state_list: List[CustomState] = [
                 state.to_cr_custom_state(time_step=step) for step, state in self.points.items()
             ]

@@ -106,7 +106,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
                                                        u_init=u_init)
 
         # check result
-        self.assertLess(np.linalg.norm(x_sol.final_state.convert_to_array()),1e-5)
+        self.assertLess(np.linalg.norm(x_sol.final_point.convert_to_array()), 1e-5)
 
     def test_nonconvex_ocp(self) -> None:
         """
@@ -219,10 +219,10 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         # check result
         self.assertLess(np.linalg.norm(
-            np.vstack((x_sol.final_state.position_x - xf.position_x,
-                       x_sol.final_state.position_y - xf.position_y,
-                       x_sol.final_state.heading - xf.heading,
-                       x_sol.final_state.velocity - xf.velocity))),1e-5)
+            np.vstack((x_sol.final_point.position_x - xf.position_x,
+                       x_sol.final_point.position_y - xf.position_y,
+                       x_sol.final_point.heading - xf.heading,
+                       x_sol.final_point.velocity - xf.velocity))),1e-5)
 
 
 

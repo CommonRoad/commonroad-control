@@ -99,14 +99,14 @@ class TestReactivePlannerConverter(unittest.TestCase):
             dst_input_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_inputs, mode='input')
 
             reconverter_initial_state = rpc.sample_c2p_dst(
-                dst_state_traj.initial_state,
+                dst_state_traj.initial_point,
                 mode='state',
                 time_step=min(dst_state_traj.steps)
             )
             reconverter_initial_state.acceleration = 0.0
 
             reconverter_initial_input = rpc.sample_c2p_dst(
-                dst_input_traj.initial_state,
+                dst_input_traj.initial_point,
                 mode='input',
                 time_step=min(dst_input_traj.steps)
             )

@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import Any, Union, List
+from typing import Any, Union, List, Dict
 
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 
@@ -41,6 +43,15 @@ class StateInputTrajectoryFactoryInterface(ABC):
             self,
             u_np: np.array
     ) -> Union[Any]:
+        pass
+
+    @abstractmethod
+    def trajectory_from_state_or_input(self,
+                                       trajectory_dict: Union[Dict[int, StateInterface], Dict[int, InputInterface]],
+                                       mode: TrajectoryMode,
+                                       t_0: float,
+                                       delta_t: float
+                                       ) -> TrajectoryInterface:
         pass
 
     @abstractmethod

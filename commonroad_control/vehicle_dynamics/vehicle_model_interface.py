@@ -82,7 +82,10 @@ class VehicleModelInterface(ABC):
     def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
         pass
 
-    def linearize_dt_at(self, x: Union[StateInterface, np.array], u: InputInterface) -> Tuple[np.array, np.array, np.array]:
+    def linearize_dt_at(self,
+                        x: Union[StateInterface, np.array],
+                        u: InputInterface) \
+            -> Tuple[np.array, np.array, np.array]:
 
         # convert state and input to arrays
         if isinstance(x, StateInterface):

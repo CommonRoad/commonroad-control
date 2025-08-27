@@ -79,8 +79,8 @@ def main(
         params=CLCSParams()
     )
 
-    #x_measured = kst_traj.initial_state
-    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_state)
+    #x_measured = kst_traj.initial_point
+    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_point)
 
     traj_dict = {0: x_measured}
 

@@ -47,10 +47,10 @@ def main(simulate: bool = True) -> None:
         kst_input_traj: KSTTrajectory = traj_converter.trajectory_p2c_kst(planner_input_traj, mode='input')
 
         print(f"-- Initial State --")
-        print(kst_state_traj.initial_state)
+        print(kst_state_traj.initial_point)
 
 
-        current_state: KSTState = kst_state_traj.initial_state
+        current_state: KSTState = kst_state_traj.initial_point
         for t in range(2):
             # controller dummy
             controller_state_output = current_state
