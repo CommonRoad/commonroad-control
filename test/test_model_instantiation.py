@@ -1,5 +1,7 @@
 import unittest
 
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
+
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -21,12 +23,12 @@ class TestModelInstantiation(unittest.TestCase):
        """
        Test Kinematic Single Track state, input and trajectory
        """
-       kst_model = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
+       kst_model = KinematicSingleStrack(params=BMW3seriesParams(), delta_t=0.1)
 
        states = {0: KSTState(position_x=5, position_y=5, velocity=5, heading=5, steering_angle=5),
                  1: KSTState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
        state_traj = KSTTrajectory(
-           mode='state',
+           mode=TrajectoryMode.State,
            points=states,
            t_0=0,
            delta_t=0.5
@@ -34,7 +36,7 @@ class TestModelInstantiation(unittest.TestCase):
 
        inputs = {0: KSTInput(acceleration=5, steering_angle_velocity=5), 1: KSTInput(acceleration=3, steering_angle_velocity=3)}
        input_traj = KSTTrajectory(
-           mode='input',
+           mode=TrajectoryMode.Input,
            points=inputs,
            t_0=0,
            delta_t=0.5
@@ -44,7 +46,7 @@ class TestModelInstantiation(unittest.TestCase):
         """
         Test Dynamic single track
         """
-        dst_model = DynamicBicycle(params=BMW3seriesParams(), dt=0.1)
+        dst_model = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
         states = {0: DBState(
             position_x=5, position_y=5, velocity_long=5, velocity_lat=5, heading=5, steering_angle=5
@@ -54,7 +56,7 @@ class TestModelInstantiation(unittest.TestCase):
         )}
 
         state_traj = DBTrajectory(
-            mode='state',
+            mode=TrajectoryMode.State,
             points=states,
             t_0=0,
             delta_t=0.5
@@ -62,7 +64,7 @@ class TestModelInstantiation(unittest.TestCase):
 
         inputs = {0: DBInput(acceleration=5, steering_angle_velocity=5), 1: DBInput(acceleration=3, steering_angle_velocity=3)}
         input_traj = DBTrajectory(
-            mode='input',
+            mode=TrajectoryMode.Input,
             points=inputs,
             t_0=0,
             delta_t=0.5

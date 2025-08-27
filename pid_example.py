@@ -34,7 +34,7 @@ from typing import List, Tuple
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
-from commonroad_control.control.pid.pid_controller import PIDControl
+from commonroad_control.control.pid.pid_control import PIDControl
 from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
 
@@ -63,7 +63,7 @@ def main(
 
     state_input_factory = DBSITFactory()
     vehicle_params: VehicleParameters = BMW3seriesParams()
-    vehicle_model = DynamicBicycle(params=vehicle_params, dt=controller_time)
+    vehicle_model = DynamicBicycle(params=vehicle_params, delta_t=controller_time)
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model,
         state_input_factory=state_input_factory

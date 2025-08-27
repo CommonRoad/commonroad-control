@@ -29,7 +29,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # ----------------- kinematic single track ------------------
 
         # init vehicle model
-        kst = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
+        kst = KinematicSingleStrack(params=BMW3seriesParams(), delta_t=0.1)
 
         kst_factory: KSTSITFactory = KSTSITFactory()
 
@@ -48,7 +48,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
     def test_dst_sim(self) -> None:
         # ----------------- dynamic bicycle ------------------
         # init vehicle model
-        db = DynamicBicycle(params=BMW3seriesParams(), dt=0.1)
+        db = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
         dst_factory: DBSITFactory = DBSITFactory()
 
@@ -69,7 +69,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
     def test_di_sim(self) -> None:
         # ----------------- double integrator ------------------
         # init vehicle model
-        di = DoubleIntegrator(params=BMW3seriesParams(), dt=0.1)
+        di = DoubleIntegrator(params=BMW3seriesParams(), delta_t=0.1)
 
         di_factory = DISITFactory()
 

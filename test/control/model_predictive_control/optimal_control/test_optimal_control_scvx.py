@@ -31,7 +31,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
         :return:
         """
         # instantiate double integrator model
-        vehicle_model = DoubleIntegrator(params=BMW3seriesParams(), dt=0.1)
+        vehicle_model = DoubleIntegrator(params=BMW3seriesParams(), delta_t=0.1)
 
         # time
         horizon = 20
@@ -88,7 +88,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
         ocp_parameters = SCvxParameters(max_iterations=1,
                                         soft_tr_penalty_weight=0.0)
 
-        # instantiate model predictive controller
+        # instantiate model predictive control
         solver = OptimalControlSCvx(vehicle_model=vehicle_model,
                                     sit_factory=sit_factory,
                                     horizon=horizon,
@@ -116,7 +116,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
         """
 
         # instantiate double integrator model
-        vehicle_model = KinematicSingleStrack(params=BMW3seriesParams(), dt=0.1)
+        vehicle_model = KinematicSingleStrack(params=BMW3seriesParams(), delta_t=0.1)
 
         # time
         horizon = 10
@@ -200,7 +200,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
             soft_tr_penalty_weight=0.001
         )
 
-        # instantiate model predictive controller
+        # instantiate model predictive control
         solver = OptimalControlSCvx(vehicle_model=vehicle_model,
                                     sit_factory=sit_factory,
                                     horizon=horizon,

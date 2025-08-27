@@ -14,21 +14,24 @@ from commonroad_control.control.model_predictive_control.mpc_controller2vehicle 
 
 class TestModelPredictivecontrol(unittest.TestCase):
     """
-    Tests model predictive controller.
+    Tests model predictive control.
     """
 
     def test_di_control2origin(self) -> None:
         """
-        Simple test case: steer the double-integrator system to the orign within one step starting from a state inside
-        its one-step zero controllable set.
+        Simple test case: steer the double-integrator system to the orign..
         :return:
         """
-        # instantiate double integrator model
-        vehicle_model = DoubleIntegrator(params=BMW3seriesParams(), dt=0.1)
 
         # time
-        horizon = 1
+        horizon_mpc = 10
+        horizon_sim = 10
         delta_t = 0.1
+
+        # instantiate double integrator model
+        vehicle_model = DoubleIntegrator(
+            params=BMW3seriesParams(),
+            dt=delta_t)
 
         # cost matrices
         Q = np.eye(DIStateIndices.dim)
@@ -59,7 +62,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         u_init_np = np.zeros((DIInputIndices.dim, horizon))
         u_init = sit_factory.trajectory_from_numpy_array(traj_np=u_init_np, mode='input', time=time_input, t_0=0, delta_t=delta_t)
 
-        # instantiate model predictive controller
+        # instantiate model predictive control
         solver = ModelPredictiveControl(vehicle_model, horizon, delta_t=delta_t, cost_xx=Q, cost_uu=R, cost_final=P)
 
         # Solve the optimal control problem

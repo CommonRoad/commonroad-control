@@ -236,7 +236,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             time_step: int,
     ) -> Union[ReactivePlannerState, InputState]:
         """
-        Convert controller output to Reactive planner
+        Convert control output to Reactive planner
         :param dst_state:
         :param mode: choose between state and input
         :param time_step:

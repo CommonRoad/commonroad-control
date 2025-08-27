@@ -1,9 +1,9 @@
-from commonroad_control.control.control import Control
+from commonroad_control.control.control import Controller
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
-class PIDControl(Control):
+class PIDControl(Controller):
 
     def __init__(
             self,
@@ -26,7 +26,7 @@ class PIDControl(Control):
             controller_time_step: float = 0.01
     ) -> float:
         """
-        Computes controller output for float input
+        Computes control output for float input
         :param measured_state:
         :param desired_state:
         :param controller_time_step:

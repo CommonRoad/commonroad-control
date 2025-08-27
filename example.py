@@ -16,7 +16,7 @@ def main(simulate: bool = True) -> None:
     kst_sit_factory = KSTSITFactory()
     params = BMW3seriesParams()
     traj_converter = DummyPlanningConverter(kst_factory=kst_sit_factory, vehicle_params=params)
-    model = KinematicSingleStrack(params=params, dt=0.1)
+    model = KinematicSingleStrack(params=params, delta_t=0.1)
 
     replannings = range(2)
     for replanning in replannings:
@@ -52,7 +52,7 @@ def main(simulate: bool = True) -> None:
 
         current_state: KSTState = kst_state_traj.initial_point
         for t in range(2):
-            # controller dummy
+            # control dummy
             controller_state_output = current_state
             controller_u = kst_input_traj.points[t]
 
