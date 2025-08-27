@@ -9,7 +9,7 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DynamicBicycle(VehicleModelInterface):
-    def __init__(self, params: VehicleParameters, dt: float):
+    def __init__(self, params: VehicleParameters, delta_t: float):
 
         # set vehicle parameters
         self._g = params.g
@@ -23,7 +23,7 @@ class DynamicBicycle(VehicleModelInterface):
         self._h_cog = params.h_cog
 
         # init base class
-        super().__init__(nx=DBState.dim, nu=DBInput.dim, dt=dt)
+        super().__init__(nx=DBState.dim, nu=DBInput.dim, delta_t=delta_t)
 
     def simulate_forward(self, x: DBState, u: DBInput) -> DBState:
         pass

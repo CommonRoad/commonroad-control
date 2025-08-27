@@ -9,14 +9,14 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class KinematicSingleStrack(VehicleModelInterface):
-    def __init__(self, params: VehicleParameters, dt: float):
+    def __init__(self, params: VehicleParameters, delta_t: float):
 
         # set vehicle parameters
         self._l_wb = params.l_wb
         self._l_r = params.l_r
 
         # init base class
-        super().__init__(nx=KSTState.dim, nu=KSTInput.dim, dt=dt)
+        super().__init__(nx=KSTState.dim, nu=KSTInput.dim, delta_t=delta_t)
 
     def simulate_forward(self, x: KSTState, u: KSTInput) -> KSTState:
         pass

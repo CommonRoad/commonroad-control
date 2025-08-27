@@ -12,12 +12,12 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import
 
 
 class DoubleIntegrator(VehicleModelInterface):
-    def __init__(self, params: VehicleParameters, dt: float):
+    def __init__(self, params: VehicleParameters, delta_t: float):
 
         self._sys_mat, self._input_mat = self._system_matrices()
 
         # init base class
-        super().__init__(nx=DIStateIndices.dim, nu=DIInputIndices.dim, dt=dt)
+        super().__init__(nx=DIStateIndices.dim, nu=DIInputIndices.dim, delta_t=delta_t)
 
     @staticmethod
     def _system_matrices() -> Tuple[np.array, np.array]:
@@ -109,7 +109,7 @@ class DoubleIntegrator(VehicleModelInterface):
         # compute matrices of discrete-time LTI system
         lit_ct = scsi.lti(self._sys_mat, self._input_mat,
                             np.eye(self._nx), np.zeros((self._nx, self._nu)))
-        lit_dt = lit_ct.to_discrete(dt=self._dt, method='zoh')
+        lit_dt = lit_ct.to_discrete(dt=self._delta_t, method='zoh')
         sys_mat_dt = lit_dt.A
         input_mat_dt = lit_dt.B
 

@@ -17,15 +17,16 @@ class ImplementedVehicleModels(enum.Enum):
 
 
 class VehicleModelInterface(ABC):
-    def __init__(self, nx: int, nu: int, dt:float):
+    def __init__(self, nx: int, nu: int, delta_t:float):
         """
         Initialize abstract baseclass.
         :param nx: dimension of the state space
         :param nu: dimension of the input space
+        :param delta_t: sampling time
         """
         self._nx: int = nx
         self._nu: int = nu
-        self._dt: float = dt
+        self._delta_t: float = delta_t
 
         # discretize vehicle model
         self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
@@ -127,7 +128,7 @@ class VehicleModelInterface(ABC):
 
         # discretize dynamics
         x_next = cas.Function(
-            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics_cas, self._dt)]
+            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics_cas, self._delta_t)]
         )
 
         # compute Jacobian of discretized dynamics
