@@ -205,7 +205,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         x_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time=[kk for kk in range(self._horizon+1)],
             t_0=t_0,
             delta_t=self.delta_t
         )
@@ -213,7 +213,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         u_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=u_sol,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time=[kk for kk in range(self._horizon)],
             t_0=t_0,
             delta_t=self.delta_t
         )
@@ -230,5 +230,5 @@ class OptimalControlSCvx(OptimalControlSolver):
         :param u: candidate control input trajectory
         :return: array storing the defect at each time step
         """
-        err = x[:,1:self._horizon+1]  - np.hstack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk]) for kk in range(self._horizon)])
+        err = x[:,1:self._horizon+1]  - np.column_stack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk]) for kk in range(self._horizon)])
         return np.linalg.norm(err, axis=0)

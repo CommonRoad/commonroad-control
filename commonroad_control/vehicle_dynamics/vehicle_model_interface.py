@@ -54,7 +54,7 @@ class VehicleModelInterface(ABC):
         # evaluate discretized dynamics at (x,u)
         x_next = self._dynamics_dt(x_np, u_np).full()
 
-        return x_next
+        return x_next.squeeze()
 
     def _dynamics_ct(self,
                      x: np.array,

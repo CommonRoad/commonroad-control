@@ -45,7 +45,7 @@ class ModelPredictiveControl(Controller):
         # set initial guess for optimal control: if no initial guess is provided (x_init = None and or u_init = None),
         # an initial guess is computed by shifting an old solution or linearly interpolating the state between the
         # initial state and the final reference state
-        if x_init is not None and u_init is not None:
+        if x_init is None or u_init is None:
             if self._x_init is None and self._u_init is None:
                 x_init, u_init = self._initial_guess_linear_interpolation(
                     x0=x0,
@@ -80,11 +80,11 @@ class ModelPredictiveControl(Controller):
         # ... state: linear interpolation between x0 and xf
         x_init_interp_fun = sp.interpolate.interp1d(
             [0.0, 1.0],
-            np.hstack((np.reshape(x0.convert_to_array(), (self._ocp_solver.vehicle_model.state_dimension.dim, 1)),
-                       np.reshape(xf.convert_to_array().transpose(), (self._ocp_solver.vehicle_model.state_dimension.dim, 1)))),
+            np.hstack((np.reshape(x0.convert_to_array(), (self._ocp_solver.vehicle_model.state_dimension, 1)),
+                       np.reshape(xf.convert_to_array().transpose(), (self._ocp_solver.vehicle_model.state_dimension, 1)))),
             kind="linear"
         )
-        x_init_np = np.zeros((self._ocp_solver.vehicle_model.state_dimension.dim, self._ocp_solver.horizon + 1))
+        x_init_np = np.zeros((self._ocp_solver.vehicle_model.state_dimension, self._ocp_solver.horizon + 1))
         time_state = [kk for kk in range(self._ocp_solver.horizon+1)]
         for kk in range(self._ocp_solver.horizon + 1):
             x_init_np[:, kk] = x_init_interp_fun(kk / self._ocp_solver.horizon)
@@ -96,7 +96,7 @@ class ModelPredictiveControl(Controller):
             delta_t=self._ocp_solver.delta_t
         )
         # ... control inputs: set to zero
-        u_init_np = np.zeros((self._ocp_solver.vehicle_model.input_dimension.dim, self._ocp_solver.horizon))
+        u_init_np = np.zeros((self._ocp_solver.vehicle_model.input_dimension, self._ocp_solver.horizon))
         time_input = time_state
         time_input.pop()
         u_init = self._ocp_solver.sit_factory.trajectory_from_numpy_array(
@@ -121,8 +121,8 @@ class ModelPredictiveControl(Controller):
         """
 
         # extract states and input to be kept
-        x_init_points = [self._x_init.get_point_at_time_step(kk) for kk in range(1,self._ocp_solver.horizon)]
-        u_init_points = [self._u_init.get_point_at_time_step(kk) for kk in range(1,self._ocp_solver.horizon-1)]
+        x_init_points = [self._x_init.get_point_at_time_step(kk) for kk in range(1,self._ocp_solver.horizon+1)]
+        u_init_points = [self._u_init.get_point_at_time_step(kk) for kk in range(1,self._ocp_solver.horizon)]
 
         # simulate vehicle model for num_steps using the reference control inputs
         # ... append last input from reference trajectory
@@ -135,7 +135,7 @@ class ModelPredictiveControl(Controller):
 
         # convert to trajectory interface
         # ... state trajectory
-        time_steps = [kk for kk in range(0, self._ocp_solver.horizon)]
+        time_steps = [kk for kk in range(0, self._ocp_solver.horizon+1)]
         x_init = self._ocp_solver.sit_factory.trajectory_from_state_or_input(
             trajectory_dict=dict(zip(time_steps, x_init_points)),
             mode=TrajectoryMode.State,
@@ -143,7 +143,7 @@ class ModelPredictiveControl(Controller):
             delta_t=self._ocp_solver.delta_t
         )
         # ... input trajectory
-        time_steps = [kk for kk in range(0, self._ocp_solver.horizon-1)]
+        time_steps = [kk for kk in range(0, self._ocp_solver.horizon)]
         u_init = self._ocp_solver.sit_factory.trajectory_from_state_or_input(
             trajectory_dict=dict(zip(time_steps, u_init_points)),
             mode=TrajectoryMode.Input,

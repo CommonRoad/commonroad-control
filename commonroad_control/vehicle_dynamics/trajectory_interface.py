@@ -52,7 +52,7 @@ class TrajectoryInterface(ABC):
         traj_np = []
         # TODO: fix time step conversion
         for ii in range(len(time)):
-            x_ii = self.get_point_at_time_step(round(time[ii]/self.delta_t))
+            x_ii = self.get_point_at_time_step(round((time[ii]-self.t_0)/self.delta_t))
             traj_np.append(np.reshape(x_ii.convert_to_array(),(x_ii.dim, 1), order='F'))
 
         return np.hstack(traj_np)
