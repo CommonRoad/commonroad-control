@@ -2,8 +2,10 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput, KSTInputIndices
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState, KSTStateIndices
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
@@ -14,6 +16,8 @@ class KinematicSingleStrack(VehicleModelInterface):
         # set vehicle parameters
         self._l_wb = params.l_wb
         self._l_r = params.l_r
+        self._a_long_max = params.a_long_max
+        self._a_lat_max = params.a_lat_max
 
         # init base class
         super().__init__(nx=KSTState.dim, nu=KSTInput.dim, delta_t=delta_t)
@@ -118,3 +122,28 @@ class KinematicSingleStrack(VehicleModelInterface):
                         heading_dot, steering_angle_dot)
 
         return f
+
+    def compute_normalized_acceleration(self,
+                                        x: Union[KSTState, cas.SX.sym, np.array],
+                                        u: Union[KSTInput, cas.SX.sym, np.array]) \
+        -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+
+        # extract state
+        if isinstance(x, KSTState):
+            x = x.convert_to_array()
+        v = x[KSTStateIndices.velocity]
+        delta = x[KSTStateIndices.steering_angle]
+
+        # compute yaw rate
+        heading_dot = v*cas.tan(delta) / self._l_wb
+
+        # extract control input
+        if isinstance(u, KSTInput):
+            u = u.convert_to_array()
+        a = u[KSTInputIndices.acceleration]
+
+        # normalized acceleration
+        a_long_norm = a / self._a_long_max
+        a_lat_norm = (v*heading_dot) / self._a_lat_max
+
+        return a_long_norm, a_lat_norm

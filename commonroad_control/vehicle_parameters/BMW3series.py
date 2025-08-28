@@ -17,3 +17,5 @@ class BMW3seriesParams(VehicleParameters):
     C_f: float = 20.89 * 1.048
     C_r: float = 20.89 * 1.048
     h_cog: float = 0.574
+    a_long_max: float = 9.81 #TODO check values
+    a_lat_max: float = 6.0 # TODO check values

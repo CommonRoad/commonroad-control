@@ -16,6 +16,10 @@ class DoubleIntegrator(VehicleModelInterface):
 
         self._sys_mat, self._input_mat = self._system_matrices()
 
+        # set vehicle parameters
+        self._a_long_max = params.a_long_max
+        self._a_lat_max = params.a_lat_max
+
         # init base class
         super().__init__(nx=DIStateIndices.dim, nu=DIInputIndices.dim, delta_t=delta_t)
 
@@ -123,3 +127,20 @@ class DoubleIntegrator(VehicleModelInterface):
         jac_u = cas.Function("jac_dynamics_dt_u", [xk, uk], [input_mat_dt])
 
         return x_next, jac_x, jac_u
+
+    def compute_normalized_acceleration(self,
+                                        x: Union[DIState, cas.SX.sym, np.array],
+                                        u: Union[DIInput, cas.SX.sym, np.array]) \
+        -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+
+        # extract control input
+        if isinstance(u, DIInput):
+            u = u.convert_to_array()
+        a_long = u[DIInputIndices.acceleration_long]
+        a_lat = u[DIInputIndices.acceleration_lat]
+
+        # normalized acceleration
+        a_long_norm = a_long / self._a_long_max
+        a_lat_norm = a_lat / self._a_lat_max
+
+        return a_long_norm, a_lat_norm

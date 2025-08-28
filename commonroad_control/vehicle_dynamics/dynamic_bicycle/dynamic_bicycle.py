@@ -21,6 +21,8 @@ class DynamicBicycle(VehicleModelInterface):
         self._C_f = params.C_f
         self._C_r = params.C_r
         self._h_cog = params.h_cog
+        self._a_long_max = params.a_long_max
+        self._a_lat_max = params.a_lat_max
 
         # init base class
         super().__init__(nx=DBState.dim, nu=DBInput.dim, delta_t=delta_t)
@@ -64,17 +66,20 @@ class DynamicBicycle(VehicleModelInterface):
         a = u[DBInputIndices.acceleration]
         delta_dot = u[DBInputIndices.steering_angle_velocity]
 
-        # (tyre) slip angles
-        alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
-        alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
+        # # (tyre) slip angles
+        # alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
+        # alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
+        #
+        # # compute normal forces per axle (including longitudinal load transfer)
+        # fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
+        # fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
+        #
+        # # lateral tyre forces per axle
+        # fc_f = -self._C_f*alpha_f*fz_f
+        # fc_r = -self._C_r*alpha_r*fz_r
 
-        # compute normal forces per axle (including longitudinal load transfer)
-        fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
-        fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
-
-        # lateral tyre forces per axle
-        fc_f = -self._C_f*alpha_f*fz_f
-        fc_r = -self._C_r*alpha_r*fz_r
+        # compute lateral tyre forces
+        fc_f, fc_r = self._compute_lateral_tyre_forces(x,u)
 
         # dynamics
         position_x_dot = v_bx * cas.cos(psi) - v_by * cas.sin(psi)
@@ -89,3 +94,55 @@ class DynamicBicycle(VehicleModelInterface):
                         heading_dot, yaw_rate_dot, steering_angle_dot)
 
         return f
+
+    def compute_normalized_acceleration(self,
+                                        x: Union[DBState, cas.SX.sym, np.array],
+                                        u: Union[DBInput, cas.SX.sym, np.array]) \
+            -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+
+        # extract state
+        if isinstance(x, DBState):
+            x = x.convert_to_array()
+        delta = x[DBStateIndices.steering_angle]
+
+        # extract control input
+        if isinstance(u, DBInput):
+            u = u.convert_to_array()
+        a = u[DBInputIndices.acceleration]
+
+        # compute lateral tyre forces
+        fc_f, fc_r = self._compute_lateral_tyre_forces(x,u)
+
+        # normalized acceleration
+        a_long_norm = (a - fc_f*cas.sin(delta)/self._m) / self._a_long_max
+        a_lat_norm = ((fc_f * cas.cos(delta) + fc_r) / self._m) / self._a_lat_max
+
+        return a_long_norm, a_lat_norm
+
+    def _compute_lateral_tyre_forces(self,
+                             x: Union[cas.SX.sym, np.array],
+                             u: Union[cas.SX.sym, np.array]) \
+            -> Tuple[Union[float,cas.SX.sym], Union[float, cas.SX.sym]]:
+
+        # extract state
+        v_bx = x[DBStateIndices.velocity_long]
+        v_by = x[DBStateIndices.velocity_lat]
+        psi_dot = x[DBStateIndices.yaw_rate]
+        delta = x[DBStateIndices.steering_angle]
+
+        # extract control input
+        a = u[DBInputIndices.acceleration]
+
+        # (tyre) slip angles
+        alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
+        alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
+
+        # compute normal forces per axle (including longitudinal load transfer)
+        fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
+        fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
+
+        # lateral tyre forces per axle
+        fc_f = -self._C_f*alpha_f*fz_f
+        fc_r = -self._C_r*alpha_r*fz_r
+
+        return fc_f, fc_r

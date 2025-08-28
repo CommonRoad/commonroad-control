@@ -31,6 +31,10 @@ class VehicleModelInterface(ABC):
         # discretize vehicle model
         self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
 
+        # differentiate acceleration constraint functions
+        self._acc_long, self._acc_lat, self._jac_acc_long_x, self._jac_acc_long_u, self._jac_acc_lat_x, self._jac_acc_lat_u, \
+            = self._differentiate_acceleration_constraints()
+
     @abstractmethod
     def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
         pass
@@ -85,8 +89,15 @@ class VehicleModelInterface(ABC):
 
     def linearize_dt_at(self,
                         x: Union[StateInterface, np.array],
-                        u: InputInterface) \
+                        u: Union[InputInterface, np.array]) \
             -> Tuple[np.array, np.array, np.array]:
+        """
+        Linearization of the time-discretized vehicle dynamics at a given state-input-pair, e.g., for solving a
+        convex(ified) optimal control problem.
+        :param x: state for linearization
+        :param u: input for linearization
+        :return: dynamics at (x,u) and Jacobians at (x,u) w.r.t. x and u
+        """
 
         # convert state and input to arrays
         if isinstance(x, StateInterface):
@@ -108,19 +119,11 @@ class VehicleModelInterface(ABC):
 
         return x_next, jac_x, jac_u
 
-    @abstractmethod
-    def position_to_clcs(self, x: StateInterface) -> StateInterface:
-        pass
-
-    @abstractmethod
-    def position_to_cartesian(self, x: StateInterface) -> StateInterface:
-        pass
-
     def _discretize(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
         Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
         [0, dt]
-        :return: time-discretized dynamical system (CasADi function) and its Jacobian (CasADi function)
+        :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 
         xk = cas.SX.sym("xk", self._nx, 1)
@@ -138,6 +141,78 @@ class VehicleModelInterface(ABC):
                                   [cas.jacobian(x_next(xk, uk), uk)])
         return x_next, jac_x, jac_u
 
+
+
+    @abstractmethod
+    def compute_normalized_acceleration(self,
+                                        x: Union[StateInterface, cas.SX.sym, np.array],
+                                        u: Union[InputInterface, cas.SX.sym, np.array]) \
+            -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+        pass
+
+    def linearize_acceleration_constraints_at(self,
+                               x: Union[StateInterface, np.array],
+                               u: Union[InputInterface, np.array]) \
+        -> Tuple[np.array, np.array, np.array, np.array, np.array, np.array]:
+        """
+        Linearization of the (normalized) acceleration constraint functions at a given state-input-pair, e.g., for solving
+        a convex(ified) optimal control problem.
+        :param x: state for linearization
+        :param u: input for linearization
+        :return: (normalized) acceleration constraint functions and respective Jacobians w.r.t. x and u
+        """
+
+        # convert state and input to arrays
+        if isinstance(x, StateInterface):
+            x_np = x.convert_to_array()
+        else:
+            x_np = x
+
+        if isinstance(u, InputInterface):
+            u_np = u.convert_to_array()
+        else:
+            u_np = u
+
+        # evaluate acceleration constraint function at (x,u)
+        a_long = self._acc_long(x_np, u_np).full()
+        a_lat = self._acc_lat(x_np, u_np).full()
+
+        # evaluate linearized constraint functions
+        jac_a_long_x = self._jac_acc_long_x(x_np, u_np).full()
+        jac_a_long_u = self._jac_acc_long_u(x_np, u_np).full()
+        jac_a_lat_x = self._jac_acc_lat_x(x_np, u_np).full()
+        jac_a_lat_u = self._jac_acc_lat_u(x_np, u_np).full()
+
+        return a_long, a_lat, jac_a_long_x, jac_a_long_u, jac_a_lat_x, jac_a_lat_u
+
+    def _differentiate_acceleration_constraints(self) \
+            -> Tuple[cas.Function, cas.Function, cas.Function, cas.Function, cas.Function, cas.Function]:
+        """
+        Differentiation of the (normalized) acceleration constraint functions.
+        :return: acceleration constraint functions (longitudinal and lateral, CasADi functions) and respective Jacobians (CasADi functions)
+        """
+        xk = cas.SX.sym("xk", self._nx, 1)
+        uk = cas.SX.sym("uk", self._nu, 1)
+
+        # casadi function to normalized acceleration
+        acc_long, acc_lat = cas.Function(
+            "norm_acc", [xk, uk], [self.compute_normalized_acceleration(xk, uk)]
+        )
+
+        # compute Jacobian of normalized longitudinal acceleration
+        jac_acc_long_x = cas.Function("jac_acc_long_x", [xk, uk],
+                                  [cas.jacobian(acc_long(xk, uk), xk)])
+        jac_acc_long_u = cas.Function("jac_acc_long_u", [xk, uk],
+                                  [cas.jacobian(acc_long(xk, uk), uk)])
+
+        # compute Jacobian of normalized lateral acceleration
+        jac_acc_lat_x = cas.Function("jac_acc_lat_x", [xk, uk],
+                                  [cas.jacobian(acc_lat(xk, uk), xk)])
+        jac_acc_lat_u = cas.Function("jac_acc_lat_u", [xk, uk],
+                                  [cas.jacobian(acc_lat(xk, uk), uk)])
+
+        return acc_long, acc_lat, jac_acc_long_x, jac_acc_long_u, jac_acc_lat_x, jac_acc_lat_u
+
     @property
     def state_dimension(self):
         return self._nx
@@ -146,4 +221,10 @@ class VehicleModelInterface(ABC):
     def input_dimension(self):
         return self._nu
 
+    @abstractmethod
+    def position_to_clcs(self, x: StateInterface) -> StateInterface:
+        pass
 
+    @abstractmethod
+    def position_to_cartesian(self, x: StateInterface) -> StateInterface:
+        pass

@@ -15,4 +15,7 @@ class VehicleParameters(ABC):
     C_f: float  # front tyre cornering stiffness
     C_r: float  # rear tyre cornering stiffness
     h_cog: float  # height of center of gravity
+    a_long_max: float # maximum longitudinal acceleration
+    a_lat_max: float # maximum lateral acceleration
     g: float = 9.81  # gravitational acceleration
+
