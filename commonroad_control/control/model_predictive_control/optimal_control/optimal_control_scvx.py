@@ -73,6 +73,12 @@ class OptimalControlSCvx(OptimalControlSolver):
         self._par_x_next = cp.Parameter((self._nx, self._horizon))
         self._par_A = cp.Parameter((self._nx, self._nx*self._horizon))
         self._par_B = cp.Parameter((self._nx, self._nu*self._horizon))
+        self._par_a_long = cp.Parameter(self._horizon,'a_long')
+        self._par_a_lat = cp.Parameter(self._horizon,'a_lat')
+        self._par_jac_a_long_x = cp.Parameter((self._horizon, self._nx), 'jac_a_long_x')
+        self._par_jac_a_long_u = cp.Parameter((self._horizon, self._nu), 'jac_a_long_u')
+        self._par_jac_a_lat_x = cp.Parameter((self._horizon, self._nx), 'jac_a_lat_x')
+        self._par_jac_a_lat_u = cp.Parameter((self._horizon, self._nu), 'jac_a_lat_u')
 
         # Initialize history
         self._iteration_history = []
@@ -100,9 +106,14 @@ class OptimalControlSCvx(OptimalControlSolver):
                             + (self._par_B[:, [kk*self._nu + ii for ii in range(self._nu)]]
                                @ (self._u[:, kk] - self._par_u_lin[:, kk]))]
 
-            # # add nonlinear constraints
-            # soc_constraints = self.vehicle_model.nonlinConstraints(self._x[kk], self._u[kk], kk)
-            # constraints += soc_constraints
+            # acceleration constraints
+            constraints += [(self._par_a_long[kk]
+                             + self._par_jac_a_long_x[kk,:]@(self._x[:,kk] - self._par_x_lin[:,kk])
+                             + self._par_jac_a_long_u[kk,:]@(self._u[:,kk] - self._par_u_lin[:,kk]))**2
+                            + (self._par_a_lat[kk]
+                             + self._par_jac_a_lat_x[kk,:]@(self._x[:,kk] - self._par_x_lin[:,kk])
+                             + self._par_jac_a_lat_u[kk,:]@(self._u[:,kk] - self._par_u_lin[:,kk]))**2
+                            <= 1]
 
         # terminal cost
         cost += cp.quad_form(self._x[:, self._horizon] - self._par_x_ref[:, self._horizon], self._cost_final)
@@ -176,6 +187,30 @@ class OptimalControlSCvx(OptimalControlSolver):
             self._par_x_next.value = np.hstack(x_next)
             self._par_A.value = np.hstack(A)
             self._par_B.value = np.hstack(B)
+
+            # linearize acceleration constraints
+            a_long = []
+            a_lat = []
+            jac_a_long_x = []
+            jac_a_long_u = []
+            jac_a_lat_x = []
+            jac_a_lat_u = []
+            for kk in range(self._horizon):
+                tmp_a_long, tmp_a_lat, tmp_jac_a_long_x, tmp_jac_a_long_u, tmp_jac_a_lat_x, tmp_jac_a_lat_u \
+                    = self.vehicle_model.linearize_acceleration_constraints_at(
+                    self._par_x_lin.value[:, kk], self._par_u_lin.value[:, kk])
+                a_long.append(tmp_a_long)
+                a_lat.append(tmp_a_lat)
+                jac_a_long_x.append(tmp_jac_a_long_x)
+                jac_a_long_u.append(tmp_jac_a_long_u)
+                jac_a_lat_x.append(tmp_jac_a_lat_x)
+                jac_a_lat_u.append(tmp_jac_a_lat_u)
+            self._par_a_long.value = np.vstack(a_long).squeeze()
+            self._par_a_lat.value = np.vstack(a_lat).squeeze()
+            self._par_jac_a_long_x.value = np.vstack(jac_a_long_x)
+            self._par_jac_a_long_u.value = np.vstack(jac_a_long_u)
+            self._par_jac_a_lat_x.value = np.vstack(jac_a_lat_x)
+            self._par_jac_a_lat_u.value = np.vstack(jac_a_lat_u)
 
             # solve the optimal control problem
             self._ocp.solve(solver='CLARABEL', verbose=True)

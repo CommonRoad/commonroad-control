@@ -32,7 +32,7 @@ class VehicleModelInterface(ABC):
         self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
 
         # differentiate acceleration constraint functions
-        self._acc_long, self._acc_lat, self._jac_acc_long_x, self._jac_acc_long_u, self._jac_acc_lat_x, self._jac_acc_lat_u, \
+        self._a_norm, self._jac_a_norm_long_x, self._jac_a_norm_long_u, self._jac_a_norm_lat_x, self._jac_a_norm_lat_u, \
             = self._differentiate_acceleration_constraints()
 
     @abstractmethod
@@ -174,19 +174,20 @@ class VehicleModelInterface(ABC):
             u_np = u
 
         # evaluate acceleration constraint function at (x,u)
-        a_long = self._acc_long(x_np, u_np).full()
-        a_lat = self._acc_lat(x_np, u_np).full()
+        a_long, a_lat = self._a_norm(x_np, u_np)
+        a_long = a_long.full()
+        a_lat = a_lat.full()
 
         # evaluate linearized constraint functions
-        jac_a_long_x = self._jac_acc_long_x(x_np, u_np).full()
-        jac_a_long_u = self._jac_acc_long_u(x_np, u_np).full()
-        jac_a_lat_x = self._jac_acc_lat_x(x_np, u_np).full()
-        jac_a_lat_u = self._jac_acc_lat_u(x_np, u_np).full()
+        jac_a_long_x = self._jac_a_norm_long_x(x_np, u_np).full()
+        jac_a_long_u = self._jac_a_norm_long_u(x_np, u_np).full()
+        jac_a_lat_x = self._jac_a_norm_lat_x(x_np, u_np).full()
+        jac_a_lat_u = self._jac_a_norm_lat_u(x_np, u_np).full()
 
         return a_long, a_lat, jac_a_long_x, jac_a_long_u, jac_a_lat_x, jac_a_lat_u
 
     def _differentiate_acceleration_constraints(self) \
-            -> Tuple[cas.Function, cas.Function, cas.Function, cas.Function, cas.Function, cas.Function]:
+            -> Tuple[cas.Function, cas.Function, cas.Function, cas.Function, cas.Function]:
         """
         Differentiation of the (normalized) acceleration constraint functions.
         :return: acceleration constraint functions (longitudinal and lateral, CasADi functions) and respective Jacobians (CasADi functions)
@@ -195,23 +196,24 @@ class VehicleModelInterface(ABC):
         uk = cas.SX.sym("uk", self._nu, 1)
 
         # casadi function to normalized acceleration
-        acc_long, acc_lat = cas.Function(
-            "norm_acc", [xk, uk], [self.compute_normalized_acceleration(xk, uk)]
+        a_norm = cas.Function(
+            "a_norm", [xk, uk], [self.compute_normalized_acceleration(xk, uk)[0], self.compute_normalized_acceleration(xk, uk)[1]],
+            ['xk', 'uk'], ['a_long_norm', 'a_lat_norm']
         )
 
         # compute Jacobian of normalized longitudinal acceleration
-        jac_acc_long_x = cas.Function("jac_acc_long_x", [xk, uk],
-                                  [cas.jacobian(acc_long(xk, uk), xk)])
-        jac_acc_long_u = cas.Function("jac_acc_long_u", [xk, uk],
-                                  [cas.jacobian(acc_long(xk, uk), uk)])
+        jac_a_long_x = cas.Function("jac_a_long_x", [xk, uk],
+                                  [cas.jacobian(a_norm(xk, uk)[0], xk)])
+        jac_a_long_u = cas.Function("jac_a_long_u", [xk, uk],
+                                  [cas.jacobian(a_norm(xk, uk)[0], uk)])
 
         # compute Jacobian of normalized lateral acceleration
-        jac_acc_lat_x = cas.Function("jac_acc_lat_x", [xk, uk],
-                                  [cas.jacobian(acc_lat(xk, uk), xk)])
-        jac_acc_lat_u = cas.Function("jac_acc_lat_u", [xk, uk],
-                                  [cas.jacobian(acc_lat(xk, uk), uk)])
+        jac_a_lat_x = cas.Function("jac_a_lat_x", [xk, uk],
+                                  [cas.jacobian(a_norm(xk, uk)[1], xk)])
+        jac_a_lat_u = cas.Function("jac_a_lat_u", [xk, uk],
+                                  [cas.jacobian(a_norm(xk, uk)[1], uk)])
 
-        return acc_long, acc_lat, jac_acc_long_x, jac_acc_long_u, jac_acc_lat_x, jac_acc_lat_u
+        return a_norm, jac_a_long_x, jac_a_long_u, jac_a_lat_x, jac_a_lat_u
 
     @property
     def state_dimension(self):
