@@ -20,7 +20,12 @@ class KinematicSingleStrack(VehicleModelInterface):
         self._a_lat_max = params.a_lat_max
 
         # init base class
-        super().__init__(nx=KSTState.dim, nu=KSTInput.dim, delta_t=delta_t)
+        super().__init__(
+            params=params,
+            nx=KSTState.dim,
+            nu=KSTInput.dim,
+            delta_t=delta_t
+        )
 
     def simulate_forward(self, x: KSTState, u: KSTInput) -> KSTState:
         pass
@@ -34,22 +39,25 @@ class KinematicSingleStrack(VehicleModelInterface):
     def position_to_cartesian(self, x: KSTState) -> KSTState:
         pass
 
-    def input_bounds(self) -> Tuple[KSTInput, KSTInput]:
+    def _set_input_bounds(self,
+                          params: VehicleParameters) \
+        -> Tuple[KSTInput, KSTInput]:
         """
-
-        :return:
+        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        :param params: vehicle parameters
+        :return: lower and upper bound on the inputs
         """
 
         # lower bound
         u_lb = KSTInput(
-            acceleration=-9.0,
-            steering_angle_velocity=-0.4
+            acceleration=-params.a_long_max,
+            steering_angle_velocity=-params.steering_angle_velocity_max
         )
 
         # upper bound
         u_ub = KSTInput(
-            acceleration=5.0,
-            steering_angle_velocity=0.4
+            acceleration=params.a_long_max,
+            steering_angle_velocity=params.steering_angle_velocity_max
         )
 
         return u_lb, u_ub

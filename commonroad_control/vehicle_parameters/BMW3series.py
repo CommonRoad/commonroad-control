@@ -19,3 +19,5 @@ class BMW3seriesParams(VehicleParameters):
     h_cog: float = 0.574
     a_long_max: float = 9.81 #TODO check values
     a_lat_max: float = 6.0 # TODO check values
+    steering_angle_max: float = 1.066
+    steering_angle_velocity_max: float = 0.4

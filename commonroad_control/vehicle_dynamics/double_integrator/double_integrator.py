@@ -21,7 +21,12 @@ class DoubleIntegrator(VehicleModelInterface):
         self._a_lat_max = params.a_lat_max
 
         # init base class
-        super().__init__(nx=DIStateIndices.dim, nu=DIInputIndices.dim, delta_t=delta_t)
+        super().__init__(
+            params=params,
+            nx=DIStateIndices.dim,
+            nu=DIInputIndices.dim,
+            delta_t=delta_t
+        )
 
     @staticmethod
     def _system_matrices() -> Tuple[np.array, np.array]:
@@ -57,16 +62,23 @@ class DoubleIntegrator(VehicleModelInterface):
 
         return self._sys_mat@x + self._input_mat@u
 
-    def input_bounds(self) -> Tuple[DIInput, DIInput]:
+    def _set_input_bounds(self,
+                          params: VehicleParameters) \
+            -> Tuple[DIInput, DIInput]:
         """
-
-        :return:
+        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        :param params: vehicle parameters
+        :return: lower and upper bound on the inputs
         """
 
         # lower bound
-        u_lb = DIInput(acceleration_long=-2.0, acceleration_lat=-2.0)
+        u_lb = DIInput(
+            acceleration_long=-params.a_long_max,
+            acceleration_lat=-params.a_lat_max)
         # upper bound
-        u_ub = DIInput(acceleration_long=2.0, acceleration_lat=2.0)
+        u_ub = DIInput(
+            acceleration_long=params.a_long_max,
+            acceleration_lat=params.a_lat_max)
 
         return u_lb, u_ub
 

@@ -9,7 +9,9 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DynamicBicycle(VehicleModelInterface):
-    def __init__(self, params: VehicleParameters, delta_t: float):
+    def __init__(self,
+                 params: VehicleParameters,
+                 delta_t: float):
 
         # set vehicle parameters
         self._g = params.g
@@ -25,7 +27,12 @@ class DynamicBicycle(VehicleModelInterface):
         self._a_lat_max = params.a_lat_max
 
         # init base class
-        super().__init__(nx=DBState.dim, nu=DBInput.dim, delta_t=delta_t)
+        super().__init__(
+            params=params,
+             nx=DBState.dim,
+             nu=DBInput.dim,
+             delta_t=delta_t
+        )
 
     def simulate_forward(self, x: DBState, u: DBInput) -> DBState:
         pass
@@ -38,6 +45,29 @@ class DynamicBicycle(VehicleModelInterface):
 
     def position_to_cartesian(self, x: DBState) -> DBState:
         pass
+
+    def _set_input_bounds(self,
+                          params: VehicleParameters) \
+        -> Tuple[DBInput, DBInput]:
+        """
+        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        :param params: vehicle parameters
+        :return: lower and upper bound on the inputs
+        """
+
+        # lower bound
+        u_lb = DBInput(
+            acceleration=-params.a_long_max,
+            steering_angle_velocity=-params.steering_angle_velocity_max
+        )
+
+        # upper bound
+        u_ub = DBInput(
+            acceleration=params.a_long_max,
+            steering_angle_velocity=params.steering_angle_velocity_max
+        )
+
+        return u_lb, u_ub
 
     def _dynamics_cas(self,
                       x: Union[cas.SX.sym, np.array],

@@ -8,6 +8,7 @@ import casadi as cas
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.utils import rk4_integrator
+from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
 
 @enum.unique
@@ -17,7 +18,11 @@ class ImplementedVehicleModels(enum.Enum):
 
 
 class VehicleModelInterface(ABC):
-    def __init__(self, nx: int, nu: int, delta_t:float):
+    def __init__(self,
+                 params: VehicleParameters,
+                 nx: int,
+                 nu: int,
+                 delta_t:float):
         """
         Initialize abstract baseclass.
         :param nx: dimension of the state space
@@ -27,6 +32,9 @@ class VehicleModelInterface(ABC):
         self._nx: int = nx
         self._nu: int = nu
         self._delta_t: float = delta_t
+
+        # input bounds
+        self._u_lb, self._u_ub = self._set_input_bounds(params)
 
         # discretize vehicle model
         self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
@@ -214,6 +222,15 @@ class VehicleModelInterface(ABC):
                                   [cas.jacobian(a_norm(xk, uk)[1], uk)])
 
         return a_norm, jac_a_long_x, jac_a_long_u, jac_a_lat_x, jac_a_lat_u
+
+    @abstractmethod
+    def _set_input_bounds(self,
+                          params: VehicleParameters):
+        pass
+
+    def input_bounds(self) \
+            -> Tuple[InputInterface, InputInterface]:
+        return self._u_lb, self._u_ub
 
     @property
     def state_dimension(self):

@@ -17,5 +17,7 @@ class VehicleParameters(ABC):
     h_cog: float  # height of center of gravity
     a_long_max: float # maximum longitudinal acceleration
     a_lat_max: float # maximum lateral acceleration
+    steering_angle_max: float # maximum steering angle
+    steering_angle_velocity_max: float # maximum steering angle velocity
     g: float = 9.81  # gravitational acceleration
 

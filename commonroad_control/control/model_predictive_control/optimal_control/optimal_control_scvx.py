@@ -120,8 +120,8 @@ class OptimalControlSCvx(OptimalControlSolver):
 
         # control input bounds
         u_lb, u_ub = self.vehicle_model.input_bounds()
-        constraints.append(self._u >= np.tile(np.reshape(u_lb.convert_to_array(),(2,1)), (1,self._horizon)))
-        constraints.append(self._u <= np.tile(np.reshape(u_ub.convert_to_array(), (2,1)), (1,self._horizon)))
+        constraints.append(self._u >= np.tile(np.reshape(u_lb.convert_to_array(),(self._nu,1)), (1,self._horizon)))
+        constraints.append(self._u <= np.tile(np.reshape(u_ub.convert_to_array(), (self._nu,1)), (1,self._horizon)))
 
         # # state bounds
         # x_mat_lb, x_lb, x_mat_ub, x_ub = self.vehicle_model.state_bounds()
