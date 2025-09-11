@@ -121,7 +121,7 @@ def main(
     # x_measured = kst_traj.initial_point
 
     traj_dict = {0: x_measured}
-
+    input_dict = {}
     x_ref_steps = [kk for kk in range(mpc.horizon + 1)]
     u_ref_steps = [kk for kk in range(mpc.horizon)]
 
@@ -154,8 +154,8 @@ def main(
             x_ref=x_ref,
             u_ref=u_ref
         )
-        u_now = u_ref_points[0]
-
+        # u_now = kst_input.points[kk_sim]
+        input_dict[kk_sim] = u_now
         # simulate
         x_measured = simulation.simulate(
             x0=x_measured,
