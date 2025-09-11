@@ -51,22 +51,23 @@ def main(
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
-    print(f"solving scnenario {str(scenario.scenario_id)}")
+    print(f"solving scenario {str(scenario.scenario_id)}")
 
     controller_time: float = 0.01
     planner_time: float = 0.1
+    controller_time = planner_time
 
     kst_traj, kst_input = execute_planner(
         input_file=planner_input_file,
         state_file=planner_state_file
     )
 
-    state_input_factory = DBSITFactory()
+    sit_factory_sim = DBSITFactory()
     vehicle_params: VehicleParameters = BMW3seriesParams()
-    vehicle_model = DynamicBicycle(params=vehicle_params, delta_t=controller_time)
+    vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=controller_time)
     simulation: Simulation = Simulation(
-        vehicle_model=vehicle_model,
-        state_input_factory=state_input_factory
+        vehicle_model=vehicle_model_sim,
+        state_input_factory=sit_factory_sim
     )
 
     clcs_line: np.ndarray = extend_ref_path_with_route_planner(
@@ -79,15 +80,17 @@ def main(
         params=CLCSParams()
     )
 
-    #x_measured = kst_traj.initial_point
-    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_point)
+    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_point,
+                                       vehicle_params=vehicle_params
+                                       )
 
     traj_dict = {0: x_measured}
 
     for step, x_planner in kst_traj.points.items():
 
-        #x_desired = x_planner
-        x_desired = convert_state_kst2dst(x_planner)
+        x_desired = convert_state_kst2dst(x_planner,
+                                          vehicle_params=vehicle_params
+                                          )
 
         x_look_ahead = kst_traj.points[min(step + 2, len(kst_traj.points.keys())-1)]
 
@@ -127,7 +130,7 @@ def main(
             controller_time_step=controller_time
         )
 
-        u_now = state_input_factory.input_from_args(
+        u_now = sit_factory_sim.input_from_args(
             acceleration=u_vel + kst_input.points[step].acceleration,
             steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
         )
@@ -162,16 +165,16 @@ def main(
                 controller_time_step=controller_time
             )
 
-            u_now = state_input_factory.input_from_args(
+            u_now = sit_factory_sim.input_from_args(
                 acceleration=u_vel + kst_input.points[step].acceleration,
                 steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
             )
 
 
 
-    simulated_traj = state_input_factory.trajectory_from_state_or_input(
+    simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict,
-        mode=TrajectoryMode.Input,
+        mode=TrajectoryMode.State,
         t_0=0,
         delta_t=planner_time
     )

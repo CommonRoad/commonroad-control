@@ -1,5 +1,6 @@
 from typing import Union, Any, Literal, List, Dict
 
+from math import  tan, sqrt, cos, sin
 import numpy as np
 # reactive planner
 from commonroad.scenario.state import InputState
@@ -9,7 +10,9 @@ from commonroad_rp.state import ReactivePlannerState
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
 from commonroad_control.util.conversion_util import (
     compute_velocity_components_from_steering_angle_in_cog,
-    compute_total_velocity_from_components
+    compute_total_velocity_from_components,
+    map_velocity_from_ra_to_cog,
+    compute_position_of_cog_from_ra_cc
 )
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
@@ -22,6 +25,8 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
+
+# TODO: read position of rear-axle from reactive planner
 
 class ReactivePlannerConverter(PlanningConverterInterface):
     # TODO decide if it needs a config? Otherwise methods static.
@@ -88,12 +93,25 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param mode: state or input
         :return: KSTState or KSTInput object
         """
-        # TODO: Double-check -> ReactivePlanner has position on COG but velocity is rear axle
         if mode == TrajectoryMode.State:
+            # compute velocity at center of gravity
+            v_cog = map_velocity_from_ra_to_cog(
+                l_wb=self._vehicle_params.l_wb,
+                l_r=self._vehicle_params.l_r,
+                velocity_ra=planner_state.velocity,
+                steering_angle=planner_state.steering_angle
+            )
+            # compute position of the center of gravity
+            position_x_cog, position_y_cog = compute_position_of_cog_from_ra_cc(
+                position_ra_x=planner_state.position[0],
+                position_ra_y=planner_state.position[1],
+                heading=planner_state.orientation,
+                l_r=self._vehicle_params.l_r
+            )
             retval: KSTState = self._kst_factory.state_from_args(
-                position_x=planner_state.position[0],
-                position_y=planner_state.position[1],
-                velocity=planner_state.velocity,
+                position_x=position_x_cog,
+                position_y=position_y_cog,
+                velocity=v_cog,
                 heading=planner_state.orientation,
                 steering_angle=planner_state.steering_angle
             )
@@ -136,6 +154,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return:
         """
+        #TODO check conversion
         if mode == TrajectoryMode.State:
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
@@ -196,23 +215,37 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :return: DBState or DBInput
         """
         if mode == TrajectoryMode.State:
-            v_lon, v_lat = compute_velocity_components_from_steering_angle_in_cog(
+            # compute velocity at center of gravity
+            v_cog = map_velocity_from_ra_to_cog(
+                l_wb=self._vehicle_params.l_wb,
+                l_r=self._vehicle_params.l_r,
+                velocity_ra=planner_state.velocity,
+                steering_angle=planner_state.steering_angle
+            )
+            v_cog_lon, v_cog_lat = compute_velocity_components_from_steering_angle_in_cog(
                 steering_angle=planner_state.steering_angle,
-                velocity=planner_state.velocity,
-                wheelbase=self.vehicle_params.l_wb,
-                length_rear=self.vehicle_params.l_r
+                velocity_cog=v_cog,
+                l_wb=self.vehicle_params.l_wb,
+                l_r=self.vehicle_params.l_r
+            )
+            # compute position of the center of gravity
+            position_x_cog, position_y_cog = compute_position_of_cog_from_ra_cc(
+                position_ra_x=planner_state.position[0],
+                position_ra_y=planner_state.position[1],
+                heading=planner_state.orientation,
+                l_r=self._vehicle_params.l_r
             )
 
             retval: DBState = self._dst_factory.state_from_args(
-                position_x=planner_state.position[0],
-                position_y=planner_state.position[1],
-                velocity_long=v_lon,
-                velocity_lat=v_lat,
+                position_x=position_x_cog,
+                position_y=position_y_cog,
+                velocity_long=v_cog_lon,
+                velocity_lat=v_cog_lat,
                 yaw_rate=planner_state.yaw_rate,
                 steering_angle=planner_state.steering_angle,
                 heading=planner_state.orientation
             )
-        elif TrajectoryMode.Input:
+        elif mode == TrajectoryMode.Input:
             retval: DBInput = self._dst_factory.input_from_args(
                 acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed
@@ -242,6 +275,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return: ReactivePlannerState or InputState
         """
+        #TODO check conversion
         if mode == TrajectoryMode.State:
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,

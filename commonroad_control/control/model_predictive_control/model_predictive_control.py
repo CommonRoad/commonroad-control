@@ -160,3 +160,8 @@ class ModelPredictiveControl(Controller):
         """
         self._x_init = None
         self._u_init = None
+
+    @property
+    def horizon(self):
+        return self._ocp_solver.horizon
+
