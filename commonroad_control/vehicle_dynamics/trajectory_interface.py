@@ -85,6 +85,21 @@ class TrajectoryInterface(ABC):
 
         return self.points[idx_lower], self.points[idx_upper], idx_lower, idx_upper
 
+    def append_point(
+            self,
+            next_point: Union[StateInterface, InputInterface]) -> None:
+        """
+        Appends a point to the trajectory.
+        :param next_point: point to be appended
+        :return:
+        """
+        if type(next_point) is type(self.final_point):
+            self.points[self.steps[-1]+1] = next_point
+            self.__post_init__()
+        else:
+            raise TypeError(f"Expected point of type {type(self.final_point)}, "
+                            f"got {type(next_point)}instead")
+
     @abstractmethod
     def get_interpolated_point_at_time(
             self,

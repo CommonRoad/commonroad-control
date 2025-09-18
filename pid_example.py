@@ -7,8 +7,11 @@ from pathlib import Path
 import os
 
 import numpy as np
+
 from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad_clcs.config import CLCSParams
+from commonroad_clcs.clcs import CurvilinearCoordinateSystem
+
 from commonroad_rp.state import ReactivePlannerState
 from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
@@ -35,7 +38,6 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory i
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.pid.pid_control import PIDControl
-from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
 
 
@@ -187,7 +189,8 @@ def main(
             planner_trajectory=kst_traj,
             controller_trajectory=simulated_traj,
             save_path=img_save_path,
-            save_img=save_imgs
+            save_img=save_imgs,
+            clcs_line=clcs_line
         )
 
         if save_imgs:

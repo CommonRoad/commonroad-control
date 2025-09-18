@@ -2,6 +2,7 @@ import copy
 import math
 import random
 import unittest
+from typing import List, Tuple
 import ast
 from pathlib import Path
 import os
@@ -26,15 +27,13 @@ from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
-from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
+from commonroad_control.util.clcs_control_util import extend_reference_trajectory_lane_following, extend_kst_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kst2dst, convert_state_dst2kst
 from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 from rp_test import main as rpmain
 
-from typing import List, Tuple
 
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
@@ -92,7 +91,7 @@ def main(
         ocp_solver=scvx_solver
     )
 
-    kst_traj, kst_input = execute_planner(
+    x_ref, u_ref = execute_planner(
         input_file=planner_input_file,
         state_file=planner_state_file
     )
@@ -105,20 +104,19 @@ def main(
         state_input_factory=sit_factory_sim
     )
 
-    clcs_line: np.ndarray = extend_ref_path_with_route_planner(
-        positional_trajectory=np.asarray([[state.position_x, state.position_y] for state in kst_traj.points.values()]),
+    # extend reference trajectory
+    clcs_traj, x_ref_ext, u_ref_ext = extend_kst_reference_trajectory_lane_following(
+        x_ref=copy.copy(x_ref),
+        u_ref=copy.copy(u_ref),
         lanelet_network=scenario.lanelet_network,
-    )
+        vehicle_params=vehicle_params,
+        delta_t=dt_controller,
+        horizon=mpc.horizon)
 
-    clcs_traj: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
-        reference_path=clcs_line,
-        params=CLCSParams()
-    )
-
-    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_point,
+    x_measured = convert_state_kst2dst(kst_state=x_ref.initial_point,
                                        vehicle_params=vehicle_params
                                        )
-    # x_measured = kst_traj.initial_point
+    # x_measured = x_ref.initial_point
 
     traj_dict = {0: x_measured}
     input_dict = {}
@@ -126,19 +124,19 @@ def main(
     u_ref_steps = [kk for kk in range(mpc.horizon)]
 
     # for step, x_planner in kst_traj.points.items():
-    for kk_sim in range(len(kst_traj.steps) - mpc.horizon):
+    for kk_sim in range(len(x_ref.steps)):
 
         # extract reference trajectory
-        x_ref_points = [kst_traj.points[kk+kk_sim] for kk in x_ref_steps]
-        x_ref = sit_factory_ctrl.trajectory_from_state_or_input(
-            trajectory_dict=dict(zip(x_ref_steps,x_ref_points)),
+        tmp_x_ref_points = [x_ref_ext.points[kk+kk_sim] for kk in x_ref_steps]
+        tmp_x_ref = sit_factory_ctrl.trajectory_from_state_or_input(
+            trajectory_dict=dict(zip(x_ref_steps,tmp_x_ref_points)),
             mode=TrajectoryMode.State,
             t_0=kk_sim * dt_controller,
             delta_t=dt_controller
         )
-        u_ref_points = [kst_input.points[kk+kk_sim] for kk in u_ref_steps]
-        u_ref = sit_factory_ctrl.trajectory_from_state_or_input(
-            trajectory_dict=dict(zip(u_ref_steps,u_ref_points)),
+        tmp_u_ref_points = [u_ref_ext.points[kk+kk_sim] for kk in u_ref_steps]
+        tmp_u_ref = sit_factory_ctrl.trajectory_from_state_or_input(
+            trajectory_dict=dict(zip(u_ref_steps,tmp_u_ref_points)),
             mode=TrajectoryMode.Input,
             t_0=kk_sim * dt_controller,
             delta_t=dt_controller
@@ -151,8 +149,8 @@ def main(
         # compute control input
         u_now = mpc.compute_control_input(
             x0=x0_kst,
-            x_ref=x_ref,
-            u_ref=u_ref
+            x_ref=tmp_x_ref,
+            u_ref=tmp_u_ref
         )
         # u_now = kst_input.points[kk_sim]
         input_dict[kk_sim] = u_now
@@ -185,7 +183,7 @@ def main(
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,
-            planner_trajectory=kst_traj,
+            planner_trajectory=x_ref,
             controller_trajectory=simulated_traj,
             save_path=img_save_path,
             save_img=save_imgs
@@ -195,14 +193,14 @@ def main(
             make_gif(
                 path_to_img_dir=img_save_path,
                 scenario_name=str(scenario.scenario_id),
-                num_imgs=len(kst_traj.points.values())
+                num_imgs=len(x_ref.points.values())
             )
 
     visualize_desired_vs_actual_states(
-        desired_states=kst_traj,
+        desired_states=x_ref,
         actual_states=simulated_traj,
         time_steps=list(simulated_traj.points.keys())[:-2],
-        state_dim=kst_traj.dim,
+        state_dim=x_ref.dim,
         save_img=save_imgs,
         save_path=img_save_path
     )

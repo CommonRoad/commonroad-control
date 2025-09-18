@@ -95,8 +95,6 @@ def visualize_trajectories(
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 50
         controller_vehicle.draw(renderer, draw_params=draw_params)
 
-
-
         # draw scenario and renderer
         renderer.render()
         plt.title(f"Time step = {step}")
