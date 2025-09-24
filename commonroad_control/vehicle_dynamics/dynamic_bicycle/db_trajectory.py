@@ -1,14 +1,20 @@
 from dataclasses import dataclass
 from typing import Union, List
+import numpy as np
 
 from commonroad.geometry.shape import Rectangle
 from commonroad.prediction.prediction import TrajectoryPrediction, Trajectory
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.state import InitialState, CustomState
 
+from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
+
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 
 
 @dataclass
@@ -17,15 +23,33 @@ class DBTrajectory(TrajectoryInterface):
     Dynamic Single Track Trajectory
     """
 
-    def get_interpolated_point_at_time(
+    def get_point_at_time(
             self,
-            time: float
-    ) -> Union['DBInput', 'DBState']:
+            time: float,
+            factory: 'DBSITFactory'
+    ) -> Union['DBState', 'DBInput']:
         """
+        Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
+        (discrete) time steps.
         :param time: time at which to interpolate
-        :return: interpolated state
+        :param factory: sit_factory for instantiating the interpolated point (dataclass object)
+        :return: interpolated point
         """
-        pass
+
+        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(
+            time=time
+        )
+        if lower_idx == upper_idx:
+            new_point = lower_point
+        else:
+            alpha = (upper_idx*self.delta_t - time) / self.delta_t
+            new_point_array: np.ndarray = (
+                    alpha*upper_point.convert_to_array() + (1-alpha)*lower_point.convert_to_array()
+            )
+            new_point: Union[DBState,DBInput] = (
+                factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
+                else factory.input_from_numpy_array(new_point_array)
+        return new_point
 
 
     def to_cr_dynamic_obstacle(

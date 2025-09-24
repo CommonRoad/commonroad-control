@@ -65,7 +65,7 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_numpy_array(
             self,
-            x_np: np.array,
+            x_np: np.ndarray[tuple[float], np.dtype[np.float64]],
     ) -> Union['DBState']:
         """
         Set values of class from a given array.
@@ -89,7 +89,7 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def input_from_numpy_array(
             self,
-            u_np: np.array
+            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union['DBInput']:
         """
         Set values from a given array.

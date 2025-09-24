@@ -47,7 +47,6 @@ class KSTState(StateInterface):
 
         return x
 
-
     def to_cr_initial_state(
             self,
             time_step: int

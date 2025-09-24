@@ -8,6 +8,10 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+
 
 @dataclass
 class TrajectoryInterface(ABC):
@@ -101,14 +105,16 @@ class TrajectoryInterface(ABC):
                             f"got {type(next_point)}instead")
 
     @abstractmethod
-    def get_interpolated_point_at_time(
+    def get_point_at_time(
             self,
             time: float,
-            factory: Any
+            factory: 'StateInputTrajectoryFactoryInterface'
     ) -> Union[StateInterface, InputInterface]:
         """
-        Interpolate trajectory point at given point in time.
-        :param time: point in time
+        Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
+        (discrete) time steps.
+        :param time: time at which to interpolate
+        :param factory: sit_factory for instantiating the interpolated point (dataclass object)
         :return: StateInterface/InputInterface
         """
         pass

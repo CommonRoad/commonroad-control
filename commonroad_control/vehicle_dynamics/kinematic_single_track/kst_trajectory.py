@@ -9,9 +9,9 @@ from commonroad.scenario.state import InitialState, CustomState
 
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
 from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
-from typing import Dict, List, Tuple, Union, Any, Optional, Literal
+from typing import List, Union
 
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -23,29 +23,33 @@ class KSTTrajectory(TrajectoryInterface):
     Kinematic Single Track Trajectory
     """
 
-    def get_interpolated_point_at_time(
+    def get_point_at_time(
             self,
             time: float,
             factory: 'KSTSITFactory'
     ) -> Union['KSTState', 'KSTInput']:
         """
+        Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
+        (discrete) time steps.
         :param time: time at which to interpolate
-        :return: interpolated state
+        :param factory: sit_factory for instantiating the interpolated point (dataclass object)
+        :return: interpolated point
         """
-        # TODO Smarter way to integrate from_to_stuff
-        lower_state, upper_state, lower_idx, upper_idx = self.get_point_before_and_after_time(time=time)
+
+        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(
+            time=time
+        )
         if lower_idx == upper_idx:
-            new_state = lower_state
+            new_point = lower_point
         else:
-            new_state_array: np.ndarray = (
-                    ((upper_state.convert_to_array() - lower_state.convert_to_array()) / self.delta_t)
-                    * (upper_idx*self.delta_t - time)
-                    + lower_state.convert_to_array()
+            alpha = (upper_idx*self.delta_t - time) / self.delta_t
+            new_point_array: np.ndarray = (
+                (1-alpha)*upper_point.convert_to_array() + alpha*lower_point.convert_to_array()
             )
-            new_state: KSTState = (
-                factory.state_from_numpy_array(new_state_array)) if self.mode == 'state' \
-                else factory.input_from_numpy_array(new_state_array)
-        return new_state
+            new_point: Union[KSTState,KSTInput] = (
+                factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
+                else factory.input_from_numpy_array(new_point_array)
+        return new_point
 
 
 

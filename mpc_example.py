@@ -42,6 +42,7 @@ from commonroad_control.control.model_predictive_control.model_predictive_contro
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
 from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 
+from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
 
 
 
@@ -71,6 +72,7 @@ def main(
     sit_factory_ctrl = KSTSITFactory()
     # ... initialize optimal control solver
     cost_xx = np.eye(KSTStateIndices.dim)
+    cost_xx[KSTStateIndices.steering_angle, KSTStateIndices.steering_angle] = 0.0
     cost_uu = 0.01 * np.eye(KSTInputIndices.dim)
     cost_final = np.eye(KSTStateIndices.dim)
     # ... real time iteration -> only one iteration per time step
@@ -112,6 +114,16 @@ def main(
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
         horizon=mpc.horizon)
+    reference_trajectory = ReferenceTrajectoryFactory(
+        delta_t_controller=dt_controller,
+        sit_factory=KSTSITFactory(),
+        horizon=mpc.horizon,
+    )
+    reference_trajectory.set_reference_trajectory(
+        state_ref=x_ref_ext,
+        input_ref=u_ref_ext,
+        t_0=0
+    )
 
     x_measured = convert_state_kst2dst(kst_state=x_ref.initial_point,
                                        vehicle_params=vehicle_params
@@ -127,19 +139,8 @@ def main(
     for kk_sim in range(len(x_ref.steps)):
 
         # extract reference trajectory
-        tmp_x_ref_points = [x_ref_ext.points[kk+kk_sim] for kk in x_ref_steps]
-        tmp_x_ref = sit_factory_ctrl.trajectory_from_state_or_input(
-            trajectory_dict=dict(zip(x_ref_steps,tmp_x_ref_points)),
-            mode=TrajectoryMode.State,
-            t_0=kk_sim * dt_controller,
-            delta_t=dt_controller
-        )
-        tmp_u_ref_points = [u_ref_ext.points[kk+kk_sim] for kk in u_ref_steps]
-        tmp_u_ref = sit_factory_ctrl.trajectory_from_state_or_input(
-            trajectory_dict=dict(zip(u_ref_steps,tmp_u_ref_points)),
-            mode=TrajectoryMode.Input,
-            t_0=kk_sim * dt_controller,
-            delta_t=dt_controller
+        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
+            t=kk_sim*dt_controller
         )
 
         # convert initial state to kst
@@ -162,15 +163,6 @@ def main(
         )
         traj_dict[kk_sim+1] = x_measured
 
-
-
-
-    # simulated_traj = state_input_factory.trajectory_from_state_or_input(
-    #     trajectory_dict=traj_dict,
-    #     mode=TrajectoryMode.Input,
-    #     t_0=0,
-    #     delta_t=dt_controller
-    # )
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict,
         mode=TrajectoryMode.State,

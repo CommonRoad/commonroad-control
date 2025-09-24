@@ -58,11 +58,11 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_numpy_array(
             self,
-            x_np: np.array,
+            x_np: np.ndarray[tuple[float], np.dtype[np.float64]],
     ) -> Union['KSTState']:
         """
         Set values of class from a given array.
-        :param x_np: state vector - array of dimension (dim,)
+        :param x_np: state vector - array of dimension (dim,1)
         """
         if int(x_np.shape[0]) != KSTStateIndices.dim:
             raise ValueError(f'Dimension {x_np.shape[0]} does not match required {KSTStateIndices.dim}')
@@ -79,11 +79,11 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
 
     def input_from_numpy_array(
             self,
-            u_np: np.array
+            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union['KSTInput']:
         """
         Set values from a given array.
-        :param u_np: control input - array of dimension (self.dim,)
+        :param u_np: control input - array of dimension (self.dim,1)
         """
         if u_np.ndim > 1:
             raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
@@ -120,7 +120,7 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
 
     def trajectory_from_numpy_array(
             self,
-            traj_np: np.array,
+            traj_np: np.ndarray[tuple[float, float], np.dtype[np.float64]],
             mode: TrajectoryMode,
             time: List[int],
             t_0: float,
@@ -149,11 +149,3 @@ class KSTSITFactory(StateInputTrajectoryFactoryInterface):
             delta_t=delta_t,
             t_0=t_0
         )
-
-
-
-
-
-
-
-

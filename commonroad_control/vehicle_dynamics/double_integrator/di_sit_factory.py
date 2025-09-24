@@ -55,7 +55,7 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
 
     def state_from_numpy_array(
             self,
-            x_np: np.array,
+            x_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union['DIState']:
         """
         Set values of state from a given array
@@ -99,7 +99,7 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
 
     def trajectory_from_numpy_array(
             self,
-            traj_np: np.array,
+            traj_np: np.ndarray[tuple[float,float], np.dtype[np.float64]],
             mode: TrajectoryMode,
             time: List[int],
             t_0: float,
@@ -131,7 +131,7 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
 
     def input_from_numpy_array(
             self,
-            u_np: np.array
+            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union['DIInput']:
         """
         Set values of control input from a given array.
@@ -146,23 +146,3 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             acceleration_long=u_np[DIInputIndices.acceleration_long],
             acceleration_lat=u_np[DIInputIndices.acceleration_lat]
         )
-
-
-
-    def state_from_args(
-            self,
-            *args
-    ) -> Union[Any]:
-        """
-        Create State from input args
-        """
-        pass
-
-    def input_from_args(
-            self,
-            *args
-    ) -> Union[Any]:
-        """
-        Return input
-        """
-        pass
