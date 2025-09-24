@@ -125,7 +125,7 @@ def main(
         t_0=0
     )
 
-    x_measured = convert_state_kb2db(kst_state=x_ref.initial_point,
+    x_measured = convert_state_kb2db(kb_state=x_ref.initial_point,
                                      vehicle_params=vehicle_params
                                      )
     # x_measured = x_ref.initial_point
@@ -135,7 +135,7 @@ def main(
     x_ref_steps = [kk for kk in range(mpc.horizon + 1)]
     u_ref_steps = [kk for kk in range(mpc.horizon)]
 
-    # for step, x_planner in kst_traj.points.items():
+    # for step, x_planner in kb_traj.points.items():
     for kk_sim in range(len(x_ref.steps)):
 
         # extract reference trajectory
@@ -143,17 +143,17 @@ def main(
             t=kk_sim*dt_controller
         )
 
-        # convert initial state to kst
-        x0_kst = convert_state_db2kb(traj_dict[kk_sim])
-        # x0_kst = traj_dict[kk_sim]
+        # convert initial state to kb
+        x0_kb = convert_state_db2kb(traj_dict[kk_sim])
+        # x0_kb = traj_dict[kk_sim]
 
         # compute control input
         u_now = mpc.compute_control_input(
-            x0=x0_kst,
+            x0=x0_kb,
             x_ref=tmp_x_ref,
             u_ref=tmp_u_ref
         )
-        # u_now = kst_input.points[kk_sim]
+        # u_now = kb_input.points[kk_sim]
         input_dict[kk_sim] = u_now
         # simulate
         x_measured = simulation.simulate(
@@ -210,8 +210,8 @@ def execute_planner(
         state_file: Path
 ) -> Tuple[KBTrajectory, KBTrajectory]:
     """
-    Dummy loading precomputed Reactive Planner KST Trajectory
-    :return: kst trajectory for state and input
+    Dummy loading precomputed Reactive Planner KB Trajectory
+    :return: kb trajectory for state and input
     """
     with open(input_file, "r") as f:
         i = [ast.literal_eval(el) for el in f.readlines()]
@@ -236,10 +236,10 @@ def execute_planner(
             )
     rpc = ReactivePlannerConverter()
     return (
-        rpc.trajectory_p2c_kst(
+        rpc.trajectory_p2c_kb(
             planner_traj=rp_states,
             mode=TrajectoryMode.State),
-        rpc.trajectory_p2c_kst(
+        rpc.trajectory_p2c_kb(
             planner_traj=rp_inputs,
             mode=TrajectoryMode.Input)
     )

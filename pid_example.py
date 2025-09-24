@@ -59,7 +59,7 @@ def main(
     planner_time: float = 0.1
     controller_time = planner_time
 
-    kst_traj, kst_input = execute_planner(
+    kb_traj, kb_input = execute_planner(
         input_file=planner_input_file,
         state_file=planner_state_file
     )
@@ -73,7 +73,7 @@ def main(
     )
 
     clcs_line: np.ndarray = extend_ref_path_with_route_planner(
-        positional_trajectory=np.asarray([[state.position_x, state.position_y] for state in kst_traj.points.values()]),
+        positional_trajectory=np.asarray([[state.position_x, state.position_y] for state in kb_traj.points.values()]),
         lanelet_network=scenario.lanelet_network,
     )
 
@@ -82,19 +82,19 @@ def main(
         params=CLCSParams()
     )
 
-    x_measured = convert_state_kb2db(kst_state=kst_traj.initial_point,
+    x_measured = convert_state_kb2db(kb_state=kb_traj.initial_point,
                                      vehicle_params=vehicle_params
                                      )
 
     traj_dict = {0: x_measured}
 
-    for step, x_planner in kst_traj.points.items():
+    for step, x_planner in kb_traj.points.items():
 
         x_desired = convert_state_kb2db(x_planner,
                                         vehicle_params=vehicle_params
                                         )
 
-        x_look_ahead = kst_traj.points[min(step + 2, len(kst_traj.points.keys())-1)]
+        x_look_ahead = kb_traj.points[min(step + 2, len(kb_traj.points.keys())-1)]
 
         try:
             current_position_curv = clcs_traj.convert_to_curvilinear_coords(
@@ -133,8 +133,8 @@ def main(
         )
 
         u_now = sit_factory_sim.input_from_args(
-            acceleration=u_vel + kst_input.points[step].acceleration,
-            steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
+            acceleration=u_vel + kb_input.points[step].acceleration,
+            steering_angle_velocity=u_steer + kb_input.points[step].steering_angle_velocity
         )
 
 
@@ -168,8 +168,8 @@ def main(
             )
 
             u_now = sit_factory_sim.input_from_args(
-                acceleration=u_vel + kst_input.points[step].acceleration,
-                steering_angle_velocity=u_steer + kst_input.points[step].steering_angle_velocity
+                acceleration=u_vel + kb_input.points[step].acceleration,
+                steering_angle_velocity=u_steer + kb_input.points[step].steering_angle_velocity
             )
 
 
@@ -186,25 +186,24 @@ def main(
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,
-            planner_trajectory=kst_traj,
+            planner_trajectory=kb_traj,
             controller_trajectory=simulated_traj,
             save_path=img_save_path,
-            save_img=save_imgs,
-            clcs_line=clcs_line
+            save_img=save_imgs
         )
 
         if save_imgs:
             make_gif(
                 path_to_img_dir=img_save_path,
                 scenario_name=str(scenario.scenario_id),
-                num_imgs=len(kst_traj.points.values())
+                num_imgs=len(kb_traj.points.values())
             )
 
     visualize_desired_vs_actual_states(
-        desired_states=kst_traj,
+        desired_states=kb_traj,
         actual_states=simulated_traj,
         time_steps=list(simulated_traj.points.keys())[:-2],
-        state_dim=kst_traj.dim,
+        state_dim=kb_traj.dim,
         save_img=save_imgs,
         save_path=img_save_path
     )
@@ -222,8 +221,8 @@ def execute_planner(
         state_file: Path
 ) -> Tuple[KBTrajectory, KBTrajectory]:
     """
-    Dummy loading precomputed Reactive Planner KST Trajectory
-    :return: kst trajectory for state and input
+    Dummy loading precomputed Reactive Planner KB Trajectory
+    :return: kb trajectory for state and input
     """
     with open(input_file, "r") as f:
         i = [ast.literal_eval(el) for el in f.readlines()]
@@ -248,10 +247,10 @@ def execute_planner(
             )
     rpc = ReactivePlannerConverter()
     return (
-        rpc.trajectory_p2c_kst(
+        rpc.trajectory_p2c_kb(
             planner_traj=rp_states,
             mode=TrajectoryMode.State),
-        rpc.trajectory_p2c_kst(
+        rpc.trajectory_p2c_kb(
             planner_traj=rp_inputs,
             mode=TrajectoryMode.Input)
     )

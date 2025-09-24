@@ -36,20 +36,20 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             self,
             config: int = 0,
             kb_factory: Union[KBSITFactory, Any] = KBSITFactory(),
-            dst_factory: Union[DBSITFactory, Any] = DBSITFactory(),
+            db_factory: Union[DBSITFactory, Any] = DBSITFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         """
         Converter for CommonRoad reactive planner
         :param config: dummy
         :param kb_factory: kb Factory
-        :param dst_factory: DST Factory
+        :param db_factory: db Factory
         :param vehicle_params: vehicle params
         """
         super().__init__(
             config=config,
             kb_factory=kb_factory,
-            dst_factory=dst_factory,
+            db_factory=db_factory,
             vehicle_params=vehicle_params
         )
 
