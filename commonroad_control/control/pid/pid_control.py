@@ -40,5 +40,4 @@ class PIDControl(Controller):
         return self._kp * error + self._ki * self._integrated_error + self._kd * d_error
 
     def reset(self) -> None:
-        self._error_i = 0.0
-
+        self._integrated_error = 0.0

@@ -112,9 +112,9 @@ def compute_position_of_cog_from_ra_cc(
     :param heading: orientation of the vehicle
     :return: position of the center of gravity (Cartesian coordinates)
     """
-    #TODO: for now just pass rear-axle position
-    position_cog_x = position_ra_x# + l_r*math.cos(heading)
-    position_cog_y = position_ra_y# + l_r*math.sin(heading)
+
+    position_cog_x = position_ra_x + l_r*math.cos(heading)
+    position_cog_y = position_ra_y + l_r*math.sin(heading)
 
     return (
         position_cog_x,
