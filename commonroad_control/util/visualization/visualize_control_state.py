@@ -3,14 +3,14 @@ import os
 
 import matplotlib.pyplot as plt
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
 from typing import Optional, List, Union
 
 def visualize_desired_vs_actual_states(
-    desired_states: Union[TrajectoryInterface, KSTTrajectory],
-    actual_states: Union[TrajectoryInterface, KSTTrajectory],
+    desired_states: Union[TrajectoryInterface, KBTrajectory],
+    actual_states: Union[TrajectoryInterface, KBTrajectory],
     time_steps: List[int],
     state_dim: int,
     state_names: Optional[List[str]] = None,

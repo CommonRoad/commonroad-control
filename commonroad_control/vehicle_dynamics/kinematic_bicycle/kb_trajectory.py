@@ -7,18 +7,18 @@ from commonroad.prediction.prediction import TrajectoryPrediction, Trajectory
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.state import InitialState, CustomState
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 from typing import List, Union
 
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
+    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 
 @dataclass
-class KSTTrajectory(TrajectoryInterface):
+class KBTrajectory(TrajectoryInterface):
     """
     Kinematic Single Track Trajectory
     """
@@ -26,8 +26,8 @@ class KSTTrajectory(TrajectoryInterface):
     def get_point_at_time(
             self,
             time: float,
-            factory: 'KSTSITFactory'
-    ) -> Union['KSTState', 'KSTInput']:
+            factory: 'KBSITFactory'
+    ) -> Union['KBState', 'KBInput']:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
@@ -46,7 +46,7 @@ class KSTTrajectory(TrajectoryInterface):
             new_point_array: np.ndarray = (
                 (1-alpha)*upper_point.convert_to_array() + alpha*lower_point.convert_to_array()
             )
-            new_point: Union[KSTState,KSTInput] = (
+            new_point: Union[KBState,KBInput] = (
                 factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
                 else factory.input_from_numpy_array(new_point_array)
         return new_point

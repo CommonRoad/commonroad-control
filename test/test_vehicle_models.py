@@ -2,13 +2,13 @@ import unittest
 
 from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.simulation.simulation import Simulation
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -25,35 +25,35 @@ class VehicleModelSimulationTest(unittest.TestCase):
     """
     # TODO: Reasonable values to compare against
 
-    def test_kst_sim(self) -> None:
+    def test_kb_sim(self) -> None:
         # ----------------- kinematic single track ------------------
 
         # init vehicle model
-        kst = KinematicSingleStrack(params=BMW3seriesParams(), delta_t=0.1)
+        kb = KinematicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
-        kst_factory: KSTSITFactory = KSTSITFactory()
+        kb_factory: KBSITFactory = KBSITFactory()
 
         # init simulation
-        sim = Simulation(vehicle_model=kst, state_input_factory=kst_factory)
+        sim = Simulation(vehicle_model=kb, state_input_factory=kb_factory)
 
         # set initial state and control input
-        x0 = KSTState(position_x=0.0, position_y=0.0, velocity=15.0, heading=0.0, steering_angle=0.0)
-        u = KSTInput(acceleration=0.0, steering_angle_velocity=0.15)
+        x0 = KBState(position_x=0.0, position_y=0.0, velocity=15.0, heading=0.0, steering_angle=0.0)
+        u = KBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
         x_sim = sim.simulate(x0, u, time_horizon=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
 
-    def test_dst_sim(self) -> None:
+    def test_db_sim(self) -> None:
         # ----------------- dynamic bicycle ------------------
         # init vehicle model
         db = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
-        dst_factory: DBSITFactory = DBSITFactory()
+        db_factory: DBSITFactory = DBSITFactory()
 
         # init simulation
-        sim = Simulation(vehicle_model=db, state_input_factory=dst_factory)
+        sim = Simulation(vehicle_model=db, state_input_factory=db_factory)
 
         # set initial state and control input
         x0 = DBState(position_x=0.0, position_y=0.0, velocity_long=15.0, velocity_lat=0.0,

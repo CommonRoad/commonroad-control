@@ -17,7 +17,7 @@ from rp_test import main as rpmain
 
 from typing import List
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
 
 
@@ -57,8 +57,8 @@ class TestReactivePlannerConverter(unittest.TestCase):
         # -- Subtest for KST Conversion --
         with self.subTest(msg=f"KST Conversion P2C and C2P"):
             rpc = ReactivePlannerConverter()
-            kst_state_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
-            kst_input_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+            kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
+            kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
 
             rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
             rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')
@@ -163,8 +163,8 @@ class TestReactivePlannerConverter(unittest.TestCase):
 
 
         rpc = ReactivePlannerConverter()
-        kst_state_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
-        kst_input_traj: KSTTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+        kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
+        kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
 
         rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
         rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')

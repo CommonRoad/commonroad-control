@@ -7,10 +7,10 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 
 
 class TestModelInstantiation(unittest.TestCase):
@@ -19,34 +19,34 @@ class TestModelInstantiation(unittest.TestCase):
     """
 
 
-    def test_kst_inst(self) -> None:
+    def test_kb_inst(self) -> None:
        """
-       Test Kinematic Single Track state, input and trajectory
+       Test Kinematic Bicycle state, input, and trajectory
        """
-       kst_model = KinematicSingleStrack(params=BMW3seriesParams(), delta_t=0.1)
+       kst_model = KinematicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
-       states = {0: KSTState(position_x=5, position_y=5, velocity=5, heading=5, steering_angle=5),
-                 1: KSTState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
-       state_traj = KSTTrajectory(
+       states = {0: KBState(position_x=5, position_y=5, velocity=5, heading=5, steering_angle=5),
+                 1: KBState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
+       state_traj = KBTrajectory(
            mode=TrajectoryMode.State,
            points=states,
            t_0=0,
            delta_t=0.5
        )
 
-       inputs = {0: KSTInput(acceleration=5, steering_angle_velocity=5), 1: KSTInput(acceleration=3, steering_angle_velocity=3)}
-       input_traj = KSTTrajectory(
+       inputs = {0: KBInput(acceleration=5, steering_angle_velocity=5), 1: KBInput(acceleration=3, steering_angle_velocity=3)}
+       input_traj = KBTrajectory(
            mode=TrajectoryMode.Input,
            points=inputs,
            t_0=0,
            delta_t=0.5
        )
 
-    def test_dst_inst(self) -> None:
+    def test_db_inst(self) -> None:
         """
-        Test Dynamic single track
+        Test Dynamic bicycle state, input, and trajectory
         """
-        dst_model = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
+        db_model = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
         states = {0: DBState(
             position_x=5, position_y=5, velocity_long=5, velocity_lat=5, heading=5, steering_angle=5

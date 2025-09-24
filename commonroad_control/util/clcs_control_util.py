@@ -19,8 +19,8 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 
 
 def extend_ref_path_with_route_planner(
@@ -159,7 +159,7 @@ def extend_reference_trajectory_lane_following(
     return clcs_traj_ext, position_xy, velocity, acceleration, heading, yaw_rate, steering_angle, steering_angle_velocity
 
 
-def extend_kst_reference_trajectory_lane_following(
+def extend_kb_reference_trajectory_lane_following(
         x_ref: TrajectoryInterface,
         u_ref: TrajectoryInterface,
         lanelet_network: LaneletNetwork,
@@ -185,7 +185,7 @@ def extend_kst_reference_trajectory_lane_following(
     # append states
     for kk in range(horizon):
         x_ref.append_point(
-            KSTState(
+            KBState(
                 position_x=position_xy[kk][0],
                 position_y=position_xy[kk][1],
                 velocity=velocity[kk],
@@ -197,7 +197,7 @@ def extend_kst_reference_trajectory_lane_following(
     # append control inputs
     for kk in range(horizon):
         u_ref.append_point(
-            KSTInput(
+            KBInput(
                 acceleration=acceleration[kk],
                 steering_angle_velocity=steering_angle_velocity[kk]
             )

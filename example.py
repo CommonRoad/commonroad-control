@@ -2,36 +2,36 @@ import numpy as np
 
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.planning_converter.dummy_converter import DummyPlanningConverter
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 from typing import List, Any
 
 
 def main(simulate: bool = True) -> None:
-    kst_sit_factory = KSTSITFactory()
+    kst_sit_factory = KBSITFactory()
     params = BMW3seriesParams()
     traj_converter = DummyPlanningConverter(kst_factory=kst_sit_factory, vehicle_params=params)
-    model = KinematicSingleStrack(params=params, delta_t=0.1)
+    model = KinematicBicycle(params=params, delta_t=0.1)
 
     replannings = range(2)
     for replanning in replannings:
         ########## Dummy Trajectory from planner
-        states = {0: KSTState(position_x=5, position_y=0, velocity=5, heading=0, steering_angle=0),
-                  1: KSTState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
-        planner_state_traj = KSTTrajectory(
+        states = {0: KBState(position_x=5, position_y=0, velocity=5, heading=0, steering_angle=0),
+                  1: KBState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
+        planner_state_traj = KBTrajectory(
             mode='state',
             points=states,
             t_0=0,
             delta_t=0.1
         )
 
-        inputs = {0: KSTInput(acceleration=5, steering_angle_velocity=5), 1: KSTInput(acceleration=3, steering_angle_velocity=3)}
-        planner_input_traj = KSTTrajectory(
+        inputs = {0: KBInput(acceleration=5, steering_angle_velocity=5), 1: KBInput(acceleration=3, steering_angle_velocity=3)}
+        planner_input_traj = KBTrajectory(
             mode='input',
             points=inputs,
             t_0=0,
@@ -43,14 +43,14 @@ def main(simulate: bool = True) -> None:
         simulator = Simulation(vehicle_model=model)
 
         # convert trajectory
-        kst_state_traj: KSTTrajectory = traj_converter.trajectory_p2c_kst(planner_state_traj, mode='state')
-        kst_input_traj: KSTTrajectory = traj_converter.trajectory_p2c_kst(planner_input_traj, mode='input')
+        kst_state_traj: KBTrajectory = traj_converter.trajectory_p2c_kst(planner_state_traj, mode='state')
+        kst_input_traj: KBTrajectory = traj_converter.trajectory_p2c_kst(planner_input_traj, mode='input')
 
         print(f"-- Initial State --")
         print(kst_state_traj.initial_point)
 
 
-        current_state: KSTState = kst_state_traj.initial_point
+        current_state: KBState = kst_state_traj.initial_point
         for t in range(2):
             # control dummy
             controller_state_output = current_state
@@ -62,7 +62,7 @@ def main(simulate: bool = True) -> None:
                     x0=controller_state_output, u=controller_u, time_horizon=0.1
                 )
 
-                new_state: KSTState = kst_sit_factory.state_from_numpy_array(new_state_np)
+                new_state: KBState = kst_sit_factory.state_from_numpy_array(new_state_np)
                 # results
                 print(f"--- Result ---")
                 print(new_state)

@@ -20,21 +20,21 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_ref_path_with_route_planner
-from commonroad_control.util.state_conversion import convert_state_kst2dst
+from commonroad_control.util.state_conversion import convert_state_kb2db
 from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 from rp_test import main as rpmain
 
 from typing import List, Tuple
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.pid.pid_control import PIDControl
@@ -82,17 +82,17 @@ def main(
         params=CLCSParams()
     )
 
-    x_measured = convert_state_kst2dst(kst_state=kst_traj.initial_point,
-                                       vehicle_params=vehicle_params
-                                       )
+    x_measured = convert_state_kb2db(kst_state=kst_traj.initial_point,
+                                     vehicle_params=vehicle_params
+                                     )
 
     traj_dict = {0: x_measured}
 
     for step, x_planner in kst_traj.points.items():
 
-        x_desired = convert_state_kst2dst(x_planner,
-                                          vehicle_params=vehicle_params
-                                          )
+        x_desired = convert_state_kb2db(x_planner,
+                                        vehicle_params=vehicle_params
+                                        )
 
         x_look_ahead = kst_traj.points[min(step + 2, len(kst_traj.points.keys())-1)]
 
@@ -220,7 +220,7 @@ def main(
 def execute_planner(
         input_file: Path,
         state_file: Path
-) -> Tuple[KSTTrajectory, KSTTrajectory]:
+) -> Tuple[KBTrajectory, KBTrajectory]:
     """
     Dummy loading precomputed Reactive Planner KST Trajectory
     :return: kst trajectory for state and input

@@ -2,15 +2,13 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput, KSTInputIndices
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState, KSTStateIndices
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
 
-class KinematicSingleStrack(VehicleModelInterface):
+class KinematicBicycle(VehicleModelInterface):
     def __init__(self, params: VehicleParameters, delta_t: float):
 
         # set vehicle parameters
@@ -22,26 +20,26 @@ class KinematicSingleStrack(VehicleModelInterface):
         # init base class
         super().__init__(
             params=params,
-            nx=KSTState.dim,
-            nu=KSTInput.dim,
+            nx=KBState.dim,
+            nu=KBInput.dim,
             delta_t=delta_t
         )
 
-    def simulate_forward(self, x: KSTState, u: KSTInput) -> KSTState:
+    def simulate_forward(self, x: KBState, u: KBInput) -> KBState:
         pass
 
-    def linearize(self, x: KSTState, u: KSTInput) -> Tuple[KSTState, np.array, np.array]:
+    def linearize(self, x: KBState, u: KBInput) -> Tuple[KBState, np.array, np.array]:
         pass
 
-    def position_to_clcs(self, x: KSTState) -> KSTState:
+    def position_to_clcs(self, x: KBState) -> KBState:
         pass
 
-    def position_to_cartesian(self, x: KSTState) -> KSTState:
+    def position_to_cartesian(self, x: KBState) -> KBState:
         pass
 
     def _set_input_bounds(self,
                           params: VehicleParameters) \
-        -> Tuple[KSTInput, KSTInput]:
+        -> Tuple[KBInput, KBInput]:
         """
         Extract input bounds from vehicle parameters and store as instance of InputInterface class.
         :param params: vehicle parameters
@@ -49,13 +47,13 @@ class KinematicSingleStrack(VehicleModelInterface):
         """
 
         # lower bound
-        u_lb = KSTInput(
+        u_lb = KBInput(
             acceleration=-params.a_long_max,
             steering_angle_velocity=-params.steering_angle_velocity_max
         )
 
         # upper bound
-        u_ub = KSTInput(
+        u_ub = KBInput(
             acceleration=params.a_long_max,
             steering_angle_velocity=params.steering_angle_velocity_max
         )
@@ -78,10 +76,10 @@ class KinematicSingleStrack(VehicleModelInterface):
         f = self._dynamics_cas(x, u)
 
         # extract state
-        pos_y = x[KSTStateIndices.position_y]
-        v = x[KSTStateIndices.velocity]
-        psi = x[KSTStateIndices.heading]
-        delta = x[KSTStateIndices.steering_angle]
+        pos_y = x[KBStateIndices.position_y]
+        v = x[KBStateIndices.velocity]
+        psi = x[KBStateIndices.heading]
+        delta = x[KBStateIndices.steering_angle]
 
         # extract parameters
         kappa_ref = p.curvature
@@ -90,8 +88,8 @@ class KinematicSingleStrack(VehicleModelInterface):
         beta = cas.atan(cas.tan(delta) * self._l_r / self._l_wb)
 
         # dynamics
-        f[KSTStateIndices.position_x] = v*cas.cos(psi-psi_ref)/(1 - pos_y*kappa_ref)
-        f[KSTStateIndices.position_y] = v * cas.sin(psi - psi_ref)
+        f[KBStateIndices.position_x] = v * cas.cos(psi - psi_ref) / (1 - pos_y * kappa_ref)
+        f[KBStateIndices.position_y] = v * cas.sin(psi - psi_ref)
 
         return f
 
@@ -108,13 +106,13 @@ class KinematicSingleStrack(VehicleModelInterface):
         """
 
         # extract state
-        v = x[KSTStateIndices.velocity]
-        psi = x[KSTStateIndices.heading]
-        delta = x[KSTStateIndices.steering_angle]
+        v = x[KBStateIndices.velocity]
+        psi = x[KBStateIndices.heading]
+        delta = x[KBStateIndices.steering_angle]
 
         # extract control input
-        a = u[KSTInputIndices.acceleration]
-        delta_dot = u[KSTInputIndices.steering_angle_velocity]
+        a = u[KBInputIndices.acceleration]
+        delta_dot = u[KBInputIndices.steering_angle_velocity]
 
         # compute slip angle
         beta = cas.atan(cas.tan(delta)*self._l_r/self._l_wb)
@@ -132,15 +130,15 @@ class KinematicSingleStrack(VehicleModelInterface):
         return f
 
     def compute_normalized_acceleration(self,
-                                        x: Union[KSTState, cas.SX.sym, np.array],
-                                        u: Union[KSTInput, cas.SX.sym, np.array]) \
+                                        x: Union[KBState, cas.SX.sym, np.array],
+                                        u: Union[KBInput, cas.SX.sym, np.array]) \
         -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
 
         # extract state
-        if isinstance(x, KSTState):
+        if isinstance(x, KBState):
             x = x.convert_to_array()
-        v = x[KSTStateIndices.velocity]
-        delta = x[KSTStateIndices.steering_angle]
+        v = x[KBStateIndices.velocity]
+        delta = x[KBStateIndices.steering_angle]
 
         # compute slip angle
         beta = cas.atan(cas.tan(delta)*self._l_r/self._l_wb)
@@ -148,9 +146,9 @@ class KinematicSingleStrack(VehicleModelInterface):
         heading_dot = v*cas.sin(beta) / self._l_r
 
         # extract control input
-        if isinstance(u, KSTInput):
+        if isinstance(u, KBInput):
             u = u.convert_to_array()
-        a = u[KSTInputIndices.acceleration]
+        a = u[KBInputIndices.acceleration]
 
         # normalized acceleration
         a_long_norm = a / self._a_long_max

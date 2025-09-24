@@ -6,7 +6,7 @@ from commonroad_control.vehicle_dynamics.input_interface import InputInterface, 
 
 # TODO should be an enum so no initialization?
 @dataclass(frozen=True)
-class KSTInputIndices(InputInterfaceIndex):
+class KBInputIndices(InputInterfaceIndex):
     """
     Indices of the control inputs.
     """
@@ -17,11 +17,11 @@ class KSTInputIndices(InputInterfaceIndex):
 
 # TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass()
-class KSTInput(InputInterface):
+class KBInput(InputInterface):
     """
     Control input of the kinematic single track model.
     """
-    dim: int = KSTInputIndices.dim
+    dim: int = KBInputIndices.dim
     acceleration: float = None
     steering_angle_velocity: float = None
 
@@ -32,7 +32,7 @@ class KSTInput(InputInterface):
         """
 
         u = np.zeros((self.dim,))
-        u[KSTInputIndices.acceleration] = self.acceleration
-        u[KSTInputIndices.steering_angle_velocity] = self.steering_angle_velocity
+        u[KBInputIndices.acceleration] = self.acceleration
+        u[KBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
         return u

@@ -8,7 +8,7 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 # TODO should be an enum so no initialization?
 @dataclass(frozen=True)
-class KSTStateIndices:
+class KBStateIndices:
     """
     Indices of the states.
     """
@@ -22,11 +22,11 @@ class KSTStateIndices:
 
 # TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass
-class KSTState(StateInterface):
+class KBState(StateInterface):
     """
     State of the kinematic single track model.
     """
-    dim: int = KSTStateIndices.dim
+    dim: int = KBStateIndices.dim
     position_x: float = None
     position_y: float = None
     velocity: float = None
@@ -39,11 +39,11 @@ class KSTState(StateInterface):
         :return: np.ndarray of dimension (dim,)
         """
         x = np.zeros((self.dim,))
-        x[KSTStateIndices.position_x] = self.position_x
-        x[KSTStateIndices.position_y] = self.position_y
-        x[KSTStateIndices.velocity] = self.velocity
-        x[KSTStateIndices.heading] = self.heading
-        x[KSTStateIndices.steering_angle] = self.steering_angle
+        x[KBStateIndices.position_x] = self.position_x
+        x[KBStateIndices.position_y] = self.position_y
+        x[KBStateIndices.velocity] = self.velocity
+        x[KBStateIndices.heading] = self.heading
+        x[KBStateIndices.steering_angle] = self.steering_angle
 
         return x
 

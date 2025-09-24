@@ -20,22 +20,22 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kinematic_single_track import KinematicSingleStrack
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTStateIndices, KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInputIndices, KSTInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices, KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices, KBInput
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
-from commonroad_control.util.clcs_control_util import extend_reference_trajectory_lane_following, extend_kst_reference_trajectory_lane_following
-from commonroad_control.util.state_conversion import convert_state_kst2dst, convert_state_dst2kst
+from commonroad_control.util.clcs_control_util import extend_reference_trajectory_lane_following, extend_kb_reference_trajectory_lane_following
+from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from rp_test import main as rpmain
 
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
@@ -66,15 +66,15 @@ def main(
     horizon_ocp = 10
     dt_controller = 0.1
     # ... vehicle model for prediction
-    vehicle_model_ctrl = KinematicSingleStrack(
+    vehicle_model_ctrl = KinematicBicycle(
         params=vehicle_params,
         delta_t=dt_controller)
-    sit_factory_ctrl = KSTSITFactory()
+    sit_factory_ctrl = KBSITFactory()
     # ... initialize optimal control solver
-    cost_xx = np.eye(KSTStateIndices.dim)
-    cost_xx[KSTStateIndices.steering_angle, KSTStateIndices.steering_angle] = 0.0
-    cost_uu = 0.01 * np.eye(KSTInputIndices.dim)
-    cost_final = np.eye(KSTStateIndices.dim)
+    cost_xx = np.eye(KBStateIndices.dim)
+    cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
+    cost_uu = 0.01 * np.eye(KBInputIndices.dim)
+    cost_final = np.eye(KBStateIndices.dim)
     # ... real time iteration -> only one iteration per time step
     solver_parameters = SCvxParameters(max_iterations=1)
     scvx_solver = OptimalControlSCvx(
@@ -107,7 +107,7 @@ def main(
     )
 
     # extend reference trajectory
-    clcs_traj, x_ref_ext, u_ref_ext = extend_kst_reference_trajectory_lane_following(
+    clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
         x_ref=copy.copy(x_ref),
         u_ref=copy.copy(u_ref),
         lanelet_network=scenario.lanelet_network,
@@ -116,7 +116,7 @@ def main(
         horizon=mpc.horizon)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KSTSITFactory(),
+        sit_factory=KBSITFactory(),
         horizon=mpc.horizon,
     )
     reference_trajectory.set_reference_trajectory(
@@ -125,9 +125,9 @@ def main(
         t_0=0
     )
 
-    x_measured = convert_state_kst2dst(kst_state=x_ref.initial_point,
-                                       vehicle_params=vehicle_params
-                                       )
+    x_measured = convert_state_kb2db(kst_state=x_ref.initial_point,
+                                     vehicle_params=vehicle_params
+                                     )
     # x_measured = x_ref.initial_point
 
     traj_dict = {0: x_measured}
@@ -144,7 +144,7 @@ def main(
         )
 
         # convert initial state to kst
-        x0_kst = convert_state_dst2kst(traj_dict[kk_sim])
+        x0_kst = convert_state_db2kb(traj_dict[kk_sim])
         # x0_kst = traj_dict[kk_sim]
 
         # compute control input
@@ -208,7 +208,7 @@ def main(
 def execute_planner(
         input_file: Path,
         state_file: Path
-) -> Tuple[KSTTrajectory, KSTTrajectory]:
+) -> Tuple[KBTrajectory, KBTrajectory]:
     """
     Dummy loading precomputed Reactive Planner KST Trajectory
     :return: kst trajectory for state and input

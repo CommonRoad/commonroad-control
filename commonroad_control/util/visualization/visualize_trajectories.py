@@ -20,14 +20,14 @@ from commonroad.scenario.scenario import Scenario
 # typing
 from typing import List, Union, Any
 
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 
 
 def visualize_trajectories(
     scenario: Scenario,
     planning_problem: PlanningProblem,
-    planner_trajectory: Union[KSTTrajectory, Any],
-    controller_trajectory: Union[KSTTrajectory, Any],
+    planner_trajectory: Union[KBTrajectory, Any],
+    controller_trajectory: Union[KBTrajectory, Any],
     vehicle_width: float = 1.8,
     vehicle_length: float = 4.5,
     size_x: float = 10.0,
@@ -109,7 +109,7 @@ def visualize_trajectories(
             plt.show()
 
 def obtain_plot_limits_from_reference_path(
-    trajectory: Union[KSTTrajectory, Any],
+    trajectory: Union[KBTrajectory, Any],
     margin: float = 10.0
 ) -> List[int]:
     """

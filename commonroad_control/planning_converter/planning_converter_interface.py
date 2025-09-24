@@ -6,10 +6,10 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DB
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_input import KSTInput
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_sit_factory import KSTSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_state import KSTState
-from commonroad_control.vehicle_dynamics.kinematic_single_track.kst_trajectory import KSTTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
@@ -17,13 +17,13 @@ class PlanningConverterInterface(ABC):
     def __init__(
             self,
             config: int = 0,
-            kst_factory: Union[KSTSITFactory, Any] = KSTSITFactory(),
-            dst_factory: Union[DBSITFactory, Any] = DBSITFactory(),
+            kb_factory: Union[KBSITFactory, Any] = KBSITFactory(),
+            db_factory: Union[DBSITFactory, Any] = DBSITFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         self._config: int = config
-        self._kst_factory: Union[KSTSITFactory, Any] = kst_factory
-        self._dst_factory: Union[DBSITFactory, Any] = dst_factory
+        self._kb_factory: Union[KBSITFactory, Any] = kb_factory
+        self._db_factory: Union[DBSITFactory, Any] = db_factory
         self._vehicle_params: Union[BMW3seriesParams, Any] = vehicle_params
 
 
@@ -36,45 +36,45 @@ class PlanningConverterInterface(ABC):
         return self._vehicle_params
 
     @abstractmethod
-    def trajectory_p2c_kst(
+    def trajectory_p2c_kb(
             self,
             planner_traj: Any,
             mode: Literal['state', 'input'],
             t_0: float,
             dt: float
-    ) -> KSTTrajectory:
+    ) -> KBTrajectory:
         pass
 
 
-    # KST
+    # kb
     @abstractmethod
-    def trajectory_c2p_kst(
+    def trajectory_c2p_kb(
             self,
-            kst_traj: KSTTrajectory,
+            kb_traj: KBTrajectory,
             mode: Literal['state', 'input']
     ) -> Any:
         pass
 
     @abstractmethod
-    def sample_p2c_kst(
+    def sample_p2c_kb(
             self,
             planner_state: Any,
             mode: Literal['state', 'input']
-    ) -> Union[KSTState, KSTInput]:
+    ) -> Union[KBState, KBInput]:
         pass
 
     @abstractmethod
-    def sample_c2p_kst(
+    def sample_c2p_kb(
             self,
-            kst_state: KSTState,
+            kb_state: KBState,
             mode: Literal['state', 'input'],
             time_step: int
     ) -> Any:
         pass
 
-    # DST
+    # db
     @abstractmethod
-    def trajectory_p2c_dst(
+    def trajectory_p2c_db(
             self,
             planner_traj: Any,
             mode: Literal['state', 'input']
@@ -82,15 +82,15 @@ class PlanningConverterInterface(ABC):
             pass
 
     @abstractmethod
-    def trajectory_c2p_dst(
+    def trajectory_c2p_db(
             self,
-            dst_traj: DBTrajectory,
+            db_traj: DBTrajectory,
             mode: Literal['state', 'input']
     ) -> Any:
         pass
 
     @abstractmethod
-    def sample_p2c_dst(
+    def sample_p2c_db(
             self,
             planner_state: Any,
             mode: Literal['state', 'input']
@@ -98,9 +98,9 @@ class PlanningConverterInterface(ABC):
         pass
 
     @abstractmethod
-    def sample_c2p_dst(
+    def sample_c2p_db(
             self,
-            dst_state: DBState,
+            db_state: DBState,
             time_step: int,
             mode: Literal['state', 'input'],
     ) -> Any:
