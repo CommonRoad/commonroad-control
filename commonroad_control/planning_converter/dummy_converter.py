@@ -9,6 +9,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInp
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
@@ -20,13 +21,13 @@ class DummyPlanningConverter(PlanningConverterInterface):
             self,
             config: int = 0,
             kb_factory: Union[KBSITFactory, Any] = KBSITFactory(),
-            dst_factory: Union[DBSITFactory, Any] = DBSITFactory(),
+            db_factory: Union[DBSITFactory, Any] = DBSITFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         super().__init__(
             config=config,
             kb_factory=kb_factory,
-            dst_factory=dst_factory,
+            db_factory=db_factory,
             vehicle_params=vehicle_params
         )
 
@@ -34,7 +35,7 @@ class DummyPlanningConverter(PlanningConverterInterface):
     def trajectory_p2c_kb(
             self,
             planner_traj: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> KBTrajectory:
             return planner_traj
 
@@ -43,7 +44,7 @@ class DummyPlanningConverter(PlanningConverterInterface):
     def trajectory_c2p_kb(
             self,
             kb_traj: KBTrajectory,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         return kb_traj
 
@@ -51,14 +52,14 @@ class DummyPlanningConverter(PlanningConverterInterface):
     def sample_p2c_kb(
             self,
             planner_state: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[KBState, KBInput]:
         return planner_state
 
     def sample_c2p_kb(
             self,
             kb_state: KBState,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         return kb_state
 
@@ -66,28 +67,28 @@ class DummyPlanningConverter(PlanningConverterInterface):
     def trajectory_p2c_db(
             self,
             planner_traj: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> DBTrajectory:
             return planner_traj
 
     def trajectory_c2p_db(
             self,
             db_traj: DBTrajectory,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         return db_traj
 
     def sample_p2c_db(
             self,
             planner_state: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[DBState, DBInput]:
         return planner_state
 
     def sample_c2p_db(
             self,
             db_state: DBState,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         return db_state
 

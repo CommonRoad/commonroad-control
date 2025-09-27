@@ -97,12 +97,37 @@ def map_velocity_from_ra_to_cog(
 
     return v_cog
 
+
+def map_velocity_from_cog_to_ra(
+        l_wb: float,
+        l_r: float,
+        velocity_cog: float,
+        steering_angle: float) \
+        -> float:
+    """
+    Given the velocity at the center of gravity, this function computes the velocity at the vehicle's rear axle.
+    :param l_wb: wheelbase
+    :param l_r: distance from center of rear-axle to the center of gravity
+    :param velocity_cog: velocity at the center of gravity
+    :param steering_angle: steering angle
+    :return: velocity at the center of gravity
+    """
+    if abs(steering_angle) > 1e-6:
+        len_ray_ra = abs(l_wb / math.tan(steering_angle))
+        len_ray_cog = math.sqrt(len_ray_ra ** 2 + l_r ** 2)
+        velocity_ra = velocity_cog * len_ray_ra / len_ray_cog
+    else:
+        # for steering_angle = 0, the velocities are identical
+        velocity_ra = velocity_cog
+
+    return velocity_ra
+
 def compute_position_of_cog_from_ra_cc(
         l_r: float,
         position_ra_x: float,
         position_ra_y: float,
-        heading: float) \
-    -> Tuple[float, float]:
+        heading: float
+)-> Tuple[float, float]:
     """
     Given the position of the center of the rear-axle, this function returns the position of the center of gravity; each
     represented in Cartesian coordinates.
@@ -119,5 +144,28 @@ def compute_position_of_cog_from_ra_cc(
     return (
         position_cog_x,
         position_cog_y
+    )
+
+def compute_position_of_ra_from_cog_cartesian(
+        l_r: float,
+        position_cog_x: float,
+        position_cog_y: float,
+        heading: float
+) -> Tuple[float, float]:
+    """
+    Given the position of the center of the center of gravity (COG), this function returns the position of the rear axle; each
+    represented in Cartesian coordinates.
+    :param l_r: distance from center of rear-axle to the center of gravity
+    :param position_cog_x: longitudinal component of the position of the rear-axle (Cartesian coordinates)
+    :param position_cog_y: lateral component of the position of the rear-axle (Cartesian coordinates)
+    :param heading: orientation of the vehicle
+    :return: position of the rear axle(Cartesian coordinates)
+    """
+    position_ra_x = position_cog_x - l_r * math.cos(heading)
+    position_ra_y = position_cog_y - l_r * math.sin(heading)
+
+    return (
+        position_ra_x,
+        position_ra_y
     )
 

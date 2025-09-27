@@ -7,6 +7,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInp
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 from typing import List, Any
@@ -15,7 +16,7 @@ from typing import List, Any
 def main(simulate: bool = True) -> None:
     kst_sit_factory = KBSITFactory()
     params = BMW3seriesParams()
-    traj_converter = DummyPlanningConverter(kst_factory=kst_sit_factory, vehicle_params=params)
+    traj_converter = DummyPlanningConverter(kb_factory=kst_sit_factory, vehicle_params=params)
     model = KinematicBicycle(params=params, delta_t=0.1)
 
     replannings = range(2)
@@ -24,7 +25,7 @@ def main(simulate: bool = True) -> None:
         states = {0: KBState(position_x=5, position_y=0, velocity=5, heading=0, steering_angle=0),
                   1: KBState(position_x=3, position_y=3, velocity=5, heading=3, steering_angle=3)}
         planner_state_traj = KBTrajectory(
-            mode='state',
+            mode=TrajectoryMode.State,
             points=states,
             t_0=0,
             delta_t=0.1
@@ -32,7 +33,7 @@ def main(simulate: bool = True) -> None:
 
         inputs = {0: KBInput(acceleration=5, steering_angle_velocity=5), 1: KBInput(acceleration=3, steering_angle_velocity=3)}
         planner_input_traj = KBTrajectory(
-            mode='input',
+            mode=TrajectoryMode.Input,
             points=inputs,
             t_0=0,
             delta_t=0.1
@@ -40,11 +41,14 @@ def main(simulate: bool = True) -> None:
         ###################################################
 
 
-        simulator = Simulation(vehicle_model=model)
+        simulator = Simulation(
+            vehicle_model=model,
+            state_input_factory=kst_sit_factory
+        )
 
         # convert trajectory
-        kst_state_traj: KBTrajectory = traj_converter.trajectory_p2c_kst(planner_state_traj, mode='state')
-        kst_input_traj: KBTrajectory = traj_converter.trajectory_p2c_kst(planner_input_traj, mode='input')
+        kst_state_traj: KBTrajectory = traj_converter.trajectory_p2c_kb(planner_state_traj, mode=TrajectoryMode.State)
+        kst_input_traj: KBTrajectory = traj_converter.trajectory_p2c_kb(planner_input_traj, mode=TrajectoryMode.Input)
 
         print(f"-- Initial State --")
         print(kst_state_traj.initial_point)
@@ -58,11 +62,10 @@ def main(simulate: bool = True) -> None:
 
             if simulate:
                 # simulate
-                new_state_np: np.ndarray = simulator.simulate(
+                new_state: KBState = simulator.simulate(
                     x0=controller_state_output, u=controller_u, time_horizon=0.1
                 )
 
-                new_state: KBState = kst_sit_factory.state_from_numpy_array(new_state_np)
                 # results
                 print(f"--- Result ---")
                 print(new_state)
@@ -73,7 +76,7 @@ def main(simulate: bool = True) -> None:
 
 
         # input trajectory into planner
-        traj_tr = traj_converter.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
+        traj_tr = traj_converter.trajectory_c2p_kb(kb_traj=kst_state_traj, mode=TrajectoryMode.State)
 
 
 

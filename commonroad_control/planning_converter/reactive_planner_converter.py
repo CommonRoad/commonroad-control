@@ -12,7 +12,9 @@ from commonroad_control.util.conversion_util import (
     compute_velocity_components_from_steering_angle_in_cog,
     compute_total_velocity_from_components,
     map_velocity_from_ra_to_cog,
-    compute_position_of_cog_from_ra_cc
+    compute_position_of_cog_from_ra_cc,
+    map_velocity_from_cog_to_ra,
+    compute_position_of_ra_from_cog_cartesian
 )
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
@@ -93,7 +95,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param mode: state or input
         :return: KBState or KBInput object
         """
-        if mode == TrajectoryMode.State:
+        if mode.value == TrajectoryMode.State.value:
             # compute velocity at center of gravity
             v_cog = map_velocity_from_ra_to_cog(
                 l_wb=self._vehicle_params.l_wb,
@@ -115,14 +117,15 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 heading=planner_state.orientation,
                 steering_angle=planner_state.steering_angle
             )
-        elif mode == TrajectoryMode.Input:
+        elif mode.value == TrajectoryMode.Input.value:
             retval: KBInput = self._kb_factory.input_from_args(
                 acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed,
             )
+        else:
+            raise NotImplementedError(f"{mode} not implemented")
 
         return retval
-
 
 
     def trajectory_c2p_kb(
@@ -154,12 +157,28 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return:
         """
-        #TODO check conversion
         if mode == TrajectoryMode.State:
+            # TODO: convert back to rear axle
+            # transform velocity to rear axle
+            v_ra = map_velocity_from_cog_to_ra(
+                l_wb=self._vehicle_params.l_wb,
+                l_r=self._vehicle_params.l_r,
+                velocity_cog=kb_state.velocity,
+                steering_angle=kb_state.steering_angle
+            )
+
+            # compute position of the center of gravity
+            position_x_ra, position_y_ra = compute_position_of_ra_from_cog_cartesian(
+                position_cog_x=kb_state.position_x,
+                position_cog_y=kb_state.position_y,
+                heading=kb_state.heading,
+                l_r=self._vehicle_params.l_r
+            )
+
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
-                position=np.asarray([kb_state.position_x, kb_state.position_y]),
-                velocity=kb_state.velocity,
+                position=np.asarray([position_x_ra, position_y_ra]),
+                velocity=v_ra,
                 orientation=kb_state.heading,
                 steering_angle=kb_state.steering_angle,
                 yaw_rate=0
@@ -170,6 +189,8 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 acceleration=kb_state.acceleration,
                 time_step=time_step
             )
+        else:
+            raise NotImplementedError(f"mode {mode} not implemented")
         return retval
 
     # --- db ---
@@ -250,6 +271,8 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 acceleration=planner_state.acceleration,
                 steering_angle_velocity=planner_state.steering_angle_speed
             )
+        else:
+            raise NotImplementedError(f"mode {mode} not implemented")
 
         return retval
 
