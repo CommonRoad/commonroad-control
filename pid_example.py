@@ -90,6 +90,9 @@ def main(
 
     for step, x_planner in kb_traj.points.items():
 
+        if step == max(kb_traj.steps):
+            break
+
         x_desired = convert_state_kb2db(x_planner,
                                         vehicle_params=vehicle_params
                                         )
@@ -228,7 +231,9 @@ def execute_planner(
         i = [ast.literal_eval(el) for el in f.readlines()]
         rp_inputs: List[InputState] = list()
         for idx, el in enumerate(i):
-            rp_inputs.append(InputState(acceleration=el[0], steering_angle_speed=el[1], time_step=idx))
+            if idx == 0:
+                continue
+            rp_inputs.append(InputState(acceleration=el[0], steering_angle_speed=el[1], time_step=idx-1))
 
     with open(state_file, "r") as f:
         s = [ast.literal_eval(el.replace("array", '')) for el in f.readlines()]
