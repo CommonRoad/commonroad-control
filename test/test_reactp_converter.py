@@ -1,8 +1,8 @@
 import copy
-import random
 import unittest
 import ast
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 
 import numpy as np
@@ -13,12 +13,14 @@ from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from rp_test import main as rpmain
 
 from typing import List
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
+
 
 
 class TestReactivePlannerConverter(unittest.TestCase):
@@ -30,6 +32,7 @@ class TestReactivePlannerConverter(unittest.TestCase):
         """
         input_file = Path(__file__).parents[0] / "reactive_planner_traj/ZAM_Over-1_1/input.txt"
         state_file = Path(__file__).parents[0] / "reactive_planner_traj/ZAM_Over-1_1/state.txt"
+
 
         with open(input_file, "r") as f:
             i = [ast.literal_eval(el) for el in f.readlines()]
@@ -57,11 +60,11 @@ class TestReactivePlannerConverter(unittest.TestCase):
         # -- Subtest for KST Conversion --
         with self.subTest(msg=f"KST Conversion P2C and C2P"):
             rpc = ReactivePlannerConverter()
-            kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
-            kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+            kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kb(planner_traj=rp_states, mode=TrajectoryMode.State)
+            kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kb(planner_traj=rp_inputs, mode=TrajectoryMode.Input)
 
-            rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
-            rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')
+            rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kb(kb_traj=kst_state_traj, mode=TrajectoryMode.State)
+            rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kb(kb_traj=kst_input_traj, mode=TrajectoryMode.Input)
 
 
             if len(rec_rp_state_traj) != len(rp_states):
@@ -75,39 +78,48 @@ class TestReactivePlannerConverter(unittest.TestCase):
             for idx, _ in enumerate(rec_rp_state_traj):
                 if (
                         not np.isclose(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0]) or
-                        rec_rp_state_traj[idx].position[1] != rp_states[idx].position[1] or
-                        rec_rp_state_traj[idx].velocity != rp_states[idx].velocity or
-                        rec_rp_state_traj[idx].steering_angle != rp_states[idx].steering_angle or
-                        rec_rp_state_traj[idx].orientation != rp_states[idx].orientation or
-                        rec_rp_state_traj[idx].time_step != rp_states[idx].time_step
+                        not np.isclose(rec_rp_state_traj[idx].position[1], rp_states[idx].position[1]) or
+                        not np.isclose(rec_rp_state_traj[idx].velocity, rp_states[idx].velocity) or
+                        not np.isclose(rec_rp_state_traj[idx].steering_angle, rp_states[idx].steering_angle) or
+                        not np.isclose(rec_rp_state_traj[idx].orientation, rp_states[idx].orientation) or
+                        not np.isclose(rec_rp_state_traj[idx].time_step, rp_states[idx].time_step)
                 ):
                     print(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0])
-                    raise ValueError(f"Mismatching states in reconstruction: "
+                    plt.figure()
+                    plt.title("Conversion Error in KST Conversion P2C and C2P")
+                    plt.plot(rp_states[idx].position[0], rp_states[idx].position[1], 'x', label="planner")
+                    plt.plot(kst_state_traj.points[idx].position_x, kst_state_traj.points[idx].position_y, 'D',
+                             label="KST")
+                    plt.plot(rec_rp_state_traj[idx].position[0], rec_rp_state_traj[idx].position[1], 'o', label="reconstructed")
+                    plt.legend()
+                    plt.show()
+
+                    raise ValueError(f"Mismatching states in reconstruction at idx={idx}: "
                                      f"Reconstr. {rec_rp_state_traj[idx]}  --  Original {rp_states[idx]}")
 
 
             for idx, _ in enumerate(rec_rp_input_traj):
                 if rec_rp_input_traj[idx] != rp_inputs[idx]:
-                    raise ValueError(f"Mismatching input in reconstruction: "
+                    raise ValueError(f"Mismatching input in reconstruction at idx={idx}: "
                                      f"Reconstr. {rec_rp_input_traj[idx]}  --  Original {rp_inputs[idx]}")
 
 
         # -- Subtest for DST conversion --
         with self.subTest(msg="DST Conversion planning to control"):
             rpc = ReactivePlannerConverter()
-            dst_state_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_states, mode='state')
-            dst_input_traj: DBTrajectory = rpc.trajectory_p2c_dst(planner_traj=rp_inputs, mode='input')
+            dst_state_traj: DBTrajectory = rpc.trajectory_p2c_db(planner_traj=rp_states, mode=TrajectoryMode.State)
+            dst_input_traj: DBTrajectory = rpc.trajectory_p2c_db(planner_traj=rp_inputs, mode=TrajectoryMode.Input)
 
-            reconverter_initial_state = rpc.sample_c2p_dst(
+            reconverter_initial_state = rpc.sample_c2p_db(
                 dst_state_traj.initial_point,
-                mode='state',
+                mode=TrajectoryMode.State,
                 time_step=min(dst_state_traj.steps)
             )
             reconverter_initial_state.acceleration = 0.0
 
-            reconverter_initial_input = rpc.sample_c2p_dst(
+            reconverter_initial_input = rpc.sample_c2p_db(
                 dst_input_traj.initial_point,
-                mode='input',
+                mode=TrajectoryMode.Input,
                 time_step=min(dst_input_traj.steps)
             )
 
@@ -122,23 +134,16 @@ class TestReactivePlannerConverter(unittest.TestCase):
                     f"Initial inputs {rp_inputs[0]} and reconversion {reconverter_initial_input} do not match"
                 )
 
+        with self.subTest(msg="KST Over DST Visualization"):
             scenario_file = Path(__file__).parents[1] / "scenarios" / "ZAM_Over-1_1.xml"
             scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
             planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
-
-            # move dst up so it can be seen more easily
-            controller_trajectory = copy.deepcopy(dst_state_traj)
-            for step, state in controller_trajectory.points.items():
-                new_state = state
-                new_state.position_y = state.position_y + 3
-                controller_trajectory.points[step] = new_state
 
             visualize_trajectories(
                 scenario=scenario,
                 planning_problem=planning_problem,
                 planner_trajectory=kst_state_traj,
-                controller_trajectory=controller_trajectory,
-                use_icons=False
+                controller_trajectory=dst_state_traj
             )
 
 
@@ -163,11 +168,14 @@ class TestReactivePlannerConverter(unittest.TestCase):
 
 
         rpc = ReactivePlannerConverter()
-        kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_states, mode='state')
-        kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kst(planner_traj=rp_inputs, mode='input')
+        kst_state_traj: KBTrajectory = rpc.trajectory_p2c_kb(planner_traj=rp_states, mode=TrajectoryMode.State)
+        kst_input_traj: KBTrajectory = rpc.trajectory_p2c_kb(planner_traj=rp_inputs, mode=TrajectoryMode.Input)
 
-        rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kst(kst_traj=kst_state_traj, mode='state')
-        rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kst(kst_traj=kst_input_traj, mode='input')
+        rec_rp_state_traj: List[ReactivePlannerState] = rpc.trajectory_c2p_kb(
+            kb_traj=kst_state_traj,
+            mode=TrajectoryMode.State
+        )
+        rec_rp_input_traj: List[InputState] = rpc.trajectory_c2p_kb(kb_traj=kst_input_traj, mode=TrajectoryMode.Input)
 
 
         if len(rec_rp_state_traj) != len(rp_states):
@@ -180,15 +188,23 @@ class TestReactivePlannerConverter(unittest.TestCase):
 
         for idx, _ in enumerate(rec_rp_state_traj):
             if (
-                    rec_rp_state_traj[idx].position[0] != rp_states[idx].position[0] or
-                    rec_rp_state_traj[idx].position[1] != rp_states[idx].position[1] or
-                    rec_rp_state_traj[idx].velocity != rp_states[idx].velocity or
-                    rec_rp_state_traj[idx].steering_angle != rp_states[idx].steering_angle or
-                    rec_rp_state_traj[idx].orientation != rp_states[idx].orientation or
-                    rec_rp_state_traj[idx].time_step != rp_states[idx].time_step
+                    not np.isclose(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0]) or
+                    not np.isclose(rec_rp_state_traj[idx].position[1], rp_states[idx].position[1]) or
+                    not np.isclose(rec_rp_state_traj[idx].velocity, rp_states[idx].velocity) or
+                    not np.isclose(rec_rp_state_traj[idx].steering_angle, rp_states[idx].steering_angle) or
+                    not np.isclose(rec_rp_state_traj[idx].orientation, rp_states[idx].orientation) or
+                    not np.isclose(rec_rp_state_traj[idx].time_step, rp_states[idx].time_step)
             ):
-                print(rec_rp_state_traj[idx].position[0], rp_states[idx].position[0])
-                raise ValueError(f"Mismatching states in reconstruction: "
+                plt.figure()
+                plt.title(f"Conversion Error Reactive Planner Integration at idx={idx}")
+                plt.plot(rp_states[idx].position[0], rp_states[idx].position[1], 'x',label="planner")
+                plt.plot(kst_state_traj.points[idx].position_x, kst_state_traj.points[idx].position_y, 'D',
+                         label="KST")
+                plt.plot(rec_rp_state_traj[idx].position[0], rec_rp_state_traj[idx].position[1], 'o',
+                         label="reconstructed")
+                plt.legend()
+                plt.show()
+                raise ValueError(f"Mismatching states in reconstruction at idx={idx}: "
                                  f"Reconstr. {rec_rp_state_traj[idx]}  --  Original {rp_states[idx]}")
 
 
@@ -196,18 +212,3 @@ class TestReactivePlannerConverter(unittest.TestCase):
             if rec_rp_input_traj[idx] != rp_inputs[idx]:
                 raise ValueError(f"Mismatching input in reconstruction: "
                                  f"Reconstr. {rec_rp_input_traj[idx]}  --  Original {rp_inputs[idx]}")
-
-
-        controller_trajectory = copy.deepcopy(kst_state_traj)
-        for step, state in controller_trajectory.points.items():
-            new_state = state
-            new_state.position_y = state.position_y + 3
-            controller_trajectory.points[step] = new_state
-
-        visualize_trajectories(
-            scenario=scenario,
-            planning_problem=planning_problem,
-            planner_trajectory=kst_state_traj,
-            controller_trajectory=controller_trajectory,
-            use_icons=True
-        )

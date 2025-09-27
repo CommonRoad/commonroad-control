@@ -10,6 +10,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInp
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
+from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
@@ -39,19 +40,17 @@ class PlanningConverterInterface(ABC):
     def trajectory_p2c_kb(
             self,
             planner_traj: Any,
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             t_0: float,
             dt: float
     ) -> KBTrajectory:
         pass
-
-
     # kb
     @abstractmethod
     def trajectory_c2p_kb(
             self,
             kb_traj: KBTrajectory,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         pass
 
@@ -59,7 +58,7 @@ class PlanningConverterInterface(ABC):
     def sample_p2c_kb(
             self,
             planner_state: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[KBState, KBInput]:
         pass
 
@@ -67,7 +66,7 @@ class PlanningConverterInterface(ABC):
     def sample_c2p_kb(
             self,
             kb_state: KBState,
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
             time_step: int
     ) -> Any:
         pass
@@ -77,7 +76,7 @@ class PlanningConverterInterface(ABC):
     def trajectory_p2c_db(
             self,
             planner_traj: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> DBTrajectory:
             pass
 
@@ -85,7 +84,7 @@ class PlanningConverterInterface(ABC):
     def trajectory_c2p_db(
             self,
             db_traj: DBTrajectory,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Any:
         pass
 
@@ -93,7 +92,7 @@ class PlanningConverterInterface(ABC):
     def sample_p2c_db(
             self,
             planner_state: Any,
-            mode: Literal['state', 'input']
+            mode: TrajectoryMode
     ) -> Union[DBState, DBInput]:
         pass
 
@@ -102,6 +101,6 @@ class PlanningConverterInterface(ABC):
             self,
             db_state: DBState,
             time_step: int,
-            mode: Literal['state', 'input'],
+            mode: TrajectoryMode,
     ) -> Any:
         pass
