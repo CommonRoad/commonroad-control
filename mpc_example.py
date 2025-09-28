@@ -15,6 +15,7 @@ from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
+from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -49,9 +50,9 @@ from commonroad_control.control.reference_trajectory_factory import ReferenceTra
 
 def main(
         scenario_file: Path,
+        scenario_name: str,
         img_save_path: Path,
-        planner_input_file: Path,
-        planner_state_file: Path,
+        planner_config_path: Path,
         save_imgs: bool,
         create_scenario: bool = True
 ) -> None:
@@ -60,6 +61,26 @@ def main(
 
     print(f"solving scnenario {str(scenario.scenario_id)}")
 
+    # run planner
+    print("run planner")
+    rp_states, rp_inputs = run_reactive_planner(
+        scenario=scenario,
+        scenario_xml_file_name=str(scenario_name + ".xml"),
+        planning_problem=planning_problem,
+        planning_problem_set=planning_problem_set,
+        reactive_planner_config_path=planner_config_path
+    )
+    rpc = ReactivePlannerConverter()
+    x_ref = rpc.trajectory_p2c_kb(
+        planner_traj=rp_states,
+        mode=TrajectoryMode.State
+    )
+    u_ref = rpc.trajectory_p2c_kb(
+        planner_traj=rp_inputs,
+        mode=TrajectoryMode.Input
+    )
+
+    print("run controller")
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
 
@@ -92,11 +113,6 @@ def main(
     # instantiate model predictive controller
     mpc = ModelPredictiveControl(
         ocp_solver=scvx_solver
-    )
-
-    x_ref, u_ref = execute_planner(
-        input_file=planner_input_file,
-        state_file=planner_state_file
     )
 
     # simulation
@@ -216,65 +232,16 @@ def main(
     )
 
 
-
-
-
-
-
-
-
-def execute_planner(
-        input_file: Path,
-        state_file: Path
-) -> Tuple[KBTrajectory, KBTrajectory]:
-    """
-    Dummy loading precomputed Reactive Planner KB Trajectory
-    :return: kb trajectory for state and input
-    """
-    with open(input_file, "r") as f:
-        i = [ast.literal_eval(el) for el in f.readlines()]
-        rp_inputs: List[InputState] = list()
-        for idx, el in enumerate(i):
-            rp_inputs.append(InputState(acceleration=el[0], steering_angle_speed=el[1], time_step=idx))
-
-    with open(state_file, "r") as f:
-        s = [ast.literal_eval(el.replace("array", '')) for el in f.readlines()]
-        rp_states: List[ReactivePlannerState] = list()
-        for idx, el in enumerate(s):
-            rp_states.append(
-                ReactivePlannerState(
-                    time_step=idx,
-                    position=np.asarray(el[0]),
-                    steering_angle=el[1],
-                    velocity=el[2],
-                    orientation=el[3],
-                    acceleration=el[4],
-                    yaw_rate=el[5]
-                )
-            )
-    rpc = ReactivePlannerConverter()
-    return (
-        rpc.trajectory_p2c_kb(
-            planner_traj=rp_states,
-            mode=TrajectoryMode.State),
-        rpc.trajectory_p2c_kb(
-            planner_traj=rp_inputs,
-            mode=TrajectoryMode.Input)
-    )
-
-
-
 if __name__ == "__main__":
     scenario_name = "ZAM_Over-1_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
-    planner_input_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "input.txt"
-    planner_state_file = Path(__file__).parents[0] / "test/reactive_planner_traj" / scenario_name / "state.txt"
+    planner_config_path = Path(__file__).parents[0]/ "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name
     main(
         scenario_file=scenario_file,
+        scenario_name=scenario_name,
         img_save_path=img_save_path,
-        planner_input_file=planner_input_file,
-        planner_state_file=planner_state_file,
+        planner_config_path=planner_config_path,
         save_imgs=True,
         create_scenario=True
     )
