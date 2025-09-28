@@ -14,6 +14,7 @@ from commonroad_rp.state import ReactivePlannerState
 from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
+from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
@@ -101,9 +102,22 @@ def main(
     # simulation
     sit_factory_sim = DBSITFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
+    disturbance_generator: GaussianNDGenerator = GaussianNDGenerator(
+        dim=vehicle_model_sim.state_dimension,
+        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+    noise_generator: GaussianNDGenerator = GaussianNDGenerator(
+        dim=vehicle_model_sim.state_dimension,
+        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim
+        state_input_factory=sit_factory_sim,
+        disturbance_generator=disturbance_generator,
+        noise_generator=noise_generator
     )
 
     # extend reference trajectory
@@ -130,7 +144,10 @@ def main(
                                      )
     # x_measured = x_ref.initial_point
 
-    traj_dict = {0: x_measured}
+    x_disturbed = copy.copy(x_measured)
+
+    traj_dict_measured = {0: x_measured}
+    traj_dict_dist_no_noise = {0: x_disturbed}
     input_dict = {}
     x_ref_steps = [kk for kk in range(mpc.horizon + 1)]
     u_ref_steps = [kk for kk in range(mpc.horizon)]
@@ -144,7 +161,7 @@ def main(
         )
 
         # convert initial state to kb
-        x0_kb = convert_state_db2kb(traj_dict[kk_sim])
+        x0_kb = convert_state_db2kb(traj_dict_measured[kk_sim])
         # x0_kb = traj_dict[kk_sim]
 
         # compute control input
@@ -156,15 +173,16 @@ def main(
         # u_now = kb_input.points[kk_sim]
         input_dict[kk_sim] = u_now
         # simulate
-        x_measured = simulation.simulate(
-            x0=x_measured,
+        x_measured, x_disturbed, x_rk45 = simulation.simulate(
+            x0=x_disturbed,
             u=u_now,
             time_horizon=dt_controller
         )
-        traj_dict[kk_sim+1] = x_measured
+        traj_dict_measured[kk_sim+1] = x_measured
+        traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
 
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
-        trajectory_dict=traj_dict,
+        trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
         delta_t=dt_controller

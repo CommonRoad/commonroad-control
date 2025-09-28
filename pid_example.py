@@ -16,6 +16,7 @@ from commonroad_rp.state import ReactivePlannerState
 from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
+from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
@@ -57,7 +58,7 @@ def main(
 
     controller_time: float = 0.01
     planner_time: float = 0.1
-    controller_time = planner_time
+
 
     kb_traj, kb_input = execute_planner(
         input_file=planner_input_file,
@@ -66,10 +67,24 @@ def main(
 
     sit_factory_sim = DBSITFactory()
     vehicle_params: VehicleParameters = BMW3seriesParams()
+
+
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=controller_time)
+    disturbance_generator: GaussianNDGenerator = GaussianNDGenerator(
+        dim=vehicle_model_sim.state_dimension,
+        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviations=[0.0025, 0.0025, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+    noise_generator: GaussianNDGenerator = GaussianNDGenerator(
+        dim=vehicle_model_sim.state_dimension,
+        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviations=[0.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim
+        state_input_factory=sit_factory_sim,
+        disturbance_generator=disturbance_generator,
+        noise_generator=noise_generator
     )
 
     clcs_line: np.ndarray = extend_ref_path_with_route_planner(
@@ -77,10 +92,15 @@ def main(
         lanelet_network=scenario.lanelet_network,
     )
 
+
+    clcs_params = CLCSParams()
+    clcs_params.default_proj_domain_limit = 1000
     clcs_traj: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
         reference_path=clcs_line,
-        params=CLCSParams()
+        params=clcs_params
     )
+
+    clcs_traj.plot_reference_states()
 
     x_measured = convert_state_kb2db(kb_state=kb_traj.initial_point,
                                      vehicle_params=vehicle_params
@@ -118,8 +138,8 @@ def main(
         )
 
         pid_steering_angle: PIDControl = PIDControl(
-            kp=0.00,
-            ki=0.00,
+            kp=0.0,
+            ki=0.0,
             kd=0.00
         )
 
@@ -142,7 +162,7 @@ def main(
 
 
         for control_step in range(int(planner_time/controller_time)):
-            x_measured = simulation.simulate(
+            x_measured, x_disturbed, _ = simulation.simulate(
                 x0=x_measured,
                 u=u_now,
                 time_horizon=controller_time
