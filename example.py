@@ -62,7 +62,7 @@ def main(simulate: bool = True) -> None:
 
             if simulate:
                 # simulate
-                new_state: KBState = simulator.simulate(
+                new_state, _, _ = simulator.simulate(
                     x0=controller_state_output, u=controller_u, time_horizon=0.1
                 )
 

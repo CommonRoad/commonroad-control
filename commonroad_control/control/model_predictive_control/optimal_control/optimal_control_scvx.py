@@ -215,6 +215,10 @@ class OptimalControlSCvx(OptimalControlSolver):
             # solve the optimal control problem
             self._ocp.solve(solver='CLARABEL', verbose=True)
 
+            # check feasibility
+            if "infeasible" in self._ocp.status or "unbounded" in self._ocp.status:
+                raise ValueError(f"Solver could not solve dynamics. Status: {self._ocp.status}")
+
             # extract (candidate) solution
             x_sol = self._x.value
             u_sol = self._u.value

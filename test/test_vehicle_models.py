@@ -41,7 +41,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         u = KBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
-        x_sim = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
 
@@ -61,7 +61,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         u = DBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
-        x_sim = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
 
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
@@ -81,7 +81,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         u = DIInput(acceleration_long=0.0, acceleration_lat=0.5)
 
         # simulate
-        x_sim = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
 
