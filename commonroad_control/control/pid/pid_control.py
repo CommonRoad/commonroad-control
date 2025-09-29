@@ -33,8 +33,8 @@ class PIDControl(Controller):
         :return:
         """
         error: float = desired_state - measured_state
-        d_error: float = (error - self._previous_error) / controller_time_step
-        self._integrated_error += error
+        d_error: float = (error - self._previous_error) / controller_time_step # TODO: check if division is reasonable
+        self._integrated_error += error * controller_time_step
         self._previous_error = error
 
         return self._kp * error + self._ki * self._integrated_error + self._kd * d_error

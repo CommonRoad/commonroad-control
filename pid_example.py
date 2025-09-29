@@ -132,15 +132,15 @@ def main(
             print(f"failed conversion at planning step {step}")
 
         pid_velocity: PIDControl = PIDControl(
-            kp=0.0,
+            kp=0.5,
             ki=0.0,
             kd=0
         )
 
         pid_steering_angle: PIDControl = PIDControl(
-            kp=0.0,
+            kp=0.5,
             ki=0.0,
-            kd=0.00
+            kd=0.0
         )
 
         u_steer = pid_steering_angle.compute_control_input(
