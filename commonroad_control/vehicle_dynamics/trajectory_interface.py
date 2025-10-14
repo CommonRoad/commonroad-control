@@ -84,8 +84,8 @@ class TrajectoryInterface(ABC):
         """
         if time < self.t_0:
             raise ValueError(f"time {time} is before trajectory start {self.t_0}")
-        idx_lower: int = math.floor((time - self.t_0) / self.delta_t)
-        idx_upper: int = math.ceil((time - self.t_0) / self.delta_t)
+        idx_lower: int = min(math.floor((time - self.t_0) / self.delta_t), max(self.points.keys()))
+        idx_upper: int = min(math.ceil((time - self.t_0) / self.delta_t), max(self.points.keys()))
 
         return self.points[idx_lower], self.points[idx_upper], idx_lower, idx_upper
 

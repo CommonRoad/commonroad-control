@@ -1,10 +1,14 @@
 import copy
+import math
 from pathlib import Path
 
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
+from shapely.geometry import LineString, Point
 
+from commonroad_control.control.pid.pid_control import PIDControl
 from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
+from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
@@ -65,40 +69,14 @@ def main(
         mode=TrajectoryMode.Input
     )
 
-    print("run controller")
+    print("initialize params")
+    # controller
+    dt_controller = 0.1
+    look_ahead_s = 0.5
+
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
-
-    # controller parameters
-    horizon_ocp = 10
-    dt_controller = 0.1
-    # ... vehicle model for prediction
-    vehicle_model_ctrl = KinematicBicycle(
-        params=vehicle_params,
-        delta_t=dt_controller)
-    sit_factory_ctrl = KBSITFactory()
-    # ... initialize optimal control solver
-    cost_xx = np.eye(KBStateIndices.dim)
-    cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
-    cost_uu = 0.01 * np.eye(KBInputIndices.dim)
-    cost_final = np.eye(KBStateIndices.dim)
-    # ... real time iteration -> only one iteration per time step
-    solver_parameters = SCvxParameters(max_iterations=1)
-    scvx_solver = OptimalControlSCvx(
-        vehicle_model=vehicle_model_ctrl,
-        sit_factory=sit_factory_ctrl,
-        horizon=horizon_ocp,
-        delta_t=dt_controller,
-        cost_xx=cost_xx,
-        cost_uu=cost_uu,
-        cost_final=cost_final,
-        ocp_parameters=solver_parameters
-    )
-
-    # instantiate model predictive controller
-    mpc = ModelPredictiveControl(
-        ocp_solver=scvx_solver
-    )
+    extended_horizon_steps = 10
 
     # simulation
     sit_factory_sim = DBSITFactory()
@@ -121,6 +99,36 @@ def main(
         noise_generator=noise_generator
     )
 
+    look_ahead_sim: Simulation = Simulation(
+        vehicle_model=vehicle_model_sim,
+        state_input_factory=sit_factory_sim
+    )
+
+    pid_velocity: PIDControl = PIDControl(
+        kp=1.0,
+        ki=0.0,
+        kd=0.0,
+        dt=dt_controller
+    )
+
+    pid_steering_angle_orientation: PIDControl = PIDControl(
+        kp=0.05,
+        ki=0.0,
+        kd=0.2,
+        dt=dt_controller
+    )
+
+    pid_steering_angle_lateral_error: PIDControl = PIDControl(
+        kp=0.01,
+        ki=0.0,
+        kd=0.04,
+        dt=dt_controller
+    )
+
+
+
+    print("run controller")
+
     # extend reference trajectory
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
         x_ref=copy.copy(x_ref),
@@ -128,60 +136,91 @@ def main(
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=mpc.horizon)
+        horizon=extended_horizon_steps)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sit_factory=KBSITFactory(),
-        horizon=mpc.horizon,
+        horizon=extended_horizon_steps,
     )
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
         input_ref=u_ref_ext,
         t_0=0
     )
+    ref_path: LineString = LineString(
+        [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
+    )
+
 
     x_measured = convert_state_kb2db(kb_state=x_ref.initial_point,
                                      vehicle_params=vehicle_params
                                      )
-    # x_measured = x_ref.initial_point
+
 
     x_disturbed = copy.copy(x_measured)
-
     traj_dict_measured = {0: x_measured}
     traj_dict_dist_no_noise = {0: x_disturbed}
     input_dict = {}
-    x_ref_steps = [kk for kk in range(mpc.horizon + 1)]
-    u_ref_steps = [kk for kk in range(mpc.horizon)]
 
-    # for step, x_planner in kb_traj.points.items():
+
     for kk_sim in range(len(x_ref.steps)):
-
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim*dt_controller
+            t=kk_sim * dt_controller + look_ahead_s
         )
 
-        # convert initial state to kb
-        x0_kb = convert_state_db2kb(traj_dict_measured[kk_sim])
-        # x0_kb = traj_dict[kk_sim]
-
-        # compute control input
-        u_now = mpc.compute_control_input(
-            x0=x0_kb,
-            x_ref=tmp_x_ref,
-            u_ref=tmp_u_ref
+        u_look_ahead_sim = sit_factory_sim.input_from_args(
+            acceleration=u_ref.points[kk_sim].acceleration,
+            steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
         )
-        # u_now = kb_input.points[kk_sim]
-        input_dict[kk_sim] = u_now
+        _, _, x_look_ahead = look_ahead_sim.simulate(
+            x0=x_disturbed,
+            u=u_look_ahead_sim,
+            time_horizon=look_ahead_s
+        )
+
+        # convert simulated forward step state back to KB for control
+        x0_kb = convert_state_db2kb(x_look_ahead)
+        lateral_offset_lookahead = signed_distance_point_to_linestring(
+            point=Point(x0_kb.position_x, x0_kb.position_y),
+            linestring=ref_path
+        )
+
+        # get controller outputs
+        u_steer_orientation = pid_steering_angle_orientation.compute_control_input(
+            measured_state=x0_kb.heading,
+            desired_state=tmp_x_ref.points[0].heading,
+        )
+        u_steer_lateral_offset = pid_steering_angle_lateral_error.compute_control_input(
+            measured_state=lateral_offset_lookahead,
+            desired_state=0.0,
+        )
+
+        u_vel = pid_velocity.compute_control_input(
+            measured_state=x0_kb.velocity,
+            desired_state=tmp_x_ref.points[0].velocity,
+        )
+        u_now = sit_factory_sim.input_from_args(
+            acceleration=u_vel + u_ref.points[kk_sim].acceleration,
+            steering_angle_velocity=u_steer_orientation + u_steer_lateral_offset + u_ref.points[kk_sim].steering_angle_velocity
+        )
+
+
         # simulate
         x_measured, x_disturbed, x_rk45 = simulation.simulate(
             x0=x_disturbed,
             u=u_now,
             time_horizon=dt_controller
         )
-        traj_dict_measured[kk_sim+1] = x_measured
+
+        # update dicts
+        input_dict[kk_sim] = u_now
+        traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
 
+
+
+    print(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
@@ -216,12 +255,13 @@ def main(
         save_path=img_save_path
     )
 
-
 if __name__ == "__main__":
-    scenario_name = "ZAM_Over-1_1"
+    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
-    planner_config_path = Path(__file__).parents[0]/ "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
+    planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name
+
+
     main(
         scenario_file=scenario_file,
         scenario_name=scenario_name,
