@@ -16,8 +16,8 @@ class ReferenceTrajectoryFactory:
         self._t_look_ahead: float = t_look_ahead
         self._sit_factory: StateInputTrajectoryFactoryInterface = sit_factory
 
-        self._x_ref: Union[TrajectoryInterface,None] = None
-        self._u_ref: Union[TrajectoryInterface,None] = None
+        self._x_ref: Union[TrajectoryInterface, None] = None
+        self._u_ref: Union[TrajectoryInterface, None] = None
         if horizon > 0:
             self._x_ref_steps: List[int] = [kk for kk in range(self._horizon + 1)]
             self._u_ref_steps: List[int] = [kk for kk in range(self._horizon)]
@@ -26,11 +26,18 @@ class ReferenceTrajectoryFactory:
             self._u_ref_steps = [0]
 
 
+    @property
+    def state_trajectory(self) -> Union[TrajectoryInterface, None]:
+        """
+        :return: state trajectory
+        """
+        return self._x_ref
+
 
     def set_reference_trajectory(self,
                                  state_ref: TrajectoryInterface,
                                  input_ref: TrajectoryInterface,
-                                 t_0: float):
+                                 t_0: float) -> None:
         """
         Function for updating the reference trajectory (e.g. given a new planned trajectory).
         :param state_ref: state reference trajectory
@@ -51,7 +58,8 @@ class ReferenceTrajectoryFactory:
 
         self._x_ref = state_ref
         self._u_ref = input_ref
-        return None
+
+
 
     def get_reference_trajectory_at_time(self,
                                          t: float) \
