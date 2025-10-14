@@ -111,7 +111,13 @@ def run_reactive_planner(
         _, _ = run_evaluation(planner.config, planner.record_state_list,
                                                        planner.record_input_list)
 
-    return planner.record_state_list, planner.record_input_list
+    # Move input up one time step so that the idx of the input correspond the state to which it is applied to to come
+    # into the next state
+    input_list: List[InputState] = planner.record_input_list[1:]
+    for el in input_list:
+        el.time_step = el.time_step - 1
+
+    return planner.record_state_list, input_list
 
 
 
