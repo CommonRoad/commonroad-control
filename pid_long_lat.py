@@ -1,38 +1,24 @@
 import copy
-import math
 from pathlib import Path
 
-import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
 from shapely.geometry import LineString, Point
 
-from commonroad_control.control.pid.pid_control import PIDControl
+from commonroad_control.control.pid.pid_long_lat import PIDLongLat
 from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices
-
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
-
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-
-
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
-
-from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
-from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
-
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
 
 
@@ -99,34 +85,24 @@ def main(
         noise_generator=noise_generator
     )
 
+    # Lookahead
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
         state_input_factory=sit_factory_sim
     )
 
-    pid_velocity: PIDControl = PIDControl(
-        kp=1.0,
-        ki=0.0,
-        kd=0.0,
-        dt=dt_controller
+    pid_controller: PIDLongLat = PIDLongLat(
+        kp_long=1.0,
+        ki_long=0.0,
+        kd_long=0.0,
+        kp_steer_offset=0.05,
+        ki_steer_offset=0.0,
+        kd_steer_offset=0.2,
+        kp_steer_heading=0.01,
+        ki_steer_heading=0.0,
+        kd_steer_heading=0.04,
+        dt=dt_controller,
     )
-
-    pid_steering_angle_orientation: PIDControl = PIDControl(
-        kp=0.05,
-        ki=0.0,
-        kd=0.2,
-        dt=dt_controller
-    )
-
-    pid_steering_angle_lateral_error: PIDControl = PIDControl(
-        kp=0.01,
-        ki=0.0,
-        kd=0.04,
-        dt=dt_controller
-    )
-
-
-
     print("run controller")
 
     # extend reference trajectory
@@ -186,23 +162,18 @@ def main(
             linestring=ref_path
         )
 
-        # get controller outputs
-        u_steer_orientation = pid_steering_angle_orientation.compute_control_input(
-            measured_state=x0_kb.heading,
-            desired_state=tmp_x_ref.points[0].heading,
-        )
-        u_steer_lateral_offset = pid_steering_angle_lateral_error.compute_control_input(
-            measured_state=lateral_offset_lookahead,
-            desired_state=0.0,
+        u_vel, u_steer = pid_controller.compute_control_input(
+            measured_v_long=x0_kb.velocity,
+            desired_v_long=tmp_x_ref.points[0].velocity,
+            measured_heading=x0_kb.heading,
+            desired_heading=tmp_x_ref.points[0].heading,
+            measured_lat_offset=lateral_offset_lookahead,
+            desired_lat_offset=0.0
         )
 
-        u_vel = pid_velocity.compute_control_input(
-            measured_state=x0_kb.velocity,
-            desired_state=tmp_x_ref.points[0].velocity,
-        )
         u_now = sit_factory_sim.input_from_args(
             acceleration=u_vel + u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_steer_orientation + u_steer_lateral_offset + u_ref.points[kk_sim].steering_angle_velocity
+            steering_angle_velocity=u_steer + u_ref.points[kk_sim].steering_angle_velocity
         )
 
 

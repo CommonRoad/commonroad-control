@@ -1,15 +1,15 @@
 import unittest
 from pathlib import Path
 import os
-from pid_with_lookahead import main
+from pid_long_lat import main
 
 
-class TestPIDLookaheadExample(unittest.TestCase):
+class TestPIDLongLatExample(unittest.TestCase):
 
 
-    def test_pid_with_lookahead_example(self) -> None:
+    def test_pid_long_lat_example(self) -> None:
         """
-        Test pid with lookahead example script
+        Test pid long lat example script
         """
 
         not_working = [

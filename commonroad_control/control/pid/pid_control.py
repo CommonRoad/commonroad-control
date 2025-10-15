@@ -1,9 +1,9 @@
-from commonroad_control.control.control import Controller
+from commonroad_control.control.control import ControllerInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
-class PIDControl(Controller):
+class PIDControl(ControllerInterface):
 
     def __init__(
             self,
