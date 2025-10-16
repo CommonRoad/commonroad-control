@@ -12,6 +12,21 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import
 
 
 class DoubleIntegrator(VehicleModelInterface):
+
+    @classmethod
+    def factory_method(
+            cls,
+            params: VehicleParameters,
+            delta_t: float
+    ) -> "DoubleIntegrator":
+        """
+        Factory method to generate class
+        :param params: CommonRoad vehicle params
+        :param delta_t: sampling time
+        :return: instance
+        """
+        return DoubleIntegrator(params=params, delta_t=delta_t)
+
     def __init__(self, params: VehicleParameters, delta_t: float):
 
         self._sys_mat, self._input_mat = self._system_matrices()

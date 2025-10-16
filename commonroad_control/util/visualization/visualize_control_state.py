@@ -45,7 +45,7 @@ def visualize_desired_vs_actual_states(
     plt.tight_layout()  # Avoid overlap
 
 
-    if save_img:
+    if save_img and save_path is not None:
         save_dir = os.path.join(save_path, "control")
         save_file: str = os.path.join(
             save_path, "control", "states.png"
@@ -76,7 +76,7 @@ def visualize_desired_vs_actual_states(
     plt.tight_layout()  # Avoid overlap
 
 
-    if save_img:
+    if save_img and save_path is not None:
         save_dir = os.path.join(save_path, "control")
         save_file: str = os.path.join(
             save_dir, "error.png"
