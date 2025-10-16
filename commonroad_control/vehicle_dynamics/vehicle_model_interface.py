@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 import enum
-import inspect
 import numpy as np
-from typing import Tuple, Union
+from typing import Tuple, Union, Any
 import casadi as cas
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
@@ -18,13 +17,30 @@ class ImplementedVehicleModels(enum.Enum):
 
 
 class VehicleModelInterface(ABC):
+
+    @classmethod
+    @abstractmethod
+    def factory_method(
+            cls,
+            params: VehicleParameters,
+            delta_t: float
+    ) -> Any:
+        """
+        Factory method to generate class
+        :param params: CommonRoad vehicle params
+        :param delta_t: sampling time
+        :return: instance
+        """
+        pass
+
     def __init__(self,
                  params: VehicleParameters,
                  nx: int,
                  nu: int,
-                 delta_t:float):
+                 delta_t: float):
         """
         Initialize abstract baseclass.
+        :param params: CommonRoad vehicle params
         :param nx: dimension of the state space
         :param nu: dimension of the input space
         :param delta_t: sampling time

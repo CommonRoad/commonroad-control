@@ -9,6 +9,21 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DynamicBicycle(VehicleModelInterface):
+
+    @classmethod
+    def factory_method(
+            cls,
+            params: VehicleParameters,
+            delta_t: float
+    ) -> "DynamicBicycle":
+        """
+        Factory method to generate class
+        :param params: CommonRoad vehicle params
+        :param delta_t: sampling time
+        :return: instance
+        """
+        return DynamicBicycle(params=params, delta_t=delta_t)
+
     def __init__(self,
                  params: VehicleParameters,
                  delta_t: float):
