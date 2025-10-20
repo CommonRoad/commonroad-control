@@ -337,6 +337,25 @@ setuptools = ">=62.1.0"
 shapely = ">=1.6.4"
 
 [[package]]
+name = "commonroad-idm-planner"
+version = "0.1.1"
+description = "CommonRoad Intelligent Driver Model Planner"
+optional = false
+python-versions = "<3.12,>=3.9"
+groups = ["planner"]
+files = [
+    {file = "commonroad_idm_planner-0.1.1-py3-none-any.whl", hash = "sha256:49908c11dbe1ff9b6b4e3513abb41c8fcb7d43f96235f2b2ec1511903315d137"},
+    {file = "commonroad_idm_planner-0.1.1.tar.gz", hash = "sha256:99f340c781a15f127546d48cdb065add93fc065ee4c97fd81e215655871f2dbe"},
+]
+
+[package.dependencies]
+commonroad-drivability-checker = ">=2025.1.0,<2026.0.0"
+commonroad-io = ">=2022.2,<2025.0.1"
+commonroad-route-planner = ">=2025.0.1,<2026.0.1"
+matplotlib = ">=3.9"
+numpy = ">=2.0"
+
+[[package]]
 name = "commonroad-io"
 version = "2024.3"
 description = "Python tool to read, write, and visualize CommonRoad scenarios and solutions for automated vehicles."
@@ -2461,4 +2480,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9, <3.12"
-content-hash = "337224649fdeefdf33620ad12a92e4c8e1df71387b9ac4e66ce8994df1f2ea74"
+content-hash = "d8a9cdacdfaf12a611a38153f2732c2c81533146aea69d42967f721625296e3b"
