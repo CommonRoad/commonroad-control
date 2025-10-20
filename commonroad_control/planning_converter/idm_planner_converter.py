@@ -3,8 +3,10 @@ from typing import Union, Any, Literal, List, Dict
 from math import  tan, sqrt, cos, sin
 import numpy as np
 # reactive planner
-from commonroad.scenario.state import InputState
-from commonroad_rp.state import ReactivePlannerState
+from commonroad_idm_planner.idm_trajectory import IDMTrajectory
+from commonroad_idm_planner.idm_state import IDMState
+from commonroad_idm_planner.idm_input import IDMInput
+from commonroad_idm_planner.util.geometry import wrap_to_pi
 
 # own code base
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
@@ -30,7 +32,7 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 # TODO: read position of rear-axle from reactive planner
 
-class ReactivePlannerConverter(PlanningConverterInterface):
+class IDMPlannerConverter(PlanningConverterInterface):
     # TODO decide if it needs a config? Otherwise methods static.
     # TODO: Aggregation makes sense?
 
@@ -42,7 +44,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         """
-        Converter for CommonRoad reactive planner
+        Converter for CommonRoad idm planner
         :param config: dummy
         :param kb_factory: kb Factory
         :param db_factory: db Factory
@@ -58,13 +60,13 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     # --- kb ---
     def trajectory_p2c_kb(
             self,
-            planner_traj: Union[List['ReactivePlannerState'], List[InputState]],
+            planner_traj: Union[IDMTrajectory, List[IDMInput]],
             mode: TrajectoryMode,
             t_0: float = 0.0,
             dt: float = 0.1
     ) -> KBTrajectory:
         """
-        Convert Reactive Planner Trajectory To kb-Trajectory
+        Convert IDM Planner Trajectory To kb-Trajectory
         :param planner_traj: state or input trajectory
         :param mode: state or input mode
         :param t_0: starting time of trajectory
@@ -72,10 +74,11 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :return: KBTrajectory
         """
         kb_dict: Dict[int, Union[KBState, KBInput]] = dict()
-        for kb_point in planner_traj:
+        for idx, kb_point in enumerate(planner_traj):
             kb_dict[kb_point.time_step] = self.sample_p2c_kb(
                 planner_state=kb_point,
-                mode=mode
+                mode=mode,
+                next_state=planner_traj if idx < len(planner_traj) - 1 else None
             )
         return self._kb_factory.trajectory_from_state_or_input(
             trajectory_dict=kb_dict,
@@ -86,43 +89,36 @@ class ReactivePlannerConverter(PlanningConverterInterface):
 
     def sample_p2c_kb(
             self,
-            planner_state: Union[ReactivePlannerState, InputState],
+            planner_state: Union[IDMState, IDMInput],
             mode: TrajectoryMode,
+            next_state: IDMState,
             *args,
             **kwargs
     ) -> Union[KBState, KBInput]:
         """
-        Convert one state or input of reactive planner to kb
+        Convert one state or input of IDM planner to kb
         :param planner_state: planner state or input
         :param mode: state or input
         :return: KBState or KBInput object
         """
         if mode.value == TrajectoryMode.State.value:
             # compute velocity at center of gravity
-            v_cog = map_velocity_from_ra_to_cog(
-                l_wb=self._vehicle_params.l_wb,
-                l_r=self._vehicle_params.l_r,
-                velocity_ra=planner_state.velocity,
-                steering_angle=planner_state.steering_angle
-            )
+            v_cog = planner_state.velocity
             # compute position of the center of gravity
-            position_x_cog, position_y_cog = compute_position_of_cog_from_ra_cc(
-                position_ra_x=planner_state.position[0],
-                position_ra_y=planner_state.position[1],
-                heading=planner_state.orientation,
-                l_r=self._vehicle_params.l_r
-            )
+            position_x_cog: float = planner_state.position[0]
+            position_y_cog: float = planner_state.position[1]
             retval: KBState = self._kb_factory.state_from_args(
                 position_x=position_x_cog,
                 position_y=position_y_cog,
                 velocity=v_cog,
                 heading=planner_state.orientation,
-                steering_angle=planner_state.steering_angle
+                steering_angle=wrap_to_pi(next_state.orientation - planner_state.orientation)
+                if next_state is not None else 0.0
             )
         elif mode.value == TrajectoryMode.Input.value:
             retval: KBInput = self._kb_factory.input_from_args(
                 acceleration=planner_state.acceleration,
-                steering_angle_velocity=planner_state.steering_angle_speed,
+                steering_angle_velocity=planner_state.steering_angle_velocity,
             )
         else:
             raise NotImplementedError(f"{mode} not implemented")
