@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 import os
 from commonroad.common.file_reader import CommonRoadFileReader
+from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_idm_planner
 from commonroad_idm_planner.idm_planner import IDMPlanner
 from commonroad_idm_planner.idm_input import IDMInput
 from commonroad_idm_planner.idm_state import IDMState
@@ -13,9 +14,10 @@ class TestIDMPlanner(unittest.TestCase):
 
     def test_idm_planner(self) -> None:
         """
-                Test pid long lat example script
-                """
+        Test pid long lat example script
+        """
         not_working = [
+            "DEU_AachenFrankenburg-1_2621353_T-21698"
         ]
 
         path_scenarios = Path(__file__).parents[1] / "scenarios"
@@ -38,4 +40,15 @@ class TestIDMPlanner(unittest.TestCase):
                     planning_problem=planning_problem
                 )
 
-                asdf = 3
+                print(f"run controller with scenario {scenario_name}")
+                noisy_traj, disturbed_traj, input_traj = pid_with_lookahead_for_idm_planner(
+                    scenario=scenario,
+                    planning_problem=planning_problem,
+                    idm_state_trajectory=state_traj,
+                    idm_input_trajectory=input_traj,
+                    visualize_scenario=True,
+                    visualize_control=False,
+                    save_imgs=True,
+                    img_saving_path=Path(__file__).parents[0] / "output" / str("idm_"  + scenario_name)
+                )
+

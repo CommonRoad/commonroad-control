@@ -59,8 +59,6 @@ class PlanningConverterInterface(ABC):
             self,
             planner_state: Any,
             mode: TrajectoryMode,
-            *args,
-            **kwargs
     ) -> Union[KBState, KBInput]:
         pass
 

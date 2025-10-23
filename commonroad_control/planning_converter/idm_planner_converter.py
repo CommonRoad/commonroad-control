@@ -30,7 +30,6 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
-# TODO: read position of rear-axle from reactive planner
 
 class IDMPlannerConverter(PlanningConverterInterface):
     # TODO decide if it needs a config? Otherwise methods static.
@@ -74,11 +73,11 @@ class IDMPlannerConverter(PlanningConverterInterface):
         :return: KBTrajectory
         """
         kb_dict: Dict[int, Union[KBState, KBInput]] = dict()
-        for idx, kb_point in enumerate(planner_traj):
-            kb_dict[kb_point.time_step] = self.sample_p2c_kb(
-                planner_state=kb_point,
-                mode=mode,
-                next_state=planner_traj if idx < len(planner_traj) - 1 else None
+        p_traj = planner_traj if mode == TrajectoryMode.Input else planner_traj.state_list
+        for idm_point in p_traj:
+            kb_dict[idm_point.time_step] = self.sample_p2c_kb(
+                planner_state=idm_point,
+                mode=mode
             )
         return self._kb_factory.trajectory_from_state_or_input(
             trajectory_dict=kb_dict,
@@ -91,9 +90,6 @@ class IDMPlannerConverter(PlanningConverterInterface):
             self,
             planner_state: Union[IDMState, IDMInput],
             mode: TrajectoryMode,
-            next_state: IDMState,
-            *args,
-            **kwargs
     ) -> Union[KBState, KBInput]:
         """
         Convert one state or input of IDM planner to kb
@@ -102,18 +98,13 @@ class IDMPlannerConverter(PlanningConverterInterface):
         :return: KBState or KBInput object
         """
         if mode.value == TrajectoryMode.State.value:
-            # compute velocity at center of gravity
-            v_cog = planner_state.velocity
-            # compute position of the center of gravity
-            position_x_cog: float = planner_state.position[0]
-            position_y_cog: float = planner_state.position[1]
+            # idm planner already has position on COG
             retval: KBState = self._kb_factory.state_from_args(
-                position_x=position_x_cog,
-                position_y=position_y_cog,
-                velocity=v_cog,
+                position_x=planner_state.position[0],
+                position_y=planner_state.position[1],
+                velocity=planner_state.velocity,
                 heading=planner_state.orientation,
-                steering_angle=wrap_to_pi(next_state.orientation - planner_state.orientation)
-                if next_state is not None else 0.0
+                steering_angle=planner_state.steering_angle
             )
         elif mode.value == TrajectoryMode.Input.value:
             retval: KBInput = self._kb_factory.input_from_args(
@@ -130,77 +121,27 @@ class IDMPlannerConverter(PlanningConverterInterface):
             self,
             kb_traj: KBTrajectory,
             mode: TrajectoryMode,
-    ) -> Union[List[ReactivePlannerState], List[InputState]]:
-        ordered_points_by_step = dict(sorted(kb_traj.points.items()))
-        retval: List[ReactivePlannerState] = list()
-        for step, point in ordered_points_by_step.items():
-            retval.append(
-                self.sample_c2p_kb(
-                    kb_state=point,
-                    mode=mode,
-                    time_step=step)
-            )
-        return retval
+    ) -> Union[IDMTrajectory, List[IDMInput]]:
+        raise NotImplementedError()
 
     def sample_c2p_kb(
             self,
             kb_state: Union[KBState, KBInput],
             mode: TrajectoryMode,
             time_step: int
-    ) -> Union[ReactivePlannerState, InputState]:
-        """
-        Get Reactive planner state or input from kb state or input
-        :param kb_state:
-        :param mode:
-        :param time_step:
-        :return:
-        """
-        if mode == TrajectoryMode.State:
-            # TODO: convert back to rear axle
-            # transform velocity to rear axle
-            v_ra = map_velocity_from_cog_to_ra(
-                l_wb=self._vehicle_params.l_wb,
-                l_r=self._vehicle_params.l_r,
-                velocity_cog=kb_state.velocity,
-                steering_angle=kb_state.steering_angle
-            )
-
-            # compute position of the center of gravity
-            position_x_ra, position_y_ra = compute_position_of_ra_from_cog_cartesian(
-                position_cog_x=kb_state.position_x,
-                position_cog_y=kb_state.position_y,
-                heading=kb_state.heading,
-                l_r=self._vehicle_params.l_r
-            )
-
-            retval: ReactivePlannerState = ReactivePlannerState(
-                time_step=time_step,
-                position=np.asarray([position_x_ra, position_y_ra]),
-                velocity=v_ra,
-                orientation=kb_state.heading,
-                steering_angle=kb_state.steering_angle,
-                yaw_rate=0
-            )
-        elif mode == TrajectoryMode.Input:
-            retval: InputState = InputState(
-                steering_angle_speed=kb_state.steering_angle_velocity,
-                acceleration=kb_state.acceleration,
-                time_step=time_step
-            )
-        else:
-            raise NotImplementedError(f"mode {mode} not implemented")
-        return retval
+    ) -> Union[IDMState, IDMInput]:
+        raise NotImplementedError()
 
     # --- db ---
     def trajectory_p2c_db(
             self,
-            planner_traj: Union[List['ReactivePlannerState'], List[InputState]],
+            planner_traj: Union[IDMTrajectory, List[IDMState]],
             mode: TrajectoryMode,
             t_0: float = 0.0,
             dt: float = 0.1
     ) -> DBTrajectory:
         """
-        Build dynamic-single-track trajectory from reactive planner
+        Build dynamic-single-track trajectory from IDM planner
         :param planner_traj:
         :param mode:
         :param t_0:
@@ -208,7 +149,17 @@ class IDMPlannerConverter(PlanningConverterInterface):
         :return: DBTrajectory
         """
         db_dict: Dict[int, Union[DBState, DBInput]] = dict()
-        for db_point in planner_traj:
+
+        # add yaw rate attribute to idm state if necessary
+        if mode == TrajectoryMode.State and not hasattr(planner_traj.state_list[0], "yaw_rate"):
+            setattr(planner_traj.state_list[0], "yaw_rate", 0.0)
+            for idx in range(len(planner_traj.state_list) - 2):
+                yaw_rate: float = (planner_traj[idx + 1].orientation - planner_traj[idx].orientation) / dt
+                setattr(planner_traj[idx + 1], "yaw_rate", yaw_rate)
+
+        p_traj = planner_traj if mode == TrajectoryMode.Input else planner_traj.state_list
+
+        for db_point in p_traj:
             db_dict[db_point.time_step] = self.sample_p2c_db(
                 planner_state=db_point,
                 mode=mode
@@ -224,7 +175,7 @@ class IDMPlannerConverter(PlanningConverterInterface):
 
     def sample_p2c_db(
             self,
-            planner_state: Union[ReactivePlannerState, InputState],
+            planner_state: Union[IDMState, IDMInput],
             mode: TrajectoryMode
     ) -> Union[DBState, DBInput]:
         """
@@ -234,30 +185,19 @@ class IDMPlannerConverter(PlanningConverterInterface):
         :return: DBState or DBInput
         """
         if mode == TrajectoryMode.State:
+            # IDM already is in COG
             # compute velocity at center of gravity
-            v_cog = map_velocity_from_ra_to_cog(
-                l_wb=self._vehicle_params.l_wb,
-                l_r=self._vehicle_params.l_r,
-                velocity_ra=planner_state.velocity,
-                steering_angle=planner_state.steering_angle
-            )
+            v_cog = planner_state.velocity
             v_cog_lon, v_cog_lat = compute_velocity_components_from_steering_angle_in_cog(
                 steering_angle=planner_state.steering_angle,
                 velocity_cog=v_cog,
                 l_wb=self.vehicle_params.l_wb,
                 l_r=self.vehicle_params.l_r
             )
-            # compute position of the center of gravity
-            position_x_cog, position_y_cog = compute_position_of_cog_from_ra_cc(
-                position_ra_x=planner_state.position[0],
-                position_ra_y=planner_state.position[1],
-                heading=planner_state.orientation,
-                l_r=self._vehicle_params.l_r
-            )
 
             retval: DBState = self._db_factory.state_from_args(
-                position_x=position_x_cog,
-                position_y=position_y_cog,
+                position_x=planner_state.position[0],
+                position_y=planner_state.position[1],
                 velocity_long=v_cog_lon,
                 velocity_lat=v_cog_lat,
                 yaw_rate=planner_state.yaw_rate,
@@ -288,7 +228,7 @@ class IDMPlannerConverter(PlanningConverterInterface):
             db_state: Union[DBState, DBInput],
             mode: TrajectoryMode,
             time_step: int,
-    ) -> Union[ReactivePlannerState, InputState]:
+    ) -> Union[IDMState, IDMInput]:
         """
         Convert control output to Reactive planner
         :param db_state:
@@ -296,22 +236,4 @@ class IDMPlannerConverter(PlanningConverterInterface):
         :param time_step:
         :return: ReactivePlannerState or InputState
         """
-        #TODO check conversion
-        if mode == TrajectoryMode.State:
-            retval: ReactivePlannerState = ReactivePlannerState(
-                time_step=time_step,
-                position=np.asarray([db_state.position_x, db_state.position_y]),
-                velocity=compute_total_velocity_from_components(
-                    db_state.velocity_long, db_state.velocity_lat
-                ),
-                orientation=db_state.heading,
-                steering_angle=db_state.steering_angle,
-                yaw_rate=db_state.yaw_rate
-            )
-        elif mode == TrajectoryMode.Input:
-            retval: InputState = InputState(
-                steering_angle_speed=db_state.steering_angle_velocity,
-                acceleration=db_state.acceleration,
-                time_step=time_step
-            )
-        return retval
+        raise NotImplementedError()
