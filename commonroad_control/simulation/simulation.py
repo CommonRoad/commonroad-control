@@ -1,7 +1,7 @@
 from typing import Union, Any, Optional, Tuple
 
 import numpy as np
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, OdeSolver
 
 from commonroad_control.noise_disturbance.NoiseDisturbanceGeneratorInterface import NoiseDisturbanceGeneratorInterface
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
@@ -84,7 +84,8 @@ class Simulation:
         self,
         x0: StateInterface,
         u: InputInterface,
-        time_horizon: float
+        time_horizon: float,
+        ivp_method: Union[str, OdeSolver, None] = "RK45"
     ) -> Tuple[Union[StateInterface, Any], Union[StateInterface, Any], Union[StateInterface, Any]]:
         """
         Simulates the current state forward given an input and the time horizon using Runge-Kutta 4.
@@ -97,8 +98,12 @@ class Simulation:
         u_num = u.convert_to_array()
 
         # TODO fix to public var
-        res_sim = solve_ivp(lambda t, y: self._vehicle_model._dynamics_ct(y, u_num), [0, time_horizon], y0=x0_num,
-                          method='RK45')
+        res_sim = solve_ivp(
+            lambda t, y: self._vehicle_model._dynamics_ct(y, u_num),
+            [0, time_horizon],
+            y0=x0_num,
+            method=ivp_method
+        )
         x_end = res_sim.y[:, -1]
 
 

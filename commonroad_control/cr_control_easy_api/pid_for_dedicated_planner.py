@@ -7,6 +7,7 @@ from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import InputState
 from commonroad_idm_planner.idm_input import IDMInput
+from scipy.integrate import OdeSolver
 
 from commonroad_control.planning_converter.idm_planner_converter import IDMPlannerConverter
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
@@ -49,17 +50,17 @@ def pid_with_lookahead_for_idm_planner(
         planning_problem: PlanningProblem,
         idm_state_trajectory: IDMTrajectory,
         idm_input_trajectory: List[IDMInput],
-        kp_long: float = 10.0,
+        kp_long: float = 2.0,
         ki_long: float = 0.5,
         kd_long: float = 0.5,
-        kp_steer_offset: float = 0.02,
+        kp_steer_offset: float = 0.00,
         ki_steer_offset: float = 0.0,
-        kd_steer_offset: float = 0.1,
-        kp_steer_heading: float = 0.01,
+        kd_steer_offset: float = 0.2,
+        kp_steer_heading: float = 0.00,
         ki_steer_heading: float = 0.0,
-        kd_steer_heading: float = 0.1,
+        kd_steer_heading: float = 0.0,
         dt_controller: float = 0.1,
-        look_ahead_s: float = 0.0,
+        look_ahead_s: float = 0.5,
         extended_horizon_steps: int = 10,
         vehicle_params=BMW3seriesParams(),
         planner_converter: Optional[PlanningConverterInterface]=IDMPlannerConverter(),
@@ -69,6 +70,7 @@ def pid_with_lookahead_for_idm_planner(
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
         func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
+        ivp_method: Union[str, OdeSolver, None] = "Radau",
         visualize_scenario: bool = False,
         visualize_control: bool = False,
         save_imgs: bool = False,
@@ -99,6 +101,7 @@ def pid_with_lookahead_for_idm_planner(
         class_vehicle_model=class_vehicle_model,
         func_convert_planner2controller_state=func_convert_planner2controller_state,
         func_convert_controller2planner_state=func_convert_controller2planner_state,
+        ivp_method=ivp_method,
         visualize_scenario=visualize_scenario,
         visualize_control=visualize_control,
         save_imgs=save_imgs,
@@ -131,6 +134,7 @@ def pid_with_lookahead_for_reactive_planner(
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
         func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
+        ivp_method: Union[str, OdeSolver, None] = "RK45",
         visualize_scenario: bool = False,
         visualize_control: bool = False,
         save_imgs: bool = False,
@@ -161,6 +165,7 @@ def pid_with_lookahead_for_reactive_planner(
         class_vehicle_model=class_vehicle_model,
         func_convert_planner2controller_state=func_convert_planner2controller_state,
         func_convert_controller2planner_state=func_convert_controller2planner_state,
+        ivp_method=ivp_method,
         visualize_scenario=visualize_scenario,
         visualize_control=visualize_control,
         save_imgs=save_imgs,
@@ -194,6 +199,7 @@ def pid_with_lookahead_for_planner(
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
         func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
+        ivp_method: Union[str, OdeSolver, None] = "RK45",
         visualize_scenario: bool = False,
         visualize_control: bool = False,
         save_imgs: bool = False,
@@ -290,7 +296,8 @@ def pid_with_lookahead_for_planner(
         _, _, x_look_ahead = look_ahead_sim.simulate(
             x0=x_disturbed,
             u=u_look_ahead_sim,
-            time_horizon=look_ahead_s
+            time_horizon=look_ahead_s,
+            ivp_method=ivp_method
         )
 
         # convert simulated forward step state back to KB for control

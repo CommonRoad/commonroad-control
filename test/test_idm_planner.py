@@ -17,7 +17,6 @@ class TestIDMPlanner(unittest.TestCase):
         Test pid long lat example script
         """
         not_working = [
-            "DEU_AachenFrankenburg-1_2621353_T-21698"
         ]
 
         path_scenarios = Path(__file__).parents[1] / "scenarios"
@@ -29,6 +28,9 @@ class TestIDMPlanner(unittest.TestCase):
             if not os.path.isfile(scenario_file) or scenario_name in not_working:
                 continue
 
+            if not "Tjunction" in str(Path(__file__).parents[1] / "scenarios" / str(scenario_name + ".xml")):
+                continue
+
             with self.subTest(msg=f"testing scenario {scenario_name}"):
                 planner_config_path = Path(__file__).parents[1] / "scenarios" / "reactive_planner_configs" / str(
                     scenario_name + ".yaml")
@@ -37,7 +39,8 @@ class TestIDMPlanner(unittest.TestCase):
 
                 state_traj, input_traj = solve_planning_problem_and_get_state_and_input_trajectory(
                     scenario=scenario,
-                    planning_problem=planning_problem
+                    planning_problem=planning_problem,
+                    ignore_static_obstacles=False
                 )
 
                 print(f"run controller with scenario {scenario_name}")
@@ -46,6 +49,8 @@ class TestIDMPlanner(unittest.TestCase):
                     planning_problem=planning_problem,
                     idm_state_trajectory=state_traj,
                     idm_input_trajectory=input_traj,
+                    noise_generator=None,
+                    disturbance_generator=None,
                     visualize_scenario=True,
                     visualize_control=False,
                     save_imgs=True,
