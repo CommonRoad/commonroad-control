@@ -6,18 +6,12 @@ from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import InputState
-from commonroad_idm_planner.idm_input import IDMInput
 from scipy.integrate import OdeSolver
-
-from commonroad_control.planning_converter.idm_planner_converter import IDMPlannerConverter
 from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
-from commonroad_idm_planner.idm_state import IDMState
-from commonroad_idm_planner.idm_trajectory import IDMTrajectory
 from commonroad_rp.state import ReactivePlannerState
 from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
-from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
 from commonroad_control.noise_disturbance.NoiseDisturbanceGeneratorInterface import NoiseDisturbanceGeneratorInterface
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
@@ -42,71 +36,6 @@ from commonroad_control.cr_control_easy_api.default_building_blocks import gauss
 from typing import List, Union, Tuple, Dict, Optional, Callable, Any
 
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
-
-
-
-def pid_with_lookahead_for_idm_planner(
-        scenario: Scenario,
-        planning_problem: PlanningProblem,
-        idm_state_trajectory: IDMTrajectory,
-        idm_input_trajectory: List[IDMInput],
-        kp_long: float = 2.0,
-        ki_long: float = 0.5,
-        kd_long: float = 0.5,
-        kp_steer_offset: float = 0.00,
-        ki_steer_offset: float = 0.0,
-        kd_steer_offset: float = 0.2,
-        kp_steer_heading: float = 0.00,
-        ki_steer_heading: float = 0.0,
-        kd_steer_heading: float = 0.0,
-        dt_controller: float = 0.1,
-        look_ahead_s: float = 0.5,
-        extended_horizon_steps: int = 10,
-        vehicle_params=BMW3seriesParams(),
-        planner_converter: Optional[PlanningConverterInterface]=IDMPlannerConverter(),
-        disturbance_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_disturbance_for_db(),
-        noise_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_noise_for_db(),
-        sit_factory_sim: StateInputTrajectoryFactoryInterface = DBSITFactory(),
-        class_vehicle_model: VehicleModelInterface = DynamicBicycle,
-        func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
-        func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
-        ivp_method: Union[str, OdeSolver, None] = "Radau",
-        visualize_scenario: bool = False,
-        visualize_control: bool = False,
-        save_imgs: bool = False,
-        img_saving_path: Union[Path, str] = None
-) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
-    return pid_with_lookahead_for_planner(
-        scenario=scenario,
-        planning_problem=planning_problem,
-        state_trajectory=idm_state_trajectory,
-        input_trajectory=idm_input_trajectory,
-        kp_long=kp_long,
-        ki_long=ki_long,
-        kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
-        kp_steer_heading=kp_steer_heading,
-        ki_steer_heading=ki_steer_heading,
-        kd_steer_heading=kd_steer_heading,
-        dt_controller=dt_controller,
-        look_ahead_s=look_ahead_s,
-        extended_horizon_steps=extended_horizon_steps,
-        vehicle_params=vehicle_params,
-        planner_converter=planner_converter,
-        disturbance_generator=disturbance_generator,
-        noise_generator=noise_generator,
-        sit_factory_sim=sit_factory_sim,
-        class_vehicle_model=class_vehicle_model,
-        func_convert_planner2controller_state=func_convert_planner2controller_state,
-        func_convert_controller2planner_state=func_convert_controller2planner_state,
-        ivp_method=ivp_method,
-        visualize_scenario=visualize_scenario,
-        visualize_control=visualize_control,
-        save_imgs=save_imgs,
-        img_saving_path=img_saving_path
-    )
 
 
 def pid_with_lookahead_for_reactive_planner(
