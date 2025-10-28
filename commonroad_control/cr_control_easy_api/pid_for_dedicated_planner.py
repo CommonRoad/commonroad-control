@@ -6,11 +6,12 @@ from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import InputState
+from scipy.integrate import OdeSolver
+from commonroad_control.planning_converter.planning_converter_interface import PlanningConverterInterface
 from commonroad_rp.state import ReactivePlannerState
 from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
-from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
 from commonroad_control.noise_disturbance.NoiseDisturbanceGeneratorInterface import NoiseDisturbanceGeneratorInterface
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
@@ -55,29 +56,93 @@ def pid_with_lookahead_for_reactive_planner(
         look_ahead_s: float = 0.5,
         extended_horizon_steps: int = 10,
         vehicle_params=BMW3seriesParams(),
+        planner_converter: Optional[PlanningConverterInterface]=ReactivePlannerConverter(),
         disturbance_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_disturbance_for_db(),
         noise_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_noise_for_db(),
         sit_factory_sim: StateInputTrajectoryFactoryInterface = DBSITFactory(),
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
         func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
+        ivp_method: Union[str, OdeSolver, None] = "RK45",
+        visualize_scenario: bool = False,
+        visualize_control: bool = False,
+        save_imgs: bool = False,
+        img_saving_path: Union[Path, str] = None
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
+    return pid_with_lookahead_for_planner(
+        scenario=scenario,
+        planning_problem=planning_problem,
+        state_trajectory=reactive_planner_state_trajectory,
+        input_trajectory=reactive_planner_input_trajectory,
+        kp_long=kp_long,
+        ki_long=ki_long,
+        kd_long=kd_long,
+        kp_steer_offset=kp_steer_offset,
+        ki_steer_offset=ki_steer_offset,
+        kd_steer_offset=kd_steer_offset,
+        kp_steer_heading=kp_steer_heading,
+        ki_steer_heading=ki_steer_heading,
+        kd_steer_heading=kd_steer_heading,
+        dt_controller=dt_controller,
+        look_ahead_s=look_ahead_s,
+        extended_horizon_steps=extended_horizon_steps,
+        vehicle_params=vehicle_params,
+        planner_converter=planner_converter,
+        disturbance_generator=disturbance_generator,
+        noise_generator=noise_generator,
+        sit_factory_sim=sit_factory_sim,
+        class_vehicle_model=class_vehicle_model,
+        func_convert_planner2controller_state=func_convert_planner2controller_state,
+        func_convert_controller2planner_state=func_convert_controller2planner_state,
+        ivp_method=ivp_method,
+        visualize_scenario=visualize_scenario,
+        visualize_control=visualize_control,
+        save_imgs=save_imgs,
+        img_saving_path=img_saving_path
+    )
+
+
+
+def pid_with_lookahead_for_planner(
+        scenario: Scenario,
+        planning_problem: PlanningProblem,
+        state_trajectory: Any,
+        input_trajectory: Any,
+        planner_converter: PlanningConverterInterface,
+        kp_long: float = 1.0,
+        ki_long: float = 0.0,
+        kd_long: float = 0.0,
+        kp_steer_offset: float = 0.05,
+        ki_steer_offset: float = 0.0,
+        kd_steer_offset: float = 0.2,
+        kp_steer_heading: float = 0.01,
+        ki_steer_heading: float = 0.0,
+        kd_steer_heading: float = 0.04,
+        dt_controller: float = 0.1,
+        look_ahead_s: float = 0.5,
+        extended_horizon_steps: int = 10,
+        vehicle_params=BMW3seriesParams(),
+        disturbance_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_disturbance_for_db(),
+        noise_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_noise_for_db(),
+        sit_factory_sim: StateInputTrajectoryFactoryInterface = DBSITFactory(),
+        class_vehicle_model: VehicleModelInterface = DynamicBicycle,
+        func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
+        func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
+        ivp_method: Union[str, OdeSolver, None] = "RK45",
         visualize_scenario: bool = False,
         visualize_control: bool = False,
         save_imgs: bool = False,
         img_saving_path: Union[Path, str] = None
 ) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
 
-    rpc = ReactivePlannerConverter()
-    x_ref = rpc.trajectory_p2c_kb(
-        planner_traj=reactive_planner_state_trajectory,
+    x_ref = planner_converter.trajectory_p2c_kb(
+        planner_traj=state_trajectory,
         mode=TrajectoryMode.State
     )
-    u_ref = rpc.trajectory_p2c_kb(
-        planner_traj=reactive_planner_input_trajectory,
+    u_ref = planner_converter.trajectory_p2c_kb(
+        planner_traj=input_trajectory,
         mode=TrajectoryMode.Input
     )
-
-
 
     print("initialize simulation")
     # simulation
@@ -160,7 +225,8 @@ def pid_with_lookahead_for_reactive_planner(
         _, _, x_look_ahead = look_ahead_sim.simulate(
             x0=x_disturbed,
             u=u_look_ahead_sim,
-            time_horizon=look_ahead_s
+            time_horizon=look_ahead_s,
+            ivp_method=ivp_method
         )
 
         # convert simulated forward step state back to KB for control
@@ -199,8 +265,6 @@ def pid_with_lookahead_for_reactive_planner(
         traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
 
     print(f"Control calculation: {eta * 1000} millisec.")
-
-    print(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
@@ -210,6 +274,7 @@ def pid_with_lookahead_for_reactive_planner(
 
 
     if visualize_scenario:
+        print(f"visualization")
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,

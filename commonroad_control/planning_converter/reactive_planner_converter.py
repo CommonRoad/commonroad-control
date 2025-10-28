@@ -28,8 +28,6 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 
-# TODO: read position of rear-axle from reactive planner
-
 class ReactivePlannerConverter(PlanningConverterInterface):
     # TODO decide if it needs a config? Otherwise methods static.
     # TODO: Aggregation makes sense?
@@ -87,7 +85,9 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def sample_p2c_kb(
             self,
             planner_state: Union[ReactivePlannerState, InputState],
-            mode: TrajectoryMode
+            mode: TrajectoryMode,
+            *args,
+            **kwargs
     ) -> Union[KBState, KBInput]:
         """
         Convert one state or input of reactive planner to kb

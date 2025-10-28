@@ -58,7 +58,7 @@ class PlanningConverterInterface(ABC):
     def sample_p2c_kb(
             self,
             planner_state: Any,
-            mode: TrajectoryMode
+            mode: TrajectoryMode,
     ) -> Union[KBState, KBInput]:
         pass
 

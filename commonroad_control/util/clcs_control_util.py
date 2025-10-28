@@ -83,9 +83,8 @@ def extend_reference_trajectory_lane_following(
         horizon: int,
         delta_t: float,
         l_wb: float,
-        planning_problem_id: int = 30000) \
-        -> Tuple[CurvilinearCoordinateSystem, List[np.ndarray], List[float], List[float], List [float], List[float], List[float]]:
-
+        planning_problem_id: int = 30000
+) -> Tuple[CurvilinearCoordinateSystem, List[np.ndarray], List[float], List[float], List [float], List[float], List[float]]:
 
     # extend path with route planner
     clcs_line = extend_ref_path_with_route_planner(
