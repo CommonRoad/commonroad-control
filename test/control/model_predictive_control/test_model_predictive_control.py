@@ -77,8 +77,8 @@ class TestModelPredictivecontrol(unittest.TestCase):
         )
 
         # closed-loop simulation
-        x_sim = [x_0]
-        u_sim = []
+        x_sim = {0: x_0}
+        u_sim = {}
         for kk in range(horizon_sim):
             # extract reference trajectory and create trajectory interface object
             x_ref_np = x_ref[:, kk:kk+horizon_ocp+1]
@@ -86,31 +86,33 @@ class TestModelPredictivecontrol(unittest.TestCase):
             tmp_x_ref = sit_factory.trajectory_from_numpy_array(
                     traj_np=x_ref_np,
                     mode=TrajectoryMode.State,
-                    time=[kk for kk in range(horizon_ocp+1)],
+                    time_steps=[kk for kk in range(horizon_ocp+1)],
                     t_0=kk*delta_t,
-                    delta_t=delta_t)
+                    delta_t=delta_t
+            )
             tmp_u_ref = sit_factory.trajectory_from_numpy_array(
                     traj_np=u_ref_np,
                     mode=TrajectoryMode.Input,
-                    time=[kk for kk in range(horizon_ocp)],
+                    time_steps=[kk for kk in range(horizon_ocp)],
                     t_0=kk*delta_t,
-                    delta_t=delta_t)
+                    delta_t=delta_t
+            )
 
             # solve optimal control problem
             u_opt = mpc.compute_control_input(
-                x0=x_sim[-1],
+                x0=x_sim[kk],
                 x_ref=tmp_x_ref,
                 u_ref=tmp_u_ref
             )
 
             # simulate system
-            x_next = simulator.simulate(
-                x0=x_sim[-1],
+            x_next, _, _ = simulator.simulate(
+                x0=x_sim[kk],
                 u=u_opt,
                 time_horizon=delta_t
             )
 
             # store solution
-            x_sim.append(x_next)
-            u_sim.append(u_opt)
+            x_sim[kk+1] = x_next
+            u_sim[kk] = u_opt
 

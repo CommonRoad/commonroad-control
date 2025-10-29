@@ -61,6 +61,7 @@ class TrajectoryInterface(ABC):
 
         return np.hstack(traj_np)
 
+    # TODO: remove if not required
     def get_point_component_trajectory(self,
                                        time: List[float],
                                        comp_name: str) -> List[float]:

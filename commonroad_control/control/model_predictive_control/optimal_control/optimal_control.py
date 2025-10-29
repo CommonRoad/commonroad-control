@@ -42,3 +42,5 @@ class OptimalControlSolver(ABC):
             -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
         pass
 
+    def reset_ocp_parameters(self,new_ocp_parameters: OCPSolverParameters):
+        self._ocp_parameters = new_ocp_parameters

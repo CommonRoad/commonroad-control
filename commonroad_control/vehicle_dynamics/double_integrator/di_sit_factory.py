@@ -74,6 +74,24 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             velocity_long=x_np[DIStateIndices.velocity_long],
             velocity_lat=x_np[DIStateIndices.velocity_lat]
         )
+    
+    def input_from_numpy_array(
+            self,
+            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union['DIInput']:
+        """
+        Set values of control input from a given array.
+        :param u_np: input vector - array of dimension (self.dim,)
+        """
+        if u_np.ndim > 1:
+            raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
+        if u_np.shape[0] != DIInputIndices.dim:
+            raise ValueError(f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}")
+
+        return DIInput(
+            acceleration_long=u_np[DIInputIndices.acceleration_long],
+            acceleration_lat=u_np[DIInputIndices.acceleration_lat]
+        )
 
     def trajectory_from_state_or_input(
             self,
@@ -101,7 +119,7 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             self,
             traj_np: np.ndarray[tuple[float,float], np.dtype[np.float64]],
             mode: TrajectoryMode,
-            time: List[int],
+            time_steps: List[int],
             t_0: float,
             delta_t: float
     ) -> DITrajectory:
@@ -109,40 +127,22 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
 
         :param traj_np:
         :param mode:
-        :param time:
+        :param time_steps:
         :param t_0:
         :param delta_t:
         :return:
         """
         # convert trajectory to State/InputInterface
         points_val = []
-        for kk in range(len(time)):
+        for kk in range(len(time_steps)):
             if mode == TrajectoryMode.State:
                 points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
             elif mode == TrajectoryMode.Input:
                 points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
 
         return DITrajectory(
-            points=dict(zip(time, points_val)),
+            points=dict(zip(time_steps, points_val)),
             mode=mode,
             delta_t=delta_t,
             t_0=t_0
-        )
-
-    def input_from_numpy_array(
-            self,
-            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union['DIInput']:
-        """
-        Set values of control input from a given array.
-        :param u_np: input vector - array of dimension (self.dim,)
-        """
-        if u_np.ndim > 1:
-            raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
-        if u_np.shape[0] != DIInputIndices.dim:
-            raise ValueError(f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}")
-
-        return DIInput(
-            acceleration_long=u_np[DIInputIndices.acceleration_long],
-            acceleration_lat=u_np[DIInputIndices.acceleration_lat]
         )

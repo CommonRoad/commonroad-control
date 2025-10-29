@@ -130,9 +130,9 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
     def trajectory_from_numpy_array(
             self,
-            traj_np: np.array,
+            traj_np: np.ndarray[tuple[float,float], np.dtype[np.float64]],
             mode: TrajectoryMode,
-            time: List[int],
+            time_steps: List[int],
             t_0: float,
             delta_t: float
     ) -> TrajectoryInterface:
@@ -140,14 +140,14 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
         :param traj_np:
         :param mode:
-        :param time:
+        :param time_steps:
         :param t_0:
         :param delta_t:
         :return:
         """
 
         points = []
-        for kk in range(len(time)):
+        for kk in range(len(time_steps)):
             if mode == TrajectoryMode.State:
                 points.append(self.state_from_numpy_array(traj_np[:, kk]))
             elif mode == TrajectoryMode.Input:
@@ -155,34 +155,8 @@ class DBSITFactory(StateInputTrajectoryFactoryInterface):
 
 
         return DBTrajectory(
-            points=dict(zip(time, points)),
+            points=dict(zip(time_steps, points)),
             mode=mode,
             delta_t=delta_t,
             t_0=t_0
         )
-
-    def trajectory_from_state_or_input(
-            self,
-            trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
-            mode: TrajectoryMode,
-            t_0: float,
-            delta_t: float
-    ) -> DBTrajectory:
-        """
-        Build trajectory from dst state or input
-        :param trajectory_dict: dict of time steps to dst points
-        :param mode:
-        :param t_0:
-        :param delta_t:
-        :return: DST-Trajectory
-        """
-        return DBTrajectory(
-                points=trajectory_dict,
-                mode=mode,
-                t_0=t_0,
-                delta_t=delta_t
-            )
-
-
-
-

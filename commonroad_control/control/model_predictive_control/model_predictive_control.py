@@ -91,7 +91,7 @@ class ModelPredictiveControl(ControllerInterface):
         x_init = self.ocp_solver.sit_factory.trajectory_from_numpy_array(
             traj_np=x_init_np,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time_steps=time_state,
             t_0=t_0,
             delta_t=self.ocp_solver.delta_t
         )
@@ -102,7 +102,7 @@ class ModelPredictiveControl(ControllerInterface):
         u_init = self.ocp_solver.sit_factory.trajectory_from_numpy_array(
             traj_np=u_init_np,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time_steps=time_input,
             t_0=t_0,
             delta_t=self.ocp_solver.delta_t
         )

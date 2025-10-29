@@ -178,7 +178,7 @@ def main(
 
 
         # simulate
-        x_measured, x_disturbed, x_rk45 = simulation.simulate(
+        x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=x_disturbed,
             u=u_now,
             time_horizon=dt_controller

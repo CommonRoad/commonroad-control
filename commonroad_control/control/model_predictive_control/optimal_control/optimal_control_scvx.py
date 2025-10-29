@@ -36,9 +36,9 @@ class OptimalControlSCvx(OptimalControlSolver):
                  sit_factory:StateInputTrajectoryFactoryInterface,
                  horizon: int,
                  delta_t: float,
-                 cost_xx: np.array,
-                 cost_uu: np.array,
-                 cost_final: np.array,
+                 cost_xx: np.ndarray,
+                 cost_uu: np.ndarray,
+                 cost_final: np.ndarray,
                  ocp_parameters: SCvxParameters = SCvxParameters):
 
         # TODO: import typehinting issue for solver parameters
@@ -244,7 +244,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         x_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
             mode=TrajectoryMode.State,
-            time=[kk for kk in range(self._horizon+1)],
+            time_steps=[kk for kk in range(self._horizon+1)],
             t_0=t_0,
             delta_t=self.delta_t
         )
@@ -252,7 +252,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         u_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=u_sol,
             mode=TrajectoryMode.Input,
-            time=[kk for kk in range(self._horizon)],
+            time_steps=[kk for kk in range(self._horizon)],
             t_0=t_0,
             delta_t=self.delta_t
         )
@@ -260,14 +260,15 @@ class OptimalControlSCvx(OptimalControlSolver):
         return x_sol, u_sol, self._iteration_history
 
     def _compute_defect(self,
-                        x: np.array,
-                        u: np.array) \
-            -> np.array:
+                        x: np.ndarray,
+                        u: np.ndarray) \
+            -> np.ndarray:
         """
         Computes the defect, which is the error in the predicted state trajectory, at each time step.
         :param x: predicted state trajectory
         :param u: candidate control input trajectory
         :return: array storing the defect at each time step
         """
-        err = x[:,1:self._horizon+1]  - np.column_stack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk]) for kk in range(self._horizon)])
+        err = x[:,1:self._horizon+1]  - np.column_stack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk])
+                                                         for kk in range(self._horizon)])
         return np.linalg.norm(err, axis=0)

@@ -122,7 +122,7 @@ class KBSITFactory(StateInputTrajectoryFactoryInterface):
             self,
             traj_np: np.ndarray[tuple[float, float], np.dtype[np.float64]],
             mode: TrajectoryMode,
-            time: List[int],
+            time_steps: List[int],
             t_0: float,
             delta_t: float
     ) -> KBTrajectory:
@@ -130,21 +130,21 @@ class KBSITFactory(StateInputTrajectoryFactoryInterface):
 
         :param traj_np:
         :param mode:
-        :param time:
+        :param time_steps:
         :param t_0:
         :param delta_t:
         :return:
         """
         # convert trajectory to State/InputInterface
         points_val = []
-        for kk in range(len(time)):
+        for kk in range(len(time_steps)):
             if mode == TrajectoryMode.State:
                 points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
             elif mode == TrajectoryMode.Input:
                 points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
 
         return KBTrajectory(
-            points=dict(zip(time, points_val)),
+            points=dict(zip(time_steps, points_val)),
             mode=mode,
             delta_t=delta_t,
             t_0=t_0

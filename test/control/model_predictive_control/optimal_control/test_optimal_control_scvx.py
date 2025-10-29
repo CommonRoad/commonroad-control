@@ -57,32 +57,36 @@ class TestOptimalControlSCvx(unittest.TestCase):
         x_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=x_ref_np,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time_steps=time_state,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
         u_ref_np = np.zeros((DIInputIndices.dim, horizon))
         u_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=u_ref_np,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time_steps=time_input,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
 
         # initial guess/ reference for linearization
         x_init_np = np.zeros((DIStateIndices.dim, horizon+1))
         x_init = sit_factory.trajectory_from_numpy_array(
             traj_np=x_init_np,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time_steps=time_state,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
         u_init_np = np.zeros((DIInputIndices.dim, horizon))
         u_init = sit_factory.trajectory_from_numpy_array(
             traj_np=u_init_np,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time_steps=time_input,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
 
         # solver parameters
         ocp_parameters = SCvxParameters(max_iterations=1,
@@ -155,16 +159,18 @@ class TestOptimalControlSCvx(unittest.TestCase):
         x_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=x_ref_np,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time_steps=time_state,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
         u_ref_np = np.zeros((KBInputIndices.dim, horizon))
         u_ref = sit_factory.trajectory_from_numpy_array(
             traj_np=u_ref_np,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time_steps=time_input,
             t_0=0,
-            delta_t=delta_t)
+            delta_t=delta_t
+        )
 
         # initial guess/ reference for linearization
         # ... state: linear interpolation between x0 and xf
@@ -180,7 +186,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
         x_init = sit_factory.trajectory_from_numpy_array(
             traj_np=x_init_np,
             mode=TrajectoryMode.State,
-            time=time_state,
+            time_steps=time_state,
             t_0=0,
             delta_t=delta_t
         )
@@ -189,7 +195,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
         u_init = sit_factory.trajectory_from_numpy_array(
             traj_np=u_init_np,
             mode=TrajectoryMode.Input,
-            time=time_input,
+            time_steps=time_input,
             t_0=0,
             delta_t=delta_t
         )

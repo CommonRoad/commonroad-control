@@ -253,7 +253,7 @@ def pid_with_lookahead_for_planner(
         eta = eta + time.perf_counter() - t_0
         t_0 = time.perf_counter()
         # simulate
-        x_measured, x_disturbed, x_rk45 = simulation.simulate(
+        x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=x_disturbed,
             u=u_now,
             time_horizon=dt_controller

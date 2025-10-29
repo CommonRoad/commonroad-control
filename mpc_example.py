@@ -81,9 +81,12 @@ def main(
     cost_xx = np.eye(KBStateIndices.dim)
     cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
     cost_uu = 0.1 * np.eye(KBInputIndices.dim)
-    cost_final = np.eye(KBStateIndices.dim)
-    # ... real time iteration -> only one iteration per time step
-    solver_parameters = SCvxParameters(max_iterations=1)
+    cost_final = cost_xx  #np.eye(KBStateIndices.dim)
+    # ... solver parameters for initial step-> iterate until convergence
+    solver_parameters_init = SCvxParameters(max_iterations=20)
+    # ... solver parameters for real time iteration -> only one iteration per time step
+    solver_parameters_rti = SCvxParameters(max_iterations=1)
+    # ... ocp solver (initial parameters)
     scvx_solver = OptimalControlSCvx(
         vehicle_model=vehicle_model_ctrl,
         sit_factory=sit_factory_ctrl,
@@ -92,9 +95,8 @@ def main(
         cost_xx=cost_xx,
         cost_uu=cost_uu,
         cost_final=cost_final,
-        ocp_parameters=solver_parameters
+        ocp_parameters=solver_parameters_init
     )
-
     # instantiate model predictive controller
     mpc = ModelPredictiveControl(
         ocp_solver=scvx_solver
@@ -106,14 +108,14 @@ def main(
     disturbance_generator: GaussianNDGenerator = GaussianNDGenerator(
         dim=vehicle_model_sim.state_dimension,
         means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+        std_deviations=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
     # std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     noise_generator: GaussianNDGenerator = GaussianNDGenerator(
         dim=vehicle_model_sim.state_dimension,
         means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+        std_deviations=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
     # std_deviations = [0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -137,24 +139,33 @@ def main(
         sit_factory=KBSITFactory(),
         horizon=mpc.horizon,
     )
+    # ... dummy reference trajectory: all inputs set to zero
+    u_np = np.zeros((u_ref_ext.dim,len(u_ref_ext.steps)))
+    u_ref_0 = sit_factory_ctrl.trajectory_from_numpy_array(
+        traj_np=u_np,
+        mode=TrajectoryMode.Input,
+        time_steps=u_ref_ext.steps,
+        t_0=u_ref_ext.t_0,
+        delta_t=u_ref_ext.delta_t
+    )
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
-        input_ref=u_ref_ext,
+        input_ref=u_ref_0,
         t_0=0
     )
 
+    # simulation results
     x_measured = convert_state_kb2db(kb_state=x_ref.initial_point,
                                      vehicle_params=vehicle_params
                                      )
-    # x_measured = x_ref.initial_point
-
     x_disturbed = copy.copy(x_measured)
 
     traj_dict_measured = {0: x_measured}
     traj_dict_dist_no_noise = {0: x_disturbed}
     input_dict = {}
-    x_ref_steps = [kk for kk in range(mpc.horizon + 1)]
-    u_ref_steps = [kk for kk in range(mpc.horizon)]
+
+    # dummy input reference trajectory - set reference inputs to zero
+
 
     # for step, x_planner in kb_traj.points.items():
     for kk_sim in range(len(x_ref.steps)):
@@ -174,10 +185,16 @@ def main(
             x_ref=tmp_x_ref,
             u_ref=tmp_u_ref
         )
+        if kk_sim == 0:
+            # at the initial step: iterate until convergence
+            mpc.ocp_solver.reset_ocp_parameters(
+                new_ocp_parameters=solver_parameters_rti
+            )
+
         # u_now = kb_input.points[kk_sim]
         input_dict[kk_sim] = u_now
         # simulate
-        x_measured, x_disturbed, x_rk45 = simulation.simulate(
+        x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=x_disturbed,
             u=u_now,
             time_horizon=dt_controller
