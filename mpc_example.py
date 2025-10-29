@@ -19,7 +19,7 @@ from commonroad_control.planning_converter.reactive_planner_converter import Rea
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
-from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
+from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
@@ -70,7 +70,7 @@ def main(
     vehicle_params = BMW3seriesParams()
 
     # controller parameters
-    horizon_ocp = 10
+    horizon_ocp = 20
     dt_controller = 0.1
     # ... vehicle model for prediction
     vehicle_model_ctrl = KinematicBicycle(
@@ -80,7 +80,7 @@ def main(
     # ... initialize optimal control solver
     cost_xx = np.eye(KBStateIndices.dim)
     cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
-    cost_uu = 0.01 * np.eye(KBInputIndices.dim)
+    cost_uu = 0.1 * np.eye(KBInputIndices.dim)
     cost_final = np.eye(KBStateIndices.dim)
     # ... real time iteration -> only one iteration per time step
     solver_parameters = SCvxParameters(max_iterations=1)
@@ -108,11 +108,14 @@ def main(
         means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
+    # std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+
     noise_generator: GaussianNDGenerator = GaussianNDGenerator(
         dim=vehicle_model_sim.state_dimension,
         means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
+    # std_deviations = [0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
@@ -207,11 +210,10 @@ def main(
                 num_imgs=len(x_ref.points.values())
             )
 
-    visualize_desired_vs_actual_states(
-        desired_states=x_ref,
-        actual_states=simulated_traj,
+    visualize_reference_vs_actual_states(
+        reference_trajectory=x_ref,
+        actual_trajectory=simulated_traj,
         time_steps=list(simulated_traj.points.keys())[:-2],
-        state_dim=x_ref.dim,
         save_img=save_imgs,
         save_path=img_save_path
     )
@@ -219,6 +221,8 @@ def main(
 
 if __name__ == "__main__":
     scenario_name = "ZAM_Over-1_1"
+    # scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
+    # scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_config_path = Path(__file__).parents[0]/ "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name

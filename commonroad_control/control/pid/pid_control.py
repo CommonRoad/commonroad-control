@@ -30,7 +30,6 @@ class PIDControl(ControllerInterface):
         Computes control output for float input
         :param measured_state:
         :param desired_state:
-        :param controller_time_step:
         :return:
         """
         error: float = desired_state - measured_state

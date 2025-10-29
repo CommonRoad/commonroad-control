@@ -16,7 +16,7 @@ from commonroad_control.planning_converter.reactive_planner_converter import Rea
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
-from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
+from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
@@ -217,17 +217,17 @@ def main(
                 num_imgs=len(x_ref.points.values())
             )
 
-    visualize_desired_vs_actual_states(
-        desired_states=x_ref,
-        actual_states=simulated_traj,
+    visualize_reference_vs_actual_states(
+        reference_trajectory=x_ref,
+        actual_trajectory=simulated_traj,
         time_steps=list(simulated_traj.points.keys())[:-2],
-        state_dim=x_ref.dim,
         save_img=save_imgs,
         save_path=img_save_path
     )
 
 if __name__ == "__main__":
     scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
+    # scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name

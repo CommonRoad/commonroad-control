@@ -26,7 +26,7 @@ from commonroad_control.planning_converter.reactive_planner_converter import Rea
 from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
-from commonroad_control.util.visualization.visualize_control_state import visualize_desired_vs_actual_states
+from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
@@ -292,11 +292,10 @@ def pid_with_lookahead_for_planner(
             )
 
     if visualize_control:
-        visualize_desired_vs_actual_states(
-            desired_states=x_ref,
-            actual_states=simulated_traj,
+        visualize_reference_vs_actual_states(
+            reference_trajectory=x_ref,
+            actual_trajectory=simulated_traj,
             time_steps=list(simulated_traj.points.keys())[:-2],
-            state_dim=x_ref.dim,
             save_img=save_imgs,
             save_path=img_saving_path
         )
