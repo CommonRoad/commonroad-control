@@ -1,5 +1,6 @@
 import numpy as np
-from dataclasses import dataclass
+from math import sqrt
+from dataclasses import dataclass, InitVar
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
@@ -23,11 +24,14 @@ class DIState(StateInterface):
     """
     State of the kinematic single track model.
     """
-    dim: int = DIStateIndices.dim
     position_long: float = None
     position_lat: float = None
     velocity_long: float = None
     velocity_lat: float = None
+
+    @property
+    def dim(self):
+        return DIStateIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """

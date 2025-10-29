@@ -44,8 +44,8 @@ class DynamicBicycle(VehicleModelInterface):
         # init base class
         super().__init__(
             params=params,
-             nx=DBState.dim,
-             nu=DBInput.dim,
+             nx=DBStateIndices.dim,
+             nu=DBInputIndices.dim,
              delta_t=delta_t
         )
 

@@ -19,12 +19,12 @@ class DBInput(InputInterface):
     """
     Control input of the dynamic bicycle model.
     """
-    dim: int = DBInputIndices.dim
     acceleration: float = None
     steering_angle_velocity: float = None
 
-    def __post_init__(self):
-        super().__init__(dim=self.dim)
+    @property
+    def dim(self):
+        return DBInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """

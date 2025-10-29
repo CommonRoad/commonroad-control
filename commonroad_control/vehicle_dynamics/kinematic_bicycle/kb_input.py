@@ -19,11 +19,14 @@ class KBInputIndices(InputInterfaceIndex):
 @dataclass()
 class KBInput(InputInterface):
     """
-    Control input of the kinematic single track model.
+    Control input of the kinematic bicycle model.
     """
-    dim: int = KBInputIndices.dim
     acceleration: float = None
     steering_angle_velocity: float = None
+
+    @property
+    def dim(self):
+        return KBInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """

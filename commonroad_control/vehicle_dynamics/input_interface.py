@@ -10,14 +10,14 @@ class InputInterfaceIndex(ABC):
     """
     Indices of the control inputs.
     """
+    dim: int
 
 
 @dataclass
 class InputInterface(ABC):
     """
-    State interface
+    Control input interface
     """
-    dim: int
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:

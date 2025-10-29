@@ -2,11 +2,18 @@ import unittest
 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
+from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
+
+from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
+from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
+from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
+from commonroad_control.vehicle_dynamics.double_integrator.di_trajectory import DITrajectory
+
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
+
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
@@ -21,7 +28,7 @@ class TestModelInstantiation(unittest.TestCase):
 
     def test_kb_inst(self) -> None:
        """
-       Test Kinematic Bicycle state, input, and trajectory
+       Test kinematic bicycle model, state, input, and trajectory instantiation.
        """
        kst_model = KinematicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
@@ -34,7 +41,8 @@ class TestModelInstantiation(unittest.TestCase):
            delta_t=0.5
        )
 
-       inputs = {0: KBInput(acceleration=5, steering_angle_velocity=5), 1: KBInput(acceleration=3, steering_angle_velocity=3)}
+       inputs = {0: KBInput(acceleration=5, steering_angle_velocity=5),
+                 1: KBInput(acceleration=3, steering_angle_velocity=3)}
        input_traj = KBTrajectory(
            mode=TrajectoryMode.Input,
            points=inputs,
@@ -44,7 +52,7 @@ class TestModelInstantiation(unittest.TestCase):
 
     def test_db_inst(self) -> None:
         """
-        Test Dynamic bicycle state, input, and trajectory
+        Test dynamic bicycle model, state, input, and trajectory instantiation.
         """
         db_model = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
@@ -62,7 +70,8 @@ class TestModelInstantiation(unittest.TestCase):
             delta_t=0.5
         )
 
-        inputs = {0: DBInput(acceleration=5, steering_angle_velocity=5), 1: DBInput(acceleration=3, steering_angle_velocity=3)}
+        inputs = {0: DBInput(acceleration=5, steering_angle_velocity=5),
+                  1: DBInput(acceleration=3, steering_angle_velocity=3)}
         input_traj = DBTrajectory(
             mode=TrajectoryMode.Input,
             points=inputs,
@@ -71,5 +80,32 @@ class TestModelInstantiation(unittest.TestCase):
         )
 
     def test_di_inst(self) -> None:
-        # TODO: add double integrator tests
-        pass
+        """
+        Test double integrator model, state, input, and trajectory instantiation.
+        :return:
+        """
+
+        di_model = DoubleIntegrator(params=BMW3seriesParams(), delta_t=0.1)
+
+        states = {0: DIState(
+            position_long=5, position_lat=5, velocity_long=5, velocity_lat=5
+        ),
+                  1: DIState(
+          position_long=3, position_lat=3, velocity_long=3, velocity_lat=3
+        )}
+
+        state_traj = DITrajectory(
+            mode=TrajectoryMode.State,
+            points=states,
+            t_0=0,
+            delta_t=0.5
+        )
+
+        inputs = {0: DIInput(acceleration_long=5, acceleration_lat=5),
+                  1: DIInput(acceleration_long=3, acceleration_lat=3)}
+        input_traj = DITrajectory(
+            mode=TrajectoryMode.Input,
+            points=inputs,
+            t_0=0,
+            delta_t=0.5
+        )

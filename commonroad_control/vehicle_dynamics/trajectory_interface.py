@@ -42,12 +42,12 @@ class TrajectoryInterface(ABC):
             raise ValueError(f"states must contain more than 0 values")
         if None in self.points.values():
             raise ValueError(f"states must not contain None")
-        d = self.points[0].dim
-        for state in self.points.values():
-            if state.dim != d:
-                raise ValueError("states have varying dimension")
+        initial_point = self.points[0]
+        for point in self.points.values():
+            if type(point) is not type(initial_point):
+                raise TypeError(f"Type of trajectory points is not unique.")
 
-    def convert_to_numpy_array(self, time: List) -> np.array:
+    def convert_to_numpy_array(self, time: List[float]) -> np.array:
         """
 
         :param time:
@@ -60,6 +60,26 @@ class TrajectoryInterface(ABC):
             traj_np.append(np.reshape(x_ii.convert_to_array(),(x_ii.dim, 1), order='F'))
 
         return np.hstack(traj_np)
+
+    def get_point_component_trajectory(self,
+                                       time: List[float],
+                                       comp_name: str) -> List[float]:
+        """
+        Returns the trajectory of a single component of the point.
+        :param time: list of points in time, will be rounded to the closest time step.
+        :param comp_name: component of the state vector, e.g. velocity or heading
+        :return: list of component values at provided time steps
+        """
+
+        if not hasattr(self.initial_point,comp_name):
+            raise ValueError(f"Trajectory points do not have attribute {comp_name}.")
+
+        traj = []
+        for kk in range(len(time)):
+            tmp_x = self.get_point_at_time_step(round((time[kk] - self.t_0) / self.delta_t))
+            traj.append(getattr(tmp_x, comp_name))
+
+        return traj
 
     def get_point_at_time_step(
             self,

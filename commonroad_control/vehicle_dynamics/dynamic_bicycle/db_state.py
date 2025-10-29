@@ -1,4 +1,5 @@
 import numpy as np
+from math import sqrt
 from dataclasses import dataclass
 
 from commonroad.scenario.state import InitialState, CustomState
@@ -27,7 +28,6 @@ class DBState(StateInterface):
     """
     State of the dynamic bicycle model
     """
-    dim: int = DBStateIndices.dim
     position_x: float = None
     position_y: float = None
     velocity_long: float = None
@@ -36,8 +36,13 @@ class DBState(StateInterface):
     yaw_rate: float = None
     steering_angle: float = None
 
-    def __post_init__(self):
-        super().__init__(dim=self.dim)
+    @property
+    def dim(self):
+        return DBStateIndices.dim
+
+    @property
+    def velocity(self):
+        return sqrt(self.velocity_long**2 + self.velocity_lat**2)
 
     def convert_to_array(self) -> np.ndarray:
         """

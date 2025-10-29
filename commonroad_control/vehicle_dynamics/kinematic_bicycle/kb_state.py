@@ -24,14 +24,17 @@ class KBStateIndices:
 @dataclass
 class KBState(StateInterface):
     """
-    State of the kinematic single track model.
+    State of the kinematic bicycle model.
     """
-    dim: int = KBStateIndices.dim
     position_x: float = None
     position_y: float = None
     velocity: float = None
     heading: float = None
     steering_angle: float = None
+
+    @property
+    def dim(self):
+        return KBStateIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """

@@ -8,6 +8,7 @@ class StateInterfaceIndex(ABC):
     """
     Indices of the states.
     """
+    dim: int
 
 
 @dataclass
@@ -15,7 +16,6 @@ class StateInterface(ABC):
     """
     State interface.
     """
-    dim: int
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:

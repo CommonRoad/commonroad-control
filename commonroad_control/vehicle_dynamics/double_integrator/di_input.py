@@ -19,9 +19,12 @@ class DIInput(InputInterface):
     """
     Control input of the double-integrator model.
     """
-    dim: int = DIInputIndices.dim
     acceleration_long: float = None
     acceleration_lat: float = None
+
+    @property
+    def dim(self):
+        return DIInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """

@@ -35,8 +35,8 @@ class KinematicBicycle(VehicleModelInterface):
         # init base class
         super().__init__(
             params=params,
-            nx=KBState.dim,
-            nu=KBInput.dim,
+            nx=KBStateIndices.dim,
+            nu=KBInputIndices.dim,
             delta_t=delta_t
         )
 
