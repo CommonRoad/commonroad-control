@@ -179,7 +179,7 @@ class OptimalControlSCvx(OptimalControlSolver):
             A = []
             B = []
             for kk in range(self._horizon):
-                tmp_x, tmp_A, tmp_B = self.vehicle_model.linearize_dt_at(
+                tmp_x, tmp_A, tmp_B = self.vehicle_model.linearize_dt_nom_at(
                     self._par_x_lin.value[:, kk], self._par_u_lin.value[:, kk])
                 x_next.append(tmp_x)
                 A.append(tmp_A)
@@ -269,6 +269,6 @@ class OptimalControlSCvx(OptimalControlSolver):
         :param u: candidate control input trajectory
         :return: array storing the defect at each time step
         """
-        err = x[:,1:self._horizon+1]  - np.column_stack([self.vehicle_model.simulate_forward_dt(x[:,kk], u[:,kk])
+        err = x[:,1:self._horizon+1]  - np.column_stack([self.vehicle_model.simulate_dt_nom(x[:,kk], u[:,kk])
                                                          for kk in range(self._horizon)])
         return np.linalg.norm(err, axis=0)

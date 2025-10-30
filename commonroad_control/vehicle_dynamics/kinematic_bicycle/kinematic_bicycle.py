@@ -2,10 +2,12 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
+
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance import KBDisturbanceIndices
 
 
 class KinematicBicycle(VehicleModelInterface):
@@ -37,14 +39,9 @@ class KinematicBicycle(VehicleModelInterface):
             params=params,
             nx=KBStateIndices.dim,
             nu=KBInputIndices.dim,
+            nw=KBDisturbanceIndices.dim,
             delta_t=delta_t
         )
-
-    def simulate_forward(self, x: KBState, u: KBInput) -> KBState:
-        pass
-
-    def linearize(self, x: KBState, u: KBInput) -> Tuple[KBState, np.array, np.array]:
-        pass
 
     def position_to_clcs(self, x: KBState) -> KBState:
         pass
@@ -75,49 +72,18 @@ class KinematicBicycle(VehicleModelInterface):
 
         return u_lb, u_ub
 
-    def _dynamics_cas_clcs(self,
-                           x: Union[cas.SX.sym, np.array],
-                           u: Union[cas.SX.sym, np.array],
-                           p: Union[cas.SX.sym, np.array]):
-        """
-
-        :param x:
-        :param u:
-        :param p: reference parameters, e.g.
-        :return:
-        """
-
-        # compute cartesian dynamics
-        f = self._dynamics_cas(x, u)
-
-        # extract state
-        pos_y = x[KBStateIndices.position_y]
-        v = x[KBStateIndices.velocity]
-        psi = x[KBStateIndices.heading]
-        delta = x[KBStateIndices.steering_angle]
-
-        # extract parameters
-        kappa_ref = p.curvature
-
-        # compute slip angle
-        beta = cas.atan(cas.tan(delta) * self._l_r / self._l_wb)
-
-        # dynamics
-        f[KBStateIndices.position_x] = v * cas.cos(psi - psi_ref) / (1 - pos_y * kappa_ref)
-        f[KBStateIndices.position_y] = v * cas.sin(psi - psi_ref)
-
-        return f
-
     def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.array],
-                      u: Union[cas.SX.sym, np.array]) \
+                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
             -> cas.SX.sym:
         """
-         Dynamics function of the kinematic single-track model.
-
-        :param x: state - array of dimension (self._nx,1)
-        :param u: control input - array of dimension (self._nu,1)
-        :return: dynamics at (x,u) - casadi symbolic of dimension (self._nx,1)
+        Dynamics function of the kinematic bicycle model.
+        We model the movement of the center of gravity of the vehicle.
+        :param x: state - array of dimension (self._nx,)
+        :param u: control input - - array of dimension (self._nu,)
+        :param w: disturbance - - array of dimension (self._nw,)
+        :return: dynamics at (x,u,w) - casadi symbolic of dimension (self._nx,1)
         """
 
         # extract state
@@ -141,6 +107,9 @@ class KinematicBicycle(VehicleModelInterface):
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_dot,
                         heading_dot, steering_angle_dot)
+
+        # add disturbances
+        f = f + w
 
         return f
 

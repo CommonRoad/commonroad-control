@@ -130,7 +130,7 @@ class ModelPredictiveControl(ControllerInterface):
         # ... simulate
         x_init_points.append(
             self.ocp_solver.sit_factory.state_from_numpy_array(
-                self.ocp_solver.vehicle_model.simulate_forward_dt(x_init_points[-1], u_init_points[-1]))
+                self.ocp_solver.vehicle_model.simulate_dt_nom(x_init_points[-1], u_init_points[-1]))
         )
 
         # convert to trajectory interface

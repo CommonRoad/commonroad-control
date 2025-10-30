@@ -32,8 +32,8 @@ class DBInput(InputInterface):
         :return: np.ndarray of dimension (self.dim,)
         """
 
-        u = np.zeros((self.dim,))
-        u[DBInputIndices.acceleration] = self.acceleration
-        u[DBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
+        u_np = np.zeros((self.dim,))
+        u_np[DBInputIndices.acceleration] = self.acceleration
+        u_np[DBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
-        return u
+        return u_np

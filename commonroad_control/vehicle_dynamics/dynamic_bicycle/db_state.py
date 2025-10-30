@@ -50,16 +50,16 @@ class DBState(StateInterface):
         :return: np.ndarray of dimension (dim,)
         """
 
-        x = np.zeros((self.dim,))
-        x[DBStateIndices.position_x] = self.position_x
-        x[DBStateIndices.position_y] = self.position_y
-        x[DBStateIndices.velocity_long] = self.velocity_long
-        x[DBStateIndices.velocity_lat] = self.velocity_lat
-        x[DBStateIndices.heading] = self.heading
-        x[DBStateIndices.yaw_rate] = self.yaw_rate
-        x[DBStateIndices.steering_angle] = self.steering_angle
+        x_np = np.zeros((self.dim,))
+        x_np[DBStateIndices.position_x] = self.position_x
+        x_np[DBStateIndices.position_y] = self.position_y
+        x_np[DBStateIndices.velocity_long] = self.velocity_long
+        x_np[DBStateIndices.velocity_lat] = self.velocity_lat
+        x_np[DBStateIndices.heading] = self.heading
+        x_np[DBStateIndices.yaw_rate] = self.yaw_rate
+        x_np[DBStateIndices.steering_angle] = self.steering_angle
 
-        return x
+        return x_np
 
     # TODO: Add conversion of slip angle etc.
     def to_cr_initial_state(

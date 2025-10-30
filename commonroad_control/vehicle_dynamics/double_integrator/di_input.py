@@ -1,11 +1,11 @@
 import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface, InputInterfaceIndex
 
 
 @dataclass(frozen=True)
-class DIInputIndices:
+class DIInputIndices(InputInterfaceIndex):
     """
     Indices of the control inputs.
     """
@@ -17,7 +17,7 @@ class DIInputIndices:
 @dataclass
 class DIInput(InputInterface):
     """
-    Control input of the double-integrator model.
+    Control input of the double integrator model.
     """
     acceleration_long: float = None
     acceleration_lat: float = None
@@ -32,9 +32,9 @@ class DIInput(InputInterface):
         :return: np.ndarray of dimension (self.dim,)
         """
 
-        u = np.zeros((self.dim,))
-        u[DIInputIndices.acceleration_long] = self.acceleration_long
-        u[DIInputIndices.acceleration_lat] = self.acceleration_lat
+        u_np = np.zeros((self.dim,))
+        u_np[DIInputIndices.acceleration_long] = self.acceleration_long
+        u_np[DIInputIndices.acceleration_lat] = self.acceleration_lat
 
-        return u
+        return u_np
 

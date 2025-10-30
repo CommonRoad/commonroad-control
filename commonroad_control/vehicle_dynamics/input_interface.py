@@ -22,7 +22,7 @@ class InputInterface(ABC):
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
-        Converts state to numpy array
+        Converts instance of class to numpy array.
         :return: (dim, 1) np.ndarray
         """
         pass

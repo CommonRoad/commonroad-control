@@ -1,13 +1,12 @@
 import numpy as np
-from math import sqrt
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface, StateInterfaceIndex
 
 
 # TODO should be an enum so no initialization?
 @dataclass(frozen=True)
-class DIStateIndices:
+class DIStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
@@ -22,7 +21,7 @@ class DIStateIndices:
 @dataclass
 class DIState(StateInterface):
     """
-    State of the kinematic single track model.
+    State of the double integrator model.
     """
     position_long: float = None
     position_lat: float = None

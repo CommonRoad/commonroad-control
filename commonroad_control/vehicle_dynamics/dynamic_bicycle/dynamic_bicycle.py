@@ -2,10 +2,12 @@ from typing import Type, Tuple, Union
 import numpy as np
 import casadi as cas
 
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState, DBStateIndices
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
+
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState, DBStateIndices
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import DBDisturbanceIndices
 
 
 class DynamicBicycle(VehicleModelInterface):
@@ -44,16 +46,11 @@ class DynamicBicycle(VehicleModelInterface):
         # init base class
         super().__init__(
             params=params,
-             nx=DBStateIndices.dim,
-             nu=DBInputIndices.dim,
-             delta_t=delta_t
+            nx=DBStateIndices.dim,
+            nu=DBInputIndices.dim,
+            nw=DBDisturbanceIndices.dim,
+            delta_t=delta_t
         )
-
-    def simulate_forward(self, x: DBState, u: DBInput) -> DBState:
-        pass
-
-    def linearize(self, x: DBState, u: DBInput) -> Tuple[DBState, np.array, np.array]:
-        pass
 
     def position_to_clcs(self, x: DBState) -> DBState:
         pass
@@ -85,9 +82,10 @@ class DynamicBicycle(VehicleModelInterface):
         return u_lb, u_ub
 
     def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.array],
-                      u: Union[cas.SX.sym, np.array]
-                      ) -> cas.SX.sym:
+                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
+            -> cas.SX.sym:
         """
         Dynamics function of the dynamic bicycle model.
         Equations are taken from
@@ -111,18 +109,6 @@ class DynamicBicycle(VehicleModelInterface):
         a = u[DBInputIndices.acceleration]
         delta_dot = u[DBInputIndices.steering_angle_velocity]
 
-        # # (tyre) slip angles
-        # alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
-        # alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
-        #
-        # # compute normal forces per axle (including longitudinal load transfer)
-        # fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
-        # fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
-        #
-        # # lateral tyre forces per axle
-        # fc_f = -self._C_f*alpha_f*fz_f
-        # fc_r = -self._C_r*alpha_r*fz_r
-
         # compute lateral tyre forces
         fc_f, fc_r = self._compute_lateral_tyre_forces(x,u)
 
@@ -137,6 +123,9 @@ class DynamicBicycle(VehicleModelInterface):
 
         f = cas.vertcat(position_x_dot, position_y_dot, velocity_long_dot, velocity_lat_dot,
                         heading_dot, yaw_rate_dot, steering_angle_dot)
+
+        # add disturbances
+        f = f + w
 
         return f
 
@@ -168,7 +157,12 @@ class DynamicBicycle(VehicleModelInterface):
                              x: Union[cas.SX.sym, np.array],
                              u: Union[cas.SX.sym, np.array]) \
             -> Tuple[Union[float,cas.SX.sym], Union[float, cas.SX.sym]]:
-
+        """
+        Computes the lateral tyre forces at the front and rear axle.
+        :param x: state - array of dimension (self._nx,)
+        :param u: control input - array of dimension (self._nu,)
+        :return: lateral tyre forces at front and rear axle
+        """
         # extract state
         v_bx = x[DBStateIndices.velocity_long]
         v_by = x[DBStateIndices.velocity_lat]

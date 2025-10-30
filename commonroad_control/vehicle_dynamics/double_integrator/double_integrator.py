@@ -3,13 +3,12 @@ import numpy as np
 from typing import Tuple, Union
 import scipy.signal as scsi
 
-
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
+
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
-from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
-
+from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbanceIndices
 
 class DoubleIntegrator(VehicleModelInterface):
 
@@ -40,6 +39,7 @@ class DoubleIntegrator(VehicleModelInterface):
             params=params,
             nx=DIStateIndices.dim,
             nu=DIInputIndices.dim,
+            nw=DIDisturbanceIndices.dim,
             delta_t=delta_t
         )
 
@@ -66,16 +66,20 @@ class DoubleIntegrator(VehicleModelInterface):
         pass
 
     def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.array],
-                      u: Union[cas.SX.sym, np.array]) -> cas.SX.sym:
+                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
+            -> cas.SX.sym:
+        """
+        Dynamics function of the double integrator bicycle model.
+        We model the movement of the center of gravity of the vehicle.
+        :param x: state - array of dimension (self._nx,)
+        :param u: control input - - array of dimension (self._nu,)
+        :param w: disturbance - - array of dimension (self._nw,)
+        :return: dynamics at (x,u,w) - casadi symbolic of dimension (self._nx,1)
         """
 
-        :param x:
-        :param u:
-        :return:
-        """
-
-        return self._sys_mat@x + self._input_mat@u
+        return self._sys_mat@x + self._input_mat@u + w
 
     def _set_input_bounds(self,
                           params: VehicleParameters) \
@@ -131,10 +135,11 @@ class DoubleIntegrator(VehicleModelInterface):
     def position_to_cartesian(self, x: DIState) -> DIState:
         pass
 
-    def _discretize(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
+    def _discretize_nominal(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
-
-        :return:
+        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time
+        interval t in [0, dt].
+        :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 
         # compute matrices of discrete-time LTI system

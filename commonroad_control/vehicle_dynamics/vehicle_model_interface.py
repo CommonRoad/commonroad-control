@@ -6,14 +6,10 @@ import casadi as cas
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.disturbance_interface import DisturbanceInterface
+
 from commonroad_control.vehicle_dynamics.utils import rk4_integrator
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
-
-
-@enum.unique
-class ImplementedVehicleModels(enum.Enum):
-    KinematicSingleTrack = "KinematicSingleTrack"
-    DynamicSingleTrack = "DynamicSingleTrack"
 
 
 class VehicleModelInterface(ABC):
@@ -37,36 +33,41 @@ class VehicleModelInterface(ABC):
                  params: VehicleParameters,
                  nx: int,
                  nu: int,
+                 nw: int,
                  delta_t: float):
         """
         Initialize abstract baseclass.
         :param params: CommonRoad vehicle params
         :param nx: dimension of the state space
         :param nu: dimension of the input space
+        :param nw: dimension of the disturbance space
         :param delta_t: sampling time
         """
         self._nx: int = nx
         self._nu: int = nu
+        self._nw: int = nw
         self._delta_t: float = delta_t
 
         # input bounds
         self._u_lb, self._u_ub = self._set_input_bounds(params)
 
-        # discretize vehicle model
-        self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize()
+        # discretize (nominal) vehicle model
+        self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize_nominal()
 
         # differentiate acceleration constraint functions
         self._a_norm, self._jac_a_norm_long_x, self._jac_a_norm_long_u, self._jac_a_norm_lat_x, self._jac_a_norm_lat_u, \
             = self._differentiate_acceleration_constraints()
 
-    @abstractmethod
-    def simulate_forward(self, x: StateInterface, u: InputInterface) -> StateInterface:
-        pass
-
-    def simulate_forward_dt(self,
-                            x: Union[StateInterface, np.array],
-                            u: Union[InputInterface, np.array]) \
-            -> np.array:
+    def simulate_dt_nom(self,
+                        x: Union[StateInterface, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                        u: Union[InputInterface, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
+            -> np.ndarray:
+        """
+        One-step simulation of the time-discretized nominal model.
+        :param x: initial state - array of dimension (self._nx,)
+        :param u: control input - array of dimension (self._nu,)
+        :return: nominal state at next time step
+        """
 
         # convert state and input to arrays
         if isinstance(x, StateInterface):
@@ -84,43 +85,58 @@ class VehicleModelInterface(ABC):
 
         return x_next.squeeze()
 
-    def _dynamics_ct(self,
-                     x: np.array,
-                     u: np.array) \
-            -> np.array:
+    def dynamics_ct(self,
+                    x: Union[StateInterface, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                    u: Union[InputInterface, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                    w: Union[DisturbanceInterface, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
+            -> np.ndarray:
         """
         Continuous-time dynamics of the vehicle model.
-        :param x: state (array of dimension [self._nx,1])
-        :param u: control input (array of dimension [self._nu,1])
-        :return: dynamics function evaluated at (x, u)
+        :param x: state - array of dimension (self._nx,)
+        :param u: control input - array of dimension (self._nu,)
+        :param w: disturbance - array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x, u, w)
         """
 
-        x_next = self._dynamics_cas(x, u)
+        # convert state, input, and disturbance to arrays
+        if isinstance(x, StateInterface):
+            x_np = x.convert_to_array()
+        else:
+            x_np = x
+
+        if isinstance(u, InputInterface):
+            u_np = u.convert_to_array()
+        else:
+            u_np = u
+
+        if isinstance(w, DisturbanceInterface):
+            w_np = w.convert_to_array()
+        else:
+            w_np = w
+
+        x_next = self._dynamics_cas(x_np, u_np, w_np)
         x_next = np.reshape(x_next, (1, self._nx), order='F').squeeze()
 
         return x_next
 
     @abstractmethod
     def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.array],
-                      u: Union[cas.SX.sym, np.array]) \
+                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
             -> cas.SX.sym:
         pass
 
-    @abstractmethod
-    def linearize(self, x: StateInterface, u: InputInterface) -> Tuple[StateInterface, np.array, np.array]:
-        pass
-
-    def linearize_dt_at(self,
-                        x: Union[StateInterface, np.array],
-                        u: Union[InputInterface, np.array]) \
+    def linearize_dt_nom_at(self,
+                            x: Union[StateInterface, np.array],
+                            u: Union[InputInterface, np.array]) \
             -> Tuple[np.array, np.array, np.array]:
         """
-        Linearization of the time-discretized vehicle dynamics at a given state-input-pair, e.g., for solving a
+        Linearization of the time-discretized nominal vehicle dynamics at a given state-input-pair, e.g., for solving a
         convex(ified) optimal control problem.
-        :param x: state for linearization
-        :param u: input for linearization
-        :return: dynamics at (x,u) and Jacobians at (x,u) w.r.t. x and u
+        :param x: state for linearization - array of dimension (self._nx,)
+        :param u: input for linearization - array of dimension (self._nu,)
+        :return: nominal dynamics at (x,u) and Jacobians at (x,u) w.r.t. x and u
         """
 
         # convert state and input to arrays
@@ -143,19 +159,21 @@ class VehicleModelInterface(ABC):
 
         return x_next, jac_x, jac_u
 
-    def _discretize(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
+    def _discretize_nominal(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
-        Time-discretization of the vehicle model assuming a constant control input throughout the time interval t in
-        [0, dt]
+        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time
+        interval t in [0, dt].
         :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 
         xk = cas.SX.sym("xk", self._nx, 1)
         uk = cas.SX.sym("uk", self._nu, 1)
+        # nominal disturbance
+        wk = np.zeros((self._nw,))
 
         # discretize dynamics
         x_next = cas.Function(
-            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, self._dynamics_cas, self._delta_t)]
+            "dynamics_dt", [xk, uk], [rk4_integrator(xk, uk, wk, self._dynamics_cas, self._delta_t)]
         )
 
         # compute Jacobian of discretized dynamics
@@ -164,8 +182,6 @@ class VehicleModelInterface(ABC):
         jac_u = cas.Function("jac_dynamics_dt", [xk, uk],
                                   [cas.jacobian(x_next(xk, uk), uk)])
         return x_next, jac_x, jac_u
-
-
 
     @abstractmethod
     def compute_normalized_acceleration(self,
@@ -181,8 +197,8 @@ class VehicleModelInterface(ABC):
         """
         Linearization of the (normalized) acceleration constraint functions at a given state-input-pair, e.g., for solving
         a convex(ified) optimal control problem.
-        :param x: state for linearization
-        :param u: input for linearization
+        :param x: state for linearization - array of dimension (self._nx,)
+        :param u: input for linearization - array of dimension (self._nu,)
         :return: (normalized) acceleration constraint functions and respective Jacobians w.r.t. x and u
         """
 
@@ -255,6 +271,10 @@ class VehicleModelInterface(ABC):
     @property
     def input_dimension(self):
         return self._nu
+
+    @property
+    def disturbance_dimension(self):
+        return self._nw
 
     @abstractmethod
     def position_to_clcs(self, x: StateInterface) -> StateInterface:

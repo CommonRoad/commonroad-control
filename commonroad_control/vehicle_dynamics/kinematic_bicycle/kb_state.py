@@ -3,12 +3,12 @@ from dataclasses import dataclass
 
 from commonroad.scenario.state import InitialState, CustomState
 
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface, StateInterfaceIndex
 
 
 # TODO should be an enum so no initialization?
 @dataclass(frozen=True)
-class KBStateIndices:
+class KBStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
@@ -24,7 +24,7 @@ class KBStateIndices:
 @dataclass
 class KBState(StateInterface):
     """
-    State of the kinematic bicycle model.
+    State vector of the kinematic bicycle model.
     """
     position_x: float = None
     position_y: float = None
@@ -41,14 +41,14 @@ class KBState(StateInterface):
         Converts instance of class to numpy array.
         :return: np.ndarray of dimension (dim,)
         """
-        x = np.zeros((self.dim,))
-        x[KBStateIndices.position_x] = self.position_x
-        x[KBStateIndices.position_y] = self.position_y
-        x[KBStateIndices.velocity] = self.velocity
-        x[KBStateIndices.heading] = self.heading
-        x[KBStateIndices.steering_angle] = self.steering_angle
+        x_np = np.zeros((self.dim,))
+        x_np[KBStateIndices.position_x] = self.position_x
+        x_np[KBStateIndices.position_y] = self.position_y
+        x_np[KBStateIndices.velocity] = self.velocity
+        x_np[KBStateIndices.heading] = self.heading
+        x_np[KBStateIndices.steering_angle] = self.steering_angle
 
-        return x
+        return x_np
 
     def to_cr_initial_state(
             self,

@@ -34,8 +34,8 @@ class KBInput(InputInterface):
         :return: np.ndarray of dimension (self.dim,)
         """
 
-        u = np.zeros((self.dim,))
-        u[KBInputIndices.acceleration] = self.acceleration
-        u[KBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
+        u_np = np.zeros((self.dim,))
+        u_np[KBInputIndices.acceleration] = self.acceleration
+        u_np[KBInputIndices.steering_angle_velocity] = self.steering_angle_velocity
 
-        return u
+        return u_np
