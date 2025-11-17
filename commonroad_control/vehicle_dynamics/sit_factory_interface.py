@@ -34,14 +34,14 @@ class StateInputTrajectoryFactoryInterface(ABC):
     @abstractmethod
     def state_from_numpy_array(
             self,
-            x_np: np.array,
+            x_np: np.ndarray,
     ) -> Union[Any]:
         pass
 
     @abstractmethod
     def input_from_numpy_array(
             self,
-            u_np: np.array
+            u_np: np.ndarray
     ) -> Union[Any]:
         pass
 
@@ -57,9 +57,9 @@ class StateInputTrajectoryFactoryInterface(ABC):
     @abstractmethod
     def trajectory_from_numpy_array(
             self,
-            traj_np: np.array,
+            traj_np: np.ndarray,
             mode: TrajectoryMode,
-            time: List[int],
+            time_steps: List[int],
             t_0: float,
             delta_t: float
     ) -> TrajectoryInterface:

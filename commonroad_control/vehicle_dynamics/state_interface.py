@@ -17,6 +17,10 @@ class StateInterface(ABC):
     State interface.
     """
 
+    @property
+    def dim(self):
+        return StateInterfaceIndex.dim
+
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """

@@ -1,25 +1,32 @@
 import copy
+import numpy as np
 from pathlib import Path
 
 from commonroad.common.file_reader import CommonRoadFileReader
 from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
-from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
-from commonroad_control.util.geometry import signed_distance_point_to_linestring
-from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
+from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
+from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
-from commonroad_control.simulation.simulation import Simulation
+
+from commonroad_control.simulation.simulation.simulation import Simulation
+from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
+from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
+
+from commonroad_control.util.geometry import signed_distance_point_to_linestring
+from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
-from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
-from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
 
 
 
@@ -65,30 +72,39 @@ def main(
     extended_horizon_steps = 10
 
     # simulation
+    # ... vehicle model
     sit_factory_sim = DBSITFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
-    disturbance_generator: GaussianNDGenerator = GaussianNDGenerator(
-        dim=vehicle_model_sim.state_dimension,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # ... disturbances
+    sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
+        dim=vehicle_model_sim.disturbance_dimension,
+        mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
+        std_deviation=np.asarray([0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0])
     )
-    noise_generator: GaussianNDGenerator = GaussianNDGenerator(
-        dim=vehicle_model_sim.state_dimension,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # ... noise
+    sim_noise_model: MeasurementNoiseModel = MeasurementNoiseModel(
+        uncertainty_model=GaussianDistribution(
+            dim=vehicle_model_sim.disturbance_dimension,
+            mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
+            std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+        )
     )
-
+    # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
         state_input_factory=sit_factory_sim,
-        disturbance_generator=disturbance_generator,
-        noise_generator=noise_generator
+        disturbance_model=sim_disturbance_model,
+        random_disturbance=True,
+        noise_model=sim_noise_model,
+        random_noise=True,
+        delta_t_sim=dt_controller
     )
 
     # Lookahead
+    # ... simulation
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim
+        state_input_factory=sit_factory_sim,
     )
 
     pid_controller: PIDLongLat = PIDLongLat(
@@ -127,15 +143,14 @@ def main(
         [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
     )
 
-
-    x_measured = convert_state_kb2db(kb_state=x_ref.initial_point,
-                                     vehicle_params=vehicle_params
-                                     )
-
-
+    # simulation results
+    x_measured = convert_state_kb2db(
+        kb_state=x_ref.initial_point,
+        vehicle_params=vehicle_params
+    )
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}
-    traj_dict_dist_no_noise = {0: x_disturbed}
+    traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
 
 
@@ -150,13 +165,13 @@ def main(
             steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
         )
         _, _, x_look_ahead = look_ahead_sim.simulate(
-            x0=x_disturbed,
+            x0=traj_dict_measured[kk_sim],
             u=u_look_ahead_sim,
-            time_horizon=look_ahead_s
+            t_final=look_ahead_s
         )
 
         # convert simulated forward step state back to KB for control
-        x0_kb = convert_state_db2kb(x_look_ahead)
+        x0_kb = convert_state_db2kb(x_look_ahead.final_point)
         lateral_offset_lookahead = signed_distance_point_to_linestring(
             point=Point(x0_kb.position_x, x0_kb.position_y),
             linestring=ref_path
@@ -176,18 +191,17 @@ def main(
             steering_angle_velocity=u_steer + u_ref.points[kk_sim].steering_angle_velocity
         )
 
-
         # simulate
         x_measured, x_disturbed, x_nominal = simulation.simulate(
-            x0=x_disturbed,
+            x0=traj_dict_no_noise[kk_sim],
             u=u_now,
-            time_horizon=dt_controller
+            t_final=dt_controller
         )
 
         # update dicts
         input_dict[kk_sim] = u_now
-        traj_dict_measured[kk_sim + 1] = x_measured
-        traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
+        traj_dict_measured[kk_sim + 1] = x_measured.final_point
+        traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
 
 

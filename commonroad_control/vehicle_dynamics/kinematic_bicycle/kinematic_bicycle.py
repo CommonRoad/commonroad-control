@@ -109,7 +109,7 @@ class KinematicBicycle(VehicleModelInterface):
                         heading_dot, steering_angle_dot)
 
         # add disturbances
-        f = f + w
+        f = f + np.reshape(w, shape=(w.size,1))
 
         return f
 

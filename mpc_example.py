@@ -4,8 +4,6 @@ from pathlib import Path
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
-from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
@@ -15,14 +13,18 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices
 
+from commonroad_control.simulation.simulation.simulation import Simulation
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
+from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
+
+from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
-from commonroad_control.simulation.simulation import Simulation
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-
 
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
@@ -103,27 +105,30 @@ def main(
     )
 
     # simulation
+    # ... disturbance model
     sit_factory_sim = DBSITFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
-    disturbance_generator: GaussianNDGenerator = GaussianNDGenerator(
+    sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.state_dimension,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviation=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
-    # std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-    noise_generator: GaussianNDGenerator = GaussianNDGenerator(
-        dim=vehicle_model_sim.state_dimension,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # ... noise model
+    sim_noise_model: MeasurementNoiseModel = MeasurementNoiseModel(
+        uncertainty_model=GaussianDistribution(
+            dim=vehicle_model_sim.state_dimension,
+            mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+        )
     )
-    # std_deviations = [0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
-
+    # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
         state_input_factory=sit_factory_sim,
-        disturbance_generator=disturbance_generator,
-        noise_generator=noise_generator
+        disturbance_model=sim_disturbance_model,
+        random_disturbance=True,
+        noise_model=sim_noise_model,
+        random_noise=True
     )
 
     # extend reference trajectory
@@ -155,17 +160,14 @@ def main(
     )
 
     # simulation results
-    x_measured = convert_state_kb2db(kb_state=x_ref.initial_point,
-                                     vehicle_params=vehicle_params
-                                     )
+    x_measured = convert_state_kb2db(
+        kb_state=x_ref.initial_point,
+        vehicle_params=vehicle_params
+    )
     x_disturbed = copy.copy(x_measured)
-
     traj_dict_measured = {0: x_measured}
-    traj_dict_dist_no_noise = {0: x_disturbed}
+    traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
-
-    # dummy input reference trajectory - set reference inputs to zero
-
 
     # for step, x_planner in kb_traj.points.items():
     for kk_sim in range(len(x_ref.steps)):
@@ -187,6 +189,7 @@ def main(
         )
         if kk_sim == 0:
             # at the initial step: iterate until convergence
+            # afterwards: real-time iteration
             mpc.ocp_solver.reset_ocp_parameters(
                 new_ocp_parameters=solver_parameters_rti
             )
@@ -195,12 +198,12 @@ def main(
         input_dict[kk_sim] = u_now
         # simulate
         x_measured, x_disturbed, x_nominal = simulation.simulate(
-            x0=x_disturbed,
+            x0=traj_dict_no_noise[kk_sim],
             u=u_now,
-            time_horizon=dt_controller
+            t_final=dt_controller
         )
-        traj_dict_measured[kk_sim+1] = x_measured
-        traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
+        traj_dict_measured[kk_sim+1] = x_measured.final_point
+        traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict_measured,

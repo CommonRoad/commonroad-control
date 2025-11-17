@@ -22,8 +22,8 @@ class TrajectoryInterface(ABC):
     t_0: float = 0
     steps: List[int] = None
     t_final: Optional[float] = None
-    initial_point: Optional[Any] = None
-    final_point: Optional[Any] = None
+    initial_point: Union[StateInterface, InputInterface] = None
+    final_point: Union[StateInterface, InputInterface] = None
     dim: Optional[int] = None
 
     def __post_init__(self):
@@ -31,8 +31,9 @@ class TrajectoryInterface(ABC):
         self.dim = self.points[0].dim
         self.initial_point = self.points[min(self.points.keys())]
         self.final_point = self.points[max(self.points.keys())]
+        #TODO: check steps - 0 must be contained for initial point
         self.steps = sorted(self.points.keys())
-        self.t_final = self.t_0 + len(self.points.keys()) * self.delta_t
+        self.t_final = self.t_0 + max(self.points.keys()) * self.delta_t
 
     def sanity_check(self) -> None:
         """
@@ -47,7 +48,7 @@ class TrajectoryInterface(ABC):
             if type(point) is not type(initial_point):
                 raise TypeError(f"Type of trajectory points is not unique.")
 
-    def convert_to_numpy_array(self, time: List[float]) -> np.array:
+    def convert_to_numpy_array(self, time: List[float]) -> np.ndarray:
         """
 
         :param time:

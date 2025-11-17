@@ -2,8 +2,6 @@ from typing import Any, Tuple,Callable
 
 from commonroad_control.control.pid.pid_control import PIDControl
 from commonroad_control.control.control import ControllerInterface
-from commonroad_control.simulation.simulation import Simulation
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
 
 
 class PIDLongLat(ControllerInterface):

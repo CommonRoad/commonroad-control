@@ -19,6 +19,10 @@ class InputInterface(ABC):
     Control input interface
     """
 
+    @property
+    def dim(self):
+        return InputInterfaceIndex.dim
+
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """

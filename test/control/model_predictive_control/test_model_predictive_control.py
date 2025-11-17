@@ -12,7 +12,8 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
 
-from commonroad_control.simulation.simulation import Simulation
+from commonroad_control.simulation.simulation.simulation import Simulation
+
 
 class TestModelPredictivecontrol(unittest.TestCase):
     """
@@ -69,7 +70,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         u_ref = np.zeros((DIInputIndices.dim,horizon_sim + horizon_ocp))
 
         # initial state
-        x_0 = DIState(
+        x0 = DIState(
             position_long=5.0,
             position_lat=5.0,
             velocity_long=0.0,
@@ -77,7 +78,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         )
 
         # closed-loop simulation
-        x_sim = {0: x_0}
+        x_sim = {0: x0}
         u_sim = {}
         for kk in range(horizon_sim):
             # extract reference trajectory and create trajectory interface object
@@ -106,13 +107,13 @@ class TestModelPredictivecontrol(unittest.TestCase):
             )
 
             # simulate system
-            x_next, _, _ = simulator.simulate(
+            _, _, x_nominal = simulator.simulate(
                 x0=x_sim[kk],
                 u=u_opt,
-                time_horizon=delta_t
+                t_final=delta_t
             )
 
             # store solution
-            x_sim[kk+1] = x_next
+            x_sim[kk+1] = x_nominal.final_point
             u_sim[kk] = u_opt
 

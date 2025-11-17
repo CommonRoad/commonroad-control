@@ -225,7 +225,7 @@ def pid_with_lookahead_for_planner(
         _, _, x_look_ahead = look_ahead_sim.simulate(
             x0=x_disturbed,
             u=u_look_ahead_sim,
-            time_horizon=look_ahead_s,
+            t_final=look_ahead_s,
             ivp_method=ivp_method
         )
 
@@ -256,7 +256,7 @@ def pid_with_lookahead_for_planner(
         x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=x_disturbed,
             u=u_now,
-            time_horizon=dt_controller
+            t_final=dt_controller
         )
 
         # update dicts

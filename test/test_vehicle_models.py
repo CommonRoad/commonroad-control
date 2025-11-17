@@ -4,7 +4,7 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-from commonroad_control.simulation.simulation import Simulation
+from commonroad_control.simulation.simulation.simulation import Simulation
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
@@ -34,14 +34,17 @@ class VehicleModelSimulationTest(unittest.TestCase):
         kb_factory: KBSITFactory = KBSITFactory()
 
         # init simulation
-        sim = Simulation(vehicle_model=kb, state_input_factory=kb_factory)
+        sim = Simulation(
+            vehicle_model=kb,
+            state_input_factory=kb_factory
+        )
 
         # set initial state and control input
         x0 = KBState(position_x=0.0, position_y=0.0, velocity=15.0, heading=0.0, steering_angle=0.0)
         u = KBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
-        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, t_final=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
 
@@ -61,10 +64,12 @@ class VehicleModelSimulationTest(unittest.TestCase):
         u = DBInput(acceleration=0.0, steering_angle_velocity=0.15)
 
         # simulate
-        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, t_final=1.0)
 
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
+
+        # todo: check tyre forces
 
     def test_di_sim(self) -> None:
         # ----------------- double integrator ------------------
@@ -74,14 +79,18 @@ class VehicleModelSimulationTest(unittest.TestCase):
         di_factory = DISITFactory()
 
         # init simulation
-        sim = Simulation(vehicle_model=di, state_input_factory=di_factory)
+        sim = Simulation(
+            vehicle_model=di,
+            state_input_factory=di_factory
+        )
 
         # set initial state and control input
         x0 = DIState(position_long=0.0, position_lat=0.0, velocity_long=10.0, velocity_lat=0.0)
         u = DIInput(acceleration_long=0.0, acceleration_lat=0.5)
 
         # simulate
-        x_sim, _, _ = sim.simulate(x0, u, time_horizon=1.0)
+        x_sim, _, _ = sim.simulate(x0, u, t_final=1.0)
         print(f"initial state: {x0}")
         print(f"x_sim {x_sim}")
+
 
