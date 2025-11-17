@@ -12,7 +12,6 @@ from commonroad_rp.state import ReactivePlannerState
 from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
-from commonroad_control.noise_disturbance.NoiseDisturbanceGeneratorInterface import NoiseDisturbanceGeneratorInterface
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
@@ -23,7 +22,11 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import D
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
-from commonroad_control.simulation.simulation import Simulation
+
+from commonroad_control.simulation.simulation.simulation import Simulation
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
+
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
@@ -57,8 +60,8 @@ def pid_with_lookahead_for_reactive_planner(
         extended_horizon_steps: int = 10,
         vehicle_params=BMW3seriesParams(),
         planner_converter: Optional[PlanningConverterInterface]=ReactivePlannerConverter(),
-        disturbance_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_disturbance_for_db(),
-        noise_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_noise_for_db(),
+        disturbance_model: Optional[UncertaintyModelInterface] = gaussian_disturbance_for_db(),
+        noise_model: Optional[UncertaintyModelInterface] = gaussian_noise_for_db(),
         sit_factory_sim: StateInputTrajectoryFactoryInterface = DBSITFactory(),
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
@@ -88,8 +91,8 @@ def pid_with_lookahead_for_reactive_planner(
         extended_horizon_steps=extended_horizon_steps,
         vehicle_params=vehicle_params,
         planner_converter=planner_converter,
-        disturbance_generator=disturbance_generator,
-        noise_generator=noise_generator,
+        disturbance_model=disturbance_model,
+        noise_model=noise_model,
         sit_factory_sim=sit_factory_sim,
         class_vehicle_model=class_vehicle_model,
         func_convert_planner2controller_state=func_convert_planner2controller_state,
@@ -122,8 +125,8 @@ def pid_with_lookahead_for_planner(
         look_ahead_s: float = 0.5,
         extended_horizon_steps: int = 10,
         vehicle_params=BMW3seriesParams(),
-        disturbance_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_disturbance_for_db(),
-        noise_generator: Optional[NoiseDisturbanceGeneratorInterface] = gaussian_noise_for_db(),
+        disturbance_model: Optional[UncertaintyModelInterface] = gaussian_disturbance_for_db(),
+        noise_model: Optional[UncertaintyModelInterface] = gaussian_noise_for_db(),
         sit_factory_sim: StateInputTrajectoryFactoryInterface = DBSITFactory(),
         class_vehicle_model: VehicleModelInterface = DynamicBicycle,
         func_convert_planner2controller_state: Callable[[StateInterface, VehicleParameters], StateInterface] = convert_state_kb2db,
@@ -148,11 +151,17 @@ def pid_with_lookahead_for_planner(
     # simulation
     vehicle_model_sim = class_vehicle_model.factory_method(params=vehicle_params, delta_t=dt_controller)
 
+    # measuremt noise model
+    sim_noise = MeasurementNoiseModel(
+        uncertainty_model=noise_model
+    )
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
         state_input_factory=sit_factory_sim,
-        disturbance_generator=disturbance_generator,
-        noise_generator=noise_generator
+        disturbance_model=disturbance_model,
+        random_disturbance=True,
+        noise_model=sim_noise,
+        random_noise=True
     )
 
     # Lookahead
@@ -208,7 +217,7 @@ def pid_with_lookahead_for_planner(
 
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}
-    traj_dict_dist_no_noise = {0: x_disturbed}
+    traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
 
 
@@ -223,14 +232,14 @@ def pid_with_lookahead_for_planner(
             steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
         )
         _, _, x_look_ahead = look_ahead_sim.simulate(
-            x0=x_disturbed,
+            x0=traj_dict_no_noise[kk_sim],
             u=u_look_ahead_sim,
             t_final=look_ahead_s,
             ivp_method=ivp_method
         )
 
         # convert simulated forward step state back to KB for control
-        x0_kb = func_convert_controller2planner_state(x_look_ahead)
+        x0_kb = func_convert_controller2planner_state(x_look_ahead.final_point)
         lateral_offset_lookahead = signed_distance_point_to_linestring(
             point=Point(x0_kb.position_x, x0_kb.position_y),
             linestring=ref_path
@@ -254,15 +263,15 @@ def pid_with_lookahead_for_planner(
         t_0 = time.perf_counter()
         # simulate
         x_measured, x_disturbed, x_nominal = simulation.simulate(
-            x0=x_disturbed,
+            x0=traj_dict_no_noise[kk_sim],
             u=u_now,
             t_final=dt_controller
         )
 
         # update dicts
         input_dict[kk_sim] = u_now
-        traj_dict_measured[kk_sim + 1] = x_measured
-        traj_dict_dist_no_noise[kk_sim + 1] = x_disturbed
+        traj_dict_measured[kk_sim + 1] = x_measured.final_point
+        traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
     print(f"Control calculation: {eta * 1000} millisec.")
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
@@ -300,7 +309,7 @@ def pid_with_lookahead_for_planner(
             save_path=img_saving_path
         )
 
-    return traj_dict_measured, traj_dict_dist_no_noise, input_dict
+    return traj_dict_measured, traj_dict_no_noise, input_dict
 
 if __name__ == "__main__":
     scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"

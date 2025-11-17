@@ -1,47 +1,50 @@
-from commonroad_control.noise_disturbance.GaussianNDGenerator import GaussianNDGenerator
+from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
+
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBStateIndices
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
 
 
-def gaussian_disturbance_for_db() -> GaussianNDGenerator:
+def gaussian_disturbance_for_db() -> GaussianDistribution:
     """
-    :return: Gaussian disturbance generator parametrized for realistic dynamic bicycle.
+    :return: Gaussian disturbances of the dynamic bicycle model.
     """
-    return GaussianNDGenerator(
-        dim=7,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+    return GaussianDistribution(
+        dim=DBStateIndices.dim,
+        mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviation=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
 
 
-def gaussian_noise_for_db() -> GaussianNDGenerator:
+def gaussian_noise_for_db() -> GaussianDistribution:
     """
-    :return: Gaussian noise generator parametrized for realistic dynamic bicycle.
+    :return: Gaussian (measurement) noise for simulating the dynamic bicycle model.
     """
-    return GaussianNDGenerator(
-        dim=7,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+    return GaussianDistribution(
+        dim=DBStateIndices.dim,
+        mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
 
 
-def gaussian_disturbance_for_kb() -> GaussianNDGenerator:
+def gaussian_disturbance_for_kb() -> GaussianDistribution:
     """
-    :return: Gaussian disturbance generator parametrized for realistic kinematic bicycle.
+    :return: Gaussian disturbances of the kinematic bicycle model.
     """
-    return GaussianNDGenerator(
-        dim=5,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+    return GaussianDistribution(
+        dim=KBStateIndices.dim,
+        mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviation=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
 
 
-def gaussian_noise_for_kb() -> GaussianNDGenerator:
+def gaussian_noise_for_kb() -> GaussianDistribution:
     """
-    :return: Gaussian noise generator parametrized for realistic kinematic bicycle.
+    :return: Gaussian (measurement) noise for simulating the kinematic bicycle model.
     """
-    return GaussianNDGenerator(
-        dim=5,
-        means=[0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviations=[0.075, 0.075, 0.0, 0.0, 0.0]
+    return GaussianDistribution(
+        dim=KBStateIndices.dim,
+        mean=[0.0, 0.0, 0.0, 0.0, 0.0],
+        std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0]
     )
 
 
