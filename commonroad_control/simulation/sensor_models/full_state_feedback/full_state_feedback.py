@@ -1,6 +1,7 @@
 from typing import Union
 import numpy as np
 import casadi as cas
+import logging
 
 from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
@@ -9,6 +10,8 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 
+
+logger = logging.getLogger(__name__)
 
 class FullStateFeedback(SensorModelInterface):
     def __init__(self,
@@ -46,13 +49,17 @@ class FullStateFeedback(SensorModelInterface):
 
         # dimension of noise model must match dimension of the output
         if self._noise_model.dim != self._dim != self.state_dimension:
+            logger.error(f'Dimensions of noise, output, and state do not match but must be identical.')
             raise ValueError(f'Dimensions of noise, output, and state do not match but must be identical.')
         # state_output_factory is of correct type
         if not isinstance(self._state_output_factory, StateInputDisturbanceTrajectoryFactoryInterface):
+            logger.error(f"x must be of type {StateInputDisturbanceTrajectoryFactoryInterface.__name__}, "
+                            f"not {type(self._state_output_factory).__name__}")
             raise TypeError(f"x must be of type {StateInputDisturbanceTrajectoryFactoryInterface.__name__}, "
                             f"not {type(self._state_output_factory).__name__}")
         # state dimension of state_output_factory must match state dimension
         if self._dim != self._state_output_factory.state_dimension:
+            logger.error(f'Dimension of output does not match the dimension of the state/output factory.')
             raise ValueError(f'Dimension of output does not match the dimension of the state/output factory.')
 
     def measure(self,
@@ -70,9 +77,11 @@ class FullStateFeedback(SensorModelInterface):
 
         # check input arguments
         if x.dim != self._state_dimension:
+            logger.error(f'Dimension of state {x.dim} does not match.')
             raise ValueError(f'Dimension of state {x.dim} does not match.')
         if u.dim != self._input_dimension:
-            raise ValueError(f'Dimension of state {x.dim} does not match.')
+            logger.error(f'Dimension of input {u.dim} does not match.')
+            raise ValueError(f'Dimension of input {u.dim} does not match.')
 
         # evaluate nominal output
         y_nom_np = self._nominal_output(x, u)

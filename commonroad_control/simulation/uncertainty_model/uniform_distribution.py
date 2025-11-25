@@ -1,9 +1,11 @@
 from typing import Union
 import numpy as np
+import logging
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
 
+logger = logging.getLogger(__name__)
 
 class UniformDistribution(UncertaintyModelInterface):
     def __init__(
@@ -45,6 +47,11 @@ class UniformDistribution(UncertaintyModelInterface):
         """
         # check dimension
         if len(self._lower_bound) != self._dim or len(self._upper_bound) != self._dim:
+            logger.error(
+                f"Dimension mismatch: "
+                f"expected dimension:{self._dim}, "
+                f"lower bound:{len(self._lower_bound)}, upper bound:{len(self._upper_bound)}"
+            )
             raise ValueError(
                 f"Dimension mismatch: "
                 f"expected dimension:{self._dim}, "
@@ -52,11 +59,17 @@ class UniformDistribution(UncertaintyModelInterface):
             )
         # check bounds (lb <= ub)
         if any(self._upper_bound < self._lower_bound):
+            logger.error(
+                f"Upper bound must be greater than lower bound."
+            )
             raise ValueError(
                 f"Upper bound must be greater than lower bound."
             )
         # check nominal value (must be between bounds)
         if any(self._nominal_value < self._lower_bound) or any(self._upper_bound < self._nominal_value):
+            logger.error(
+                f"Nominal value must be contained within bounds."
+            )
             raise ValueError(
                 f"Nominal value must be contained within bounds."
             )

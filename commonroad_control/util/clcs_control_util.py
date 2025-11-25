@@ -1,4 +1,5 @@
 from math import atan2
+import logging
 from typing import List, Tuple, Union
 import numpy as np
 from scipy.spatial.kdtree import KDTree
@@ -22,6 +23,8 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 
+
+logger = logging.getLogger(__name__)
 
 def extend_ref_path_with_route_planner(
         positional_trajectory: np.ndarray,
@@ -116,6 +119,7 @@ def extend_reference_trajectory_lane_following(
     elif hasattr(final_state,"velocity_y") and hasattr(final_state,"velocity_x"):
         heading_0 = atan2(final_state.velocity_y, final_state.velocity_x)
     else:
+        logger.error("Could not compute heading at the final state of the reference trajectory!")
         raise Exception("Could not compute heading at the final state of the reference trajectory!")
 
     if hasattr(final_state,"steering_angle"):

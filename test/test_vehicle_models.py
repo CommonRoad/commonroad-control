@@ -1,4 +1,5 @@
 import unittest
+import logging
 
 from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
@@ -17,7 +18,10 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 class VehicleModelSimulationTest(unittest.TestCase):
     """

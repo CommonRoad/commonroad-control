@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Tuple
 import cvxpy as cp
 from dataclasses import dataclass
-import warnings
+import logging
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
@@ -12,7 +12,7 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import (OptimalControlSolver,
                                                                                                  OCPSolverParameters)
-
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class SCvxParameters(OCPSolverParameters):
@@ -213,10 +213,12 @@ class OptimalControlSCvx(OptimalControlSolver):
             self._par_jac_a_lat_u.value = np.vstack(jac_a_lat_u)
 
             # solve the optimal control problem
-            self._ocp.solve(solver='CLARABEL', verbose=True)
+            solver_verbosity: bool = True if logger.getEffectiveLevel() == logging.DEBUG else False
+            self._ocp.solve(solver='CLARABEL', verbose=solver_verbosity)
 
             # check feasibility
             if "infeasible" in self._ocp.status or "unbounded" in self._ocp.status:
+                logger.error(f"Solver could not solve dynamics. Status: {self._ocp.status}")
                 raise ValueError(f"Solver could not solve dynamics. Status: {self._ocp.status}")
 
             # extract (candidate) solution
@@ -239,7 +241,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         # ... compute the defect
         defect = self._compute_defect(x_sol, u_sol)
         if float(np.max(defect)) > self._ocp_parameters.feasibility_tolerance:
-            warnings.warn("SCvx algorithm converged to a dynamically infeasible solution!")
+            logger.warning("SCvx algorithm converged to a dynamically infeasible solution!")
 
         x_sol = self.sit_factory.trajectory_from_numpy_array(
             traj_np=x_sol,

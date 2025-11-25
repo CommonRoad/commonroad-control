@@ -1,9 +1,12 @@
+import logging
 import os
 import time
 from pathlib import Path
 from PIL import Image
 
 from typing import Union
+
+logger = logging.getLogger(__name__)
 
 def make_gif(
     path_to_img_dir: Union[Path, str],
@@ -17,6 +20,7 @@ def make_gif(
         or not os.path.isdir(path_to_img_dir)
         or not os.path.isabs(path_to_img_dir)
     ):
+        logger.error(f"image dir {path_to_img_dir} must exist, be a directory and be absolute")
         raise FileNotFoundError(
             f"image dir {path_to_img_dir} must exist, be a directory and be absolute"
         )
@@ -27,7 +31,7 @@ def make_gif(
         key=lambda x: int(x.split(".")[0].split("_")[-1]),
     )
 
-    print("creating gif")
+    logger.debug("creating gif")
 
     # poll until all imgs ware saved
     cnt = 0
@@ -40,6 +44,7 @@ def make_gif(
         cnt += 1
 
     if cnt == abort_img_threshold:
+        logger.error("Could not find all expected imgs")
         raise ValueError("Could not find all expected imgs")
 
     imgs_pil = [Image.open(os.path.join(path_to_img_dir, img)) for img in imgs]

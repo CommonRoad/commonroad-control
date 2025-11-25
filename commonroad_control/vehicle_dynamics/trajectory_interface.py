@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Any, Union, Dict, Optional, Tuple, List
 import numpy as np
+import logging
 
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
@@ -11,6 +12,8 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -40,12 +43,15 @@ class TrajectoryInterface(ABC):
         Sanity check
         """
         if len(self.points.keys()) == 0:
+            logger.error(f"states must contain more than 0 values")
             raise ValueError(f"states must contain more than 0 values")
         if None in self.points.values():
+            logger.error(f"states must not contain None")
             raise ValueError(f"states must not contain None")
         initial_point = self.points[0]
         for point in self.points.values():
             if type(point) is not type(initial_point):
+                logger.error(f"Type of trajectory points is not unique.")
                 raise TypeError(f"Type of trajectory points is not unique.")
 
     def convert_to_numpy_array(self, time: List[float]) -> np.ndarray:
@@ -105,6 +111,7 @@ class TrajectoryInterface(ABC):
         :return: state_before, state_after, idx_before, idx_after
         """
         if time < self.t_0:
+            logger.error(f"time {time} is before trajectory start {self.t_0}")
             raise ValueError(f"time {time} is before trajectory start {self.t_0}")
         idx_lower: int = min(math.floor((time - self.t_0) / self.delta_t), max(self.points.keys()))
         idx_upper: int = min(math.ceil((time - self.t_0) / self.delta_t), max(self.points.keys()))
@@ -123,6 +130,8 @@ class TrajectoryInterface(ABC):
             self.points[self.steps[-1]+1] = next_point
             self.__post_init__()
         else:
+            logger.error(f"Expected point of type {type(self.final_point)}, "
+                            f"got {type(next_point)}instead")
             raise TypeError(f"Expected point of type {type(self.final_point)}, "
                             f"got {type(next_point)}instead")
 

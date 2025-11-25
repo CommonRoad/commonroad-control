@@ -1,8 +1,8 @@
-import copy
 import unittest
 import ast
 from pathlib import Path
 import matplotlib.pyplot as plt
+import logging
 
 
 import numpy as np
@@ -12,16 +12,17 @@ from commonroad.scenario.state import InputState
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
+from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
-from rp_test import main as rpmain
 
 from typing import List
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
-
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 class TestReactivePlannerConverter(unittest.TestCase):
 
@@ -163,7 +164,20 @@ class TestReactivePlannerConverter(unittest.TestCase):
         rp_config.update(scenario=scenario, planning_problem=planning_problem)
         rp_config.planning_problem_set = planning_problem_set
 
-        rp_states, rp_inputs = rpmain(config=rp_config)
+        planner_config_path = Path(__file__).parents[1] / "scenarios" / "reactive_planner_configs" / str(
+            filename[:-4] + ".yaml")
+
+        print(f"solving scenario {str(scenario.scenario_id)}")
+
+        # run planner
+        print("run planner")
+        rp_states, rp_inputs = run_reactive_planner(
+            scenario=scenario,
+            scenario_xml_file_name=str(filename[:-4] + ".xml"),
+            planning_problem=planning_problem,
+            planning_problem_set=planning_problem_set,
+            reactive_planner_config_path=planner_config_path
+        )
 
 
 

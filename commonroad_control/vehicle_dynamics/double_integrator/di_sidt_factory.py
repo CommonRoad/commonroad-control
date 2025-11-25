@@ -1,5 +1,6 @@
 from typing import Union, List, Any, Dict
 import numpy as np
+import logging
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
@@ -10,6 +11,8 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_state import DISta
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbance, DIDisturbanceIndices
 
+
+logger = logging.getLogger(__name__)
 
 class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
     """
@@ -90,8 +93,10 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if int(x_np.shape[0]) != DIStateIndices.dim:
+            logger.error(f'Dimension {x_np.shape[0]} does not match required {DIStateIndices.dim}')
             raise ValueError(f'Dimension {x_np.shape[0]} does not match required {DIStateIndices.dim}')
         if x_np.ndim > 1:
+            logger.error(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
             raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
 
         return DIState(
@@ -110,8 +115,10 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         :param u_np: input vector - array of dimension (self.dim,)
         """
         if u_np.ndim > 1:
+            logger.error(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
             raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
         if u_np.shape[0] != DIInputIndices.dim:
+            logger.error(f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}")
             raise ValueError(f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}")
 
         return DIInput(
@@ -131,8 +138,10 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.shape[0] != cls.disturbance_dimension:
+            logger.error(f'Dimension {w_np.shape[0]} does not match')
             raise ValueError(f'Dimension {w_np.shape[0]} does not match')
         if w_np.ndim > 1:
+            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
             raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
 
         return DIDisturbance(

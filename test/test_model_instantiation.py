@@ -1,7 +1,8 @@
 import unittest
+import logging
 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
-
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
@@ -19,6 +20,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBSta
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 class TestModelInstantiation(unittest.TestCase):
     """

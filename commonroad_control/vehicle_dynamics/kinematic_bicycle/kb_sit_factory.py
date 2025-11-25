@@ -1,4 +1,5 @@
 from typing import Union, Dict, List
+import logging
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBSta
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance import KBDisturbance, KBDisturbanceIndices
 
+
+logger = logging.getLogger(__name__)
 
 class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
     """
@@ -95,8 +98,10 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         :param x_np: state vector - array of dimension (dim,1)
         """
         if int(x_np.shape[0]) != KBStateIndices.dim:
+            logger.error(f'Dimension {x_np.shape[0]} does not match required {KBStateIndices.dim}')
             raise ValueError(f'Dimension {x_np.shape[0]} does not match required {KBStateIndices.dim}')
         if x_np.ndim > 1:
+            logger.error(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
             raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
 
         return KBState(
@@ -116,8 +121,10 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         :param u_np: control input - array of dimension (self.dim,1)
         """
         if u_np.ndim > 1:
+            logger.error(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
             raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
         if u_np.shape[0] != KBInputIndices.dim:
+            logger.error(f"input should be ({KBStateIndices.dim},) but is {u_np.shape[0]}")
             raise ValueError(f"input should be ({KBStateIndices.dim},) but is {u_np.shape[0]}")
 
         return KBInput(
@@ -137,8 +144,10 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.shape[0] != cls.disturbance_dimension:
+            logger.error(f'Dimension {w_np.shape[0]} does not match')
             raise ValueError(f'Dimension {w_np.shape[0]} does not match')
         if w_np.ndim > 1:
+            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
             raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
 
         return KBDisturbance(
