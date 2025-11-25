@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+import logging
 import numpy as np
 from commonroad.geometry.shape import Rectangle
 from commonroad.prediction.prediction import TrajectoryPrediction, Trajectory
@@ -16,6 +16,9 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class KBTrajectory(TrajectoryInterface):
@@ -68,6 +71,7 @@ class KBTrajectory(TrajectoryInterface):
         """
 
         if not self.points:
+            logger.error(f"Trajectory.points={self.points}  is empty")
             raise ValueError(f"Trajectory.points={self.points}  is empty")
 
         else:

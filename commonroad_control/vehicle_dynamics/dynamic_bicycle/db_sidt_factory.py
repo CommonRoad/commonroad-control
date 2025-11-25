@@ -1,5 +1,5 @@
 from typing import Union, Dict, List
-
+import logging
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
@@ -11,6 +11,8 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import DBDisturbance, DBDisturbanceIndices
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 
+
+logger = logging.getLogger(__name__)
 
 class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
     """
@@ -108,8 +110,10 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         :return: db state
         """
         if x_np.shape[0] != DBStateIndices.dim:
+            logger.error(f'Dimension {x_np.shape[0]} does not match')
             raise ValueError(f'Dimension {x_np.shape[0]} does not match')
         if x_np.ndim > 1:
+            logger.error(f"Size of np_array should be (dim,) but is {x_np.shape}")
             raise ValueError(f"Size of np_array should be (dim,) but is {x_np.shape}")
 
         return DBState(
@@ -132,8 +136,10 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         :return: db input
         """
         if u_np.size > 1:
+            logger.error(f"size of array should be (dim,) but is {u_np}")
             raise ValueError(f"size of array should be (dim,) but is {u_np}")
         if u_np.shape[0] != DBStateIndices.dim:
+            logger.error(f"input should be ({DBInputIndices.dim},) but is {u_np}")
             raise ValueError(f"input should be ({DBInputIndices.dim},) but is {u_np}")
 
         return DBInput(
@@ -153,8 +159,10 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.shape[0] != cls.disturbance_dimension:
+            logger.error(f'Dimension {w_np.shape[0]} does not match')
             raise ValueError(f'Dimension {w_np.shape[0]} does not match')
         if w_np.ndim > 1:
+            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
             raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
 
         return DBDisturbance(

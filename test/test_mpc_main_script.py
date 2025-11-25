@@ -1,9 +1,13 @@
 import unittest
 import os
 from pathlib import Path
+import logging
 
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 from mpc_example import main as mpc_main
 
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 class TestMPCExample(unittest.TestCase):
 

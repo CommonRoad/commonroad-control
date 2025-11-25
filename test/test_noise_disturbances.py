@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 import os
+import logging
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_reactive_planner, \
     pid_with_lookahead_for_reactive_planner_no_uncertainty
@@ -8,8 +9,9 @@ from commonroad.common.file_reader import CommonRoadFileReader
 
 from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
-
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 class TestNoiseDisturbance(unittest.TestCase):
 

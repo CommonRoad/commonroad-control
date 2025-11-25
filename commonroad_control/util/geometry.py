@@ -1,7 +1,8 @@
 import numpy as np
+import logging
 from shapely import LineString, Point
 
-
+logger = logging.getLogger(__name__)
 
 def signed_distance_point_to_linestring(
         point: Point,
@@ -28,6 +29,7 @@ def signed_distance_point_to_linestring(
 
     if point_before_line is None:
         # TODO: Robustify
+        logger.error("point before line is none")
         raise ValueError("point before line is none")
 
     vector_line: np.ndarray = np.asarray([point_on_line.x - point_before_line.x, point_on_line.y - point_before_line.y])

@@ -1,8 +1,12 @@
 from typing import List, Union
 import numpy as np
+import logging
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
+
+
+logger = logging.getLogger(__name__)
 
 class GaussianDistribution(UncertaintyModelInterface):
     """
@@ -68,11 +72,16 @@ class GaussianDistribution(UncertaintyModelInterface):
         Checks args
         """
         if len(self._mean) != len(self._std_deviation) != self._dim:
+            logger.error(
+                f"Dimension mismatch: "
+                f"expected dimension:{self._dim}, mean:{len(self._mean)}, std:{len(self._std_deviation)}"
+            )
             raise ValueError(
                 f"Dimension mismatch: "
                 f"expected dimension:{self._dim}, mean:{len(self._mean)}, std:{len(self._std_deviation)}"
             )
         if any(self._std_deviation < 0):
+            logger.error(f"Standard deviation must be non-negative.")
             raise ValueError(
                 f"Standard deviation must be non-negative."
             )

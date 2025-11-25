@@ -1,13 +1,15 @@
 import unittest
 from pathlib import Path
 import os
+import logging
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_reactive_planner
 from commonroad.common.file_reader import CommonRoadFileReader
-
-from commonroad_control.simulation.uncertainty_model.no_uncertainty import NoUncertainty
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestCREasyAPI(unittest.TestCase):

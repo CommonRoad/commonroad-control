@@ -1,5 +1,6 @@
 import copy
 from pathlib import Path
+import logging
 
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
@@ -33,8 +34,10 @@ from commonroad_control.control.model_predictive_control.model_predictive_contro
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
 
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
-
+logger_global = configure_toolbox_logging(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main(
         scenario_file: Path,
@@ -47,10 +50,10 @@ def main(
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
-    print(f"solving scnenario {str(scenario.scenario_id)}")
+    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
 
     # run planner
-    print("run planner")
+    logger.info("run planner")
     rp_states, rp_inputs = run_reactive_planner(
         scenario=scenario,
         scenario_xml_file_name=str(scenario_name + ".xml"),
@@ -68,7 +71,7 @@ def main(
         mode=TrajectoryMode.Input
     )
 
-    print("run controller")
+    logger.info("run controller")
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
 

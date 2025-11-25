@@ -1,11 +1,14 @@
+import logging
 from pathlib import Path
 import os
-import warnings
 import matplotlib.pyplot as plt
 
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
 from typing import Optional, List, Union
+
+
+logger = logging.getLogger(__name__)
 
 def visualize_reference_vs_actual_states(
     reference_trajectory: Union[TrajectoryInterface],
@@ -25,7 +28,7 @@ def visualize_reference_vs_actual_states(
     :return:
     """
 
-    print(f"visualizing control")
+    logger.debug(f"visualizing control")
 
     if state_names is None:
         state_names = vars(reference_trajectory.initial_point).keys()
@@ -35,12 +38,12 @@ def visualize_reference_vs_actual_states(
     present_actual_state_names = [a for a in state_names if hasattr(actual_trajectory.initial_point, a)]
     plot_state_names = list(set(present_ref_state_names) & set(present_actual_state_names))
     if not plot_state_names:
-        warnings.warn(f"No matching state names for the reference and actual trajectory "
+        logger.warning(f"No matching state names for the reference and actual trajectory "
                       f"- nothing to be plotted.")
         return
     elif len(plot_state_names) < len(state_names):
         removed_names = list(set(state_names) - set(plot_state_names))
-        warnings.warn(f"The following state names are not defined for the reference or actual trajectory "
+        logger.warning(f"The following state names are not defined for the reference or actual trajectory "
                       f"{removed_names} and will not be plotted.")
 
     # plot reference and actual trajectories

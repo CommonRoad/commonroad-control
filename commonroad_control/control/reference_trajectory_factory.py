@@ -1,8 +1,9 @@
 from typing import Union, Tuple, List
-
+import logging
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 
+logger = logging.getLogger(__name__)
 
 class ReferenceTrajectoryFactory:
     def __init__(self,
@@ -47,13 +48,17 @@ class ReferenceTrajectoryFactory:
 
         # consistency checks
         if state_ref.mode is not TrajectoryMode.State:
+            logger.error(f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}")
             raise TypeError(f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}")
         if input_ref.mode is not TrajectoryMode.Input:
+            logger.error(f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}")
             raise TypeError(f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}")
         if abs(state_ref.t_0-t_0) > 1e-12or abs(input_ref.t_0-t_0) > 1e-12:
+            logger.error(f"Inconsistent initial time for state and/or reference input trajectory")
             raise ValueError(f"Inconsistent initial time for state and/or reference input trajectory")
-        if t_0 + self._t_look_ahead + max(self._x_ref_steps)*self._dt_controller > state_ref.t_final or \
-            t_0 + self._t_look_ahead + max(self._u_ref_steps)*self._dt_controller > input_ref.t_final:
+        if (t_0 + self._t_look_ahead + max(self._x_ref_steps)*self._dt_controller > state_ref.t_final or
+            t_0 + self._t_look_ahead + max(self._u_ref_steps)*self._dt_controller > input_ref.t_final):
+            logger.error(f"Prediction/look-ahead horizon exceeds the final time of the given reference trajectories")
             raise ValueError(f"Prediction/look-ahead horizon exceeds the final time of the given reference trajectories")
 
         self._x_ref = state_ref

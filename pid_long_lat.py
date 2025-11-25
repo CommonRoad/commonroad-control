@@ -1,5 +1,5 @@
 import copy
-import numpy as np
+import logging
 from pathlib import Path
 
 from commonroad.common.file_reader import CommonRoadFileReader
@@ -28,8 +28,10 @@ from commonroad_control.util.clcs_control_util import extend_kb_reference_trajec
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
-
+logger_global = configure_toolbox_logging(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main(
         scenario_file: Path,
@@ -42,10 +44,10 @@ def main(
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
-    print(f"solving scnenario {str(scenario.scenario_id)}")
+    logger.info(f"solving scenario {str(scenario.scenario_id)}")
 
     # run planner
-    print("run planner")
+    logger.info("run planner")
     rp_states, rp_inputs = run_reactive_planner(
         scenario=scenario,
         scenario_xml_file_name=str(scenario_name + ".xml"),
@@ -63,7 +65,7 @@ def main(
         mode=TrajectoryMode.Input
     )
 
-    print("initialize params")
+    logger.info("initialize params")
     # controller
     dt_controller = 0.1
     look_ahead_s = 0.5
@@ -125,7 +127,7 @@ def main(
         kd_steer_heading=0.02,
         dt=dt_controller,
     )
-    print("run controller")
+    logger.info("run controller")
 
     # extend reference trajectory
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
@@ -211,7 +213,7 @@ def main(
 
 
 
-    print(f"visualization")
+    logger.info(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,

@@ -1,6 +1,5 @@
-from typing import Union, Any, Literal, List, Dict
-
-from math import  tan, sqrt, cos, sin
+from typing import Union, Any, List, Dict
+import logging
 import numpy as np
 # reactive planner
 from commonroad.scenario.state import InputState
@@ -27,6 +26,8 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBSta
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
+
+logger = logging.getLogger(__name__)
 
 class ReactivePlannerConverter(PlanningConverterInterface):
     # TODO decide if it needs a config? Otherwise methods static.
@@ -123,6 +124,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 steering_angle_velocity=planner_state.steering_angle_speed,
             )
         else:
+            logger.error(f"{mode} not implemented")
             raise NotImplementedError(f"{mode} not implemented")
 
         return retval
@@ -190,6 +192,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 time_step=time_step
             )
         else:
+            logger.error(f"mode {mode} not implemented")
             raise NotImplementedError(f"mode {mode} not implemented")
         return retval
 
@@ -272,6 +275,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 steering_angle_velocity=planner_state.steering_angle_speed
             )
         else:
+            logger.error(f"mode {mode} not implemented")
             raise NotImplementedError(f"mode {mode} not implemented")
 
         return retval
@@ -282,6 +286,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             db_traj: DBTrajectory,
             mode: TrajectoryMode
     ) -> Any:
+        logger.error("Currently not implemented")
         raise NotImplementedError("Currently not implemented")
 
 
