@@ -1,6 +1,7 @@
 # standard imports
 from typing import List, Tuple, Union
 from pathlib import Path
+import logging
 
 # commonroad
 from commonroad.planning.planning_problem import PlanningProblem, PlanningProblemSet
@@ -20,6 +21,8 @@ from commonroad_rp.utility.utils_coordinate_system import (
 )
 
 
+logger = logging.getLogger(__name__)
+
 def run_reactive_planner(
         scenario: Scenario,
         scenario_xml_file_name: str,
@@ -28,6 +31,7 @@ def run_reactive_planner(
         reactive_planner_config_path: Union[str, Path],
         logging_level: str = "ERROR",
         show_planner_debug_plots: bool = False,
+        maximum_iterations: int = 200
 ) -> Tuple[List[ReactivePlannerState], List[InputState]]:
     """
     Util wrapper to (semi) easily run the reactive planner
@@ -38,6 +42,7 @@ def run_reactive_planner(
     :param reactive_planner_config_path: path to reactive planner config
     :param logging_level: logging level as string (see reactive planner documentation)
     :param show_planner_debug_plots: if true shows debug plots
+    :param maximum_iterations: maximum planner iterations to solve a problem before raising an exception
     :return: Tuple[list of reactive planner states, list of reactive planner inputs]
     """
 
@@ -65,7 +70,9 @@ def run_reactive_planner(
 
     SAMPLING_ITERATION_IN_PLANNER = True
 
-    while not planner.goal_reached():
+    cnt: int = 0
+
+    while not planner.goal_reached() and cnt < maximum_iterations:
         current_count = len(planner.record_state_list) - 1
 
         # check if planning cycle or not
@@ -104,6 +111,11 @@ def run_reactive_planner(
             planner.reset(initial_state_cart=planner.record_state_list[-1],
                           initial_state_curv=(optimal[1][1 + temp], optimal[2][1 + temp]),
                           collision_checker=planner.collision_checker, coordinate_system=planner.coordinate_system)
+
+
+    if cnt >= maximum_iterations - 1:
+        logger.error(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
+        raise Exception(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
 
     # Evaluate results
     evaluate = True
