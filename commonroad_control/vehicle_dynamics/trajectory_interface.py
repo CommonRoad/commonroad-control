@@ -10,7 +10,7 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+    from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 
 
 @dataclass
@@ -130,7 +130,7 @@ class TrajectoryInterface(ABC):
     def get_point_at_time(
             self,
             time: float,
-            factory: 'StateInputTrajectoryFactoryInterface'
+            factory: 'StateInputDisturbanceTrajectoryFactoryInterface'
     ) -> Union[StateInterface, InputInterface]:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent

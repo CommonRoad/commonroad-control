@@ -1,8 +1,8 @@
-from typing import List, Optional, Union
+from typing import List, Union
 import numpy as np
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
-
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
 
 class GaussianDistribution(UncertaintyModelInterface):
     """
@@ -12,9 +12,11 @@ class GaussianDistribution(UncertaintyModelInterface):
     def __init__(
             self,
             dim: int,
-            mean: Union[np.ndarray,List[float]],
-            std_deviation: Union[np.ndarray,List[float]],
-            nominal_value: Optional[List[float]] = None
+            mean: Union[np.ndarray, List[float], UncertaintyInterface],
+            std_deviation: Union[np.ndarray, List[float], UncertaintyInterface],
+            *args,
+            nominal_value: Union[np.ndarray, List[float], UncertaintyInterface, None] = None,
+            **kwargs
     ) -> None:
         """
         Generates Gaussian noise or disturbances.
@@ -37,12 +39,25 @@ class GaussianDistribution(UncertaintyModelInterface):
         """
         super().__init__(dim=dim)
 
-        self._mean: np.ndarray = np.array(mean)
-        self._std_deviation: np.ndarray = np.array(std_deviation)
+        if isinstance(mean, UncertaintyInterface):
+            mean_np = mean.convert_to_array()
+        else:
+            mean_np : np.ndarray = np.array(mean)
+        self._mean: np.ndarray = mean_np
+
+        if isinstance(std_deviation, UncertaintyInterface):
+            std_deviation_np = std_deviation.convert_to_array()
+        else:
+            std_deviation_np = np.array(mean)
+        self._std_deviation: np.ndarray = std_deviation_np
 
         # set nominal value
         if nominal_value is not None:
-            self._nominal_value = np.array(nominal_value)
+            if isinstance(nominal_value, UncertaintyInterface):
+                nominal_value_np = nominal_value.convert_to_array()
+            else:
+                nominal_value_np: np.ndarray = np.array(nominal_value)
+            self._nominal_value = nominal_value_np
         else:
             self._nominal_value = self._mean
 

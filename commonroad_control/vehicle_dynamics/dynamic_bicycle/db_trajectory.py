@@ -14,7 +14,7 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+    from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 
 
 @dataclass
@@ -26,7 +26,7 @@ class DBTrajectory(TrajectoryInterface):
     def get_point_at_time(
             self,
             time: float,
-            factory: 'DBSITFactory'
+            factory: 'DBSIDTFactory'
     ) -> Union['DBState', 'DBInput']:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent

@@ -8,7 +8,10 @@ from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 
-class StateInputTrajectoryFactoryInterface(ABC):
+class StateInputDisturbanceTrajectoryFactoryInterface(ABC):
+    state_dimension: int
+    input_dimension: int
+    disturbance_dimension: int
 
     @abstractmethod
     def state_from_args(
@@ -30,6 +33,12 @@ class StateInputTrajectoryFactoryInterface(ABC):
         """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def disturbance_from_args(
+            *args
+    ) -> Union[Any]:
+        pass
 
     @abstractmethod
     def state_from_numpy_array(
@@ -42,6 +51,14 @@ class StateInputTrajectoryFactoryInterface(ABC):
     def input_from_numpy_array(
             self,
             u_np: np.ndarray
+    ) -> Union[Any]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def disturbance_from_numpy_array(
+            cls,
+            w_np: np.ndarray
     ) -> Union[Any]:
         pass
 

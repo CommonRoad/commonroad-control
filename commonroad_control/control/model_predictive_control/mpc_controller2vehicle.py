@@ -4,11 +4,11 @@ import numpy as np
 
 from commonroad_control.control.controller_to_vehicle_interface import Controller2VehicleInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 
 
 class MPCController2Vehicle(Controller2VehicleInterface):
-    def __init__(self, sit_factory: StateInputTrajectoryFactoryInterface):
+    def __init__(self, sit_factory: StateInputDisturbanceTrajectoryFactoryInterface):
 
         # init base class
         super().__init__(sit_factory=sit_factory)

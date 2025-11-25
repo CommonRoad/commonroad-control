@@ -15,7 +15,7 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryI
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 
 @dataclass
 class KBTrajectory(TrajectoryInterface):
@@ -26,7 +26,7 @@ class KBTrajectory(TrajectoryInterface):
     def get_point_at_time(
             self,
             time: float,
-            factory: 'KBSITFactory'
+            factory: 'KBSITFactoryDisturbance'
     ) -> Union['KBState', 'KBInput']:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent

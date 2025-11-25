@@ -4,9 +4,11 @@ import numpy as np
 from typing import Tuple
 import math
 
+from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
+from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
@@ -23,14 +25,14 @@ class TestSimulation(unittest.TestCase):
 
     @staticmethod
     def make_vehicle(
-    ) -> Tuple[DynamicBicycle, DBSITFactory]:
+    ) -> Tuple[DynamicBicycle, DBSIDTFactory]:
         # parameters for simulation
         vehicle_params = BMW3seriesParams()
         dt = 0.1
 
         # setup simulation
         # ... vehicle model
-        sit_factory_sim = DBSITFactory()
+        sit_factory_sim = DBSIDTFactory()
         vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt)
 
         return vehicle_model_sim, sit_factory_sim
@@ -60,7 +62,6 @@ class TestSimulation(unittest.TestCase):
         return x0, u_sim, t_final_sim
 
     def standard_checks(self,
-                       measured_trajectory: TrajectoryInterface,
                        perturbed_trajectory: TrajectoryInterface,
                        nominal_trajectory: TrajectoryInterface,
                        x0: StateInterface,
@@ -68,10 +69,9 @@ class TestSimulation(unittest.TestCase):
                        t_final_sim: float
                        ) -> None:
         """
-        Standard test cases: check horizon length (identical for all), number of time steps (2 for noisy trajectory,
-        since the noise is only applied at the end of the simulation horizon), identical to the given expected number
-        for the nominal and the perturbed simulated trajectory, initial states must be identical for all.
-        :param measured_trajectory: noisy trajectory of the perturbed system
+        Standard test cases for the nominal and perturbed trajectory: check the number of time steps (identical to the
+        given expected number), the horizon length (identical to t_final_sim) and the initial states (must be identical
+        to x0).
         :param perturbed_trajectory: trajectory of the perturbed system
         :param nominal_trajectory: trajectory of the nominal system
         :param x0: initial state
@@ -81,17 +81,13 @@ class TestSimulation(unittest.TestCase):
         """
 
         # ... final time horizon
-        self.assertAlmostEqual(measured_trajectory.t_final, t_final_sim, places=10)
         self.assertAlmostEqual(perturbed_trajectory.t_final, t_final_sim, places=10)
         self.assertAlmostEqual(nominal_trajectory.t_final, t_final_sim, places=10)
         # ... number of time steps
-        self.assertEqual(len(measured_trajectory.steps), 2)  # measurement is only taken at t=t_final_sim
         self.assertEqual(len(perturbed_trajectory.steps), num_steps_expected+1)
         self.assertEqual(len(nominal_trajectory.steps), num_steps_expected+1)
 
         # ... initial states are identical
-        self.assertLessEqual(np.linalg.norm(
-            measured_trajectory.initial_point.convert_to_array() - x0.convert_to_array()), 1e-10)
         self.assertLessEqual(np.linalg.norm(
             perturbed_trajectory.initial_point.convert_to_array() - x0.convert_to_array()), 1e-10)
         self.assertLessEqual(np.linalg.norm(
@@ -117,7 +113,7 @@ class TestSimulation(unittest.TestCase):
         # ... problem parameters
         x0, u_sim, t_final_sim = self.problem_accelerate_steering_ramp()
         # ... run simulation
-        x_sim_nw, x_sim_w, x_sim_nom = sim_nom.simulate(
+        y_sim, x_sim_w, x_sim_nom = sim_nom.simulate(
             x0=x0,
             u=u_sim,
             t_final=t_final_sim
@@ -127,7 +123,6 @@ class TestSimulation(unittest.TestCase):
         # ... standard tests
         num_steps_expected = math.ceil(t_final_sim/sim_nom._delta_t_sim)
         self.standard_checks(
-            measured_trajectory=x_sim_nw,
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
             x0=x0,
@@ -135,11 +130,14 @@ class TestSimulation(unittest.TestCase):
             t_final_sim=t_final_sim
         )
 
-        # ... final states are identical
-        self.assertLessEqual(np.linalg.norm(
-            x_sim_nw.final_point.convert_to_array() - x_sim_nom.final_point.convert_to_array()),1e-10)
+        # ... final states are identical for the perturbed and nominal trajectory
         self.assertLessEqual(np.linalg.norm(
             x_sim_w.final_point.convert_to_array() - x_sim_nom.final_point.convert_to_array()), 1e-10)
+
+        # ... since the default setting is full state feedback and no measurement noise, the measured output must be
+        # identical to the final state of the perturbed trajectory
+        self.assertLessEqual(np.linalg.norm(
+            y_sim.convert_to_array() - x_sim_nom.final_point.convert_to_array()), 1e-10)
 
     def test_sim_perturbed(self):
         """
@@ -175,7 +173,7 @@ class TestSimulation(unittest.TestCase):
         # ... problem parameters
         x0, u_sim, t_final_sim = self.problem_accelerate_steering_ramp()
         # ... run simulation
-        x_sim_nw, x_sim_w, x_sim_nom = sim_perturbed.simulate(
+        y_sim, x_sim_w, x_sim_nom = sim_perturbed.simulate(
             x0=x0,
             u=u_sim,
             t_final=t_final_sim
@@ -185,7 +183,6 @@ class TestSimulation(unittest.TestCase):
         # ... standard tests
         num_steps_expected = math.ceil(t_final_sim/sim_perturbed._delta_t_sim)
         self.standard_checks(
-            measured_trajectory=x_sim_nw,
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
             x0=x0,
@@ -193,12 +190,14 @@ class TestSimulation(unittest.TestCase):
             t_final_sim=t_final_sim
         )
 
-        # ... final state of perturbed trajectory must not coincide with nominal state (0 not contained in set)
+        # ... final state of perturbed trajectory must not coincide with nominal state (0 not contained in set of disturbances)
         self.assertGreater(np.linalg.norm(
             x_sim_w.final_point.convert_to_array() - x_sim_nom.final_point.convert_to_array()), 1e-4)
-        # ... no noise: final states of perturbed and measured trajectory must coincide
+
+        # ... since the default setting is full state feedback and no measurement noise, the measured output must be
+        # identical to the final state of the perturbed trajectory
         self.assertLessEqual(np.linalg.norm(
-            x_sim_nw.final_point.convert_to_array() - x_sim_w.final_point.convert_to_array()), 1e-10)
+            y_sim.convert_to_array() - x_sim_w.final_point.convert_to_array()), 1e-10)
 
     def test_sim_perturbed_and_noisy(self):
         """
@@ -225,12 +224,16 @@ class TestSimulation(unittest.TestCase):
         nom_value = np.asarray([0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0])
         lb = 0.5*nom_value
         ub = 1.5*nom_value
-        noise_model: MeasurementNoiseModel = MeasurementNoiseModel(
-            uncertainty_model=UniformDistribution(
-                dim=vehicle_sim.state_dimension,
-                lower_bound=lb,
-                upper_bound=ub
-            )
+        noise_model: UniformDistribution = UniformDistribution(
+            dim=vehicle_sim.state_dimension,
+            lower_bound=lb,
+            upper_bound=ub
+        )
+        sensor_model: FullStateFeedback = FullStateFeedback(
+            state_output_factory=sit_factory_sim,
+            noise_model=noise_model,
+            state_dimension=vehicle_sim.state_dimension,
+            input_dimension=vehicle_sim.input_dimension
         )
         # ... simulation
         sim_noisy: Simulation = Simulation(
@@ -238,7 +241,7 @@ class TestSimulation(unittest.TestCase):
             state_input_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
-            noise_model=noise_model,
+            sensor_model=sensor_model,
             random_noise=True,
             delta_t_sim=vehicle_sim._delta_t
         )
@@ -247,7 +250,7 @@ class TestSimulation(unittest.TestCase):
         # ... problem parameters
         x0, u_sim, t_final_sim = self.problem_accelerate_steering_ramp()
         # ... run simulation
-        x_sim_nw, x_sim_w, x_sim_nom = sim_noisy.simulate(
+        y_sim, x_sim_w, x_sim_nom = sim_noisy.simulate(
             x0=x0,
             u=u_sim,
             t_final=t_final_sim
@@ -257,7 +260,6 @@ class TestSimulation(unittest.TestCase):
         # ... standard tests
         num_steps_expected = math.ceil(t_final_sim/sim_noisy._delta_t_sim)
         self.standard_checks(
-            measured_trajectory=x_sim_nw,
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
             x0=x0,
@@ -268,6 +270,7 @@ class TestSimulation(unittest.TestCase):
         # ... final state of perturbed and nominal trajectory must not coincide (0 not contained in set)
         self.assertGreater(np.linalg.norm(
             x_sim_w.final_point.convert_to_array() - x_sim_nom.final_point.convert_to_array()), 1e-4)
-        # ... final state of perturbed and measured trajectory must not coincide (0 not contained in set)
+
+        # ... final state of perturbed and measured state (we assume full state feedback) must not coincide (0 not contained in set of noises)
         self.assertGreater(np.linalg.norm(
-            x_sim_w.final_point.convert_to_array() - x_sim_nw.final_point.convert_to_array()), 1e-6)
+            x_sim_w.final_point.convert_to_array() - y_sim.convert_to_array()), 1e-6)

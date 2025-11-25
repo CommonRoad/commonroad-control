@@ -11,12 +11,12 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
-from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 
 
 class TestOptimalControlSCvx(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         time_state = [kk for kk in range(horizon+1)]
         time_input = [kk for kk in range(horizon)]
-        sit_factory = DISITFactory()
+        sit_factory = DISIDTFactoryDisturbance()
 
         # reference trajectory
         x_ref_np = np.zeros((DIStateIndices.dim, horizon+1))
@@ -150,7 +150,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         time_state = [kk for kk in range(horizon+1)]
         time_input = [kk for kk in range(horizon)]
-        sit_factory = KBSITFactory()
+        sit_factory = KBSITFactoryDisturbance()
 
         # reference trajectory
         # ... goal is to reach the target state while minimizing control effort

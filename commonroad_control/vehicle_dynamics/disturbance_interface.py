@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
-
+from abc import abstractmethod
 import numpy as np
+
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface, UncertaintyInterfaceIndex
+
 
 
 @dataclass(frozen=True)
-class DisturbanceInterfaceIndex(ABC):
+class DisturbanceInterfaceIndex(UncertaintyInterfaceIndex):
     """
     Indices of the disturbances.
     """
@@ -14,9 +15,9 @@ class DisturbanceInterfaceIndex(ABC):
 
 
 @dataclass
-class DisturbanceInterface(ABC):
+class DisturbanceInterface(UncertaintyInterface):
     """
-    Disturbance interface
+    Baseclass for disturbance interfaces.
     """
 
     @abstractmethod

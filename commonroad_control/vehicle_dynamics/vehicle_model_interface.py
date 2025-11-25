@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import enum
 import numpy as np
 from typing import Tuple, Union, Any
 import casadi as cas

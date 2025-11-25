@@ -9,7 +9,7 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_state import DISta
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+    from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
 
 @dataclass
 class DITrajectory(TrajectoryInterface):
@@ -30,7 +30,7 @@ class DITrajectory(TrajectoryInterface):
     def get_point_at_time(
             self,
             time: float,
-            factory: 'DISITFactory'
+            factory: 'DISIDTFactoryDisturbance'
     ) -> Union['DIState', 'DIInput']:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent

@@ -1,5 +1,11 @@
-from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 from dataclasses import dataclass
+
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_noise import DBNoise
+from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
+
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import DBDisturbance
 
 
 @dataclass(frozen=True)
@@ -21,3 +27,19 @@ class BMW3seriesParams(VehicleParameters):
     a_lat_max: float = 11.5 # TODO check values
     steering_angle_max: float = 1.066
     steering_angle_velocity_max: float = 0.4
+
+    # dynamic bicycle model: parameters of Gaussian disturbance
+    disturbance_gaussian_mean: DBDisturbance = DBSIDTFactory.disturbance_from_args()
+    disturbance_gaussian_std: DBDisturbance = DBSIDTFactory.disturbance_from_args(
+        velocity_long=0.8,
+        velocity_lat=0.35,
+        yaw_rate=0.035
+    )
+
+    # full state feedback for dynamic bicycle model: parameters of Gaussian noise
+    noise_gaussian_mean: UncertaintyInterface = DBNoise()
+    noise_gaussian_std: UncertaintyInterface = DBNoise(
+        position_x=0.075,
+        position_y=0.075,
+    )
+

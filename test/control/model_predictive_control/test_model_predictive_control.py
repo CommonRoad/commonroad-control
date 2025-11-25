@@ -6,7 +6,7 @@ from commonroad_control.vehicle_dynamics.double_integrator.double_integrator imp
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
-from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
+from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
@@ -35,7 +35,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         vehicle_model = DoubleIntegrator(
             params=BMW3seriesParams(),
             delta_t=delta_t)
-        sit_factory = DISITFactory()
+        sit_factory = DISIDTFactoryDisturbance()
 
         # cost matrices
         cost_xx = np.eye(DIStateIndices.dim)

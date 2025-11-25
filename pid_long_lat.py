@@ -7,19 +7,20 @@ from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
+from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 
 from commonroad_control.simulation.simulation.simulation import Simulation
 from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
-from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
+from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
 
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
@@ -73,21 +74,26 @@ def main(
 
     # simulation
     # ... vehicle model
-    sit_factory_sim = DBSITFactory()
+    sit_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     # ... disturbances
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.disturbance_dimension,
-        mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
-        std_deviation=np.asarray([0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0])
+        mean=vehicle_params.disturbance_gaussian_mean,
+        std_deviation=vehicle_params.disturbance_gaussian_std
     )
     # ... noise
-    sim_noise_model: MeasurementNoiseModel = MeasurementNoiseModel(
-        uncertainty_model=GaussianDistribution(
-            dim=vehicle_model_sim.disturbance_dimension,
-            mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
-            std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
-        )
+    sim_noise_model: UncertaintyModelInterface = GaussianDistribution(
+        dim=vehicle_model_sim.disturbance_dimension,
+        mean=vehicle_params.noise_gaussian_mean,
+        std_deviation=vehicle_params.noise_gaussian_std
+    )
+    # ... sensor model
+    sensor_model: SensorModelInterface = FullStateFeedback(
+        noise_model=sim_noise_model,
+        state_output_factory=sit_factory_sim,
+        state_dimension=sit_factory_sim.state_dimension,
+        input_dimension=sit_factory_sim.input_dimension
     )
     # ... simulation
     simulation: Simulation = Simulation(
@@ -95,7 +101,7 @@ def main(
         state_input_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
-        noise_model=sim_noise_model,
+        sensor_model=sensor_model,
         random_noise=True,
         delta_t_sim=dt_controller
     )
@@ -113,10 +119,10 @@ def main(
         kd_long=0.0,
         kp_steer_offset=0.05,
         ki_steer_offset=0.0,
-        kd_steer_offset=0.2,
+        kd_steer_offset=0.1,
         kp_steer_heading=0.01,
         ki_steer_heading=0.0,
-        kd_steer_heading=0.04,
+        kd_steer_heading=0.02,
         dt=dt_controller,
     )
     print("run controller")
@@ -131,7 +137,7 @@ def main(
         horizon=extended_horizon_steps)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactory(),
+        sit_factory=KBSITFactoryDisturbance(),
         horizon=extended_horizon_steps,
     )
     reference_trajectory.set_reference_trajectory(
@@ -200,7 +206,7 @@ def main(
 
         # update dicts
         input_dict[kk_sim] = u_now
-        traj_dict_measured[kk_sim + 1] = x_measured.final_point
+        traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
 
@@ -240,7 +246,7 @@ def main(
     )
 
 if __name__ == "__main__":
-    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
+    scenario_name = "ZAM_Over-1_1"
     # scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
