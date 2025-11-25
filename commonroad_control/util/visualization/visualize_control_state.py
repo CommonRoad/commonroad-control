@@ -90,7 +90,7 @@ def visualize_reference_vs_actual_states(
         error: List[float] = [actual_state_val[kk] - reference_state_val[kk] for kk in range(len(reference_state_val))]
 
         axes_err[ii].plot(time_steps, error, label=f"error", color="red")
-        axes[ii].title.set_text(plot_state_names[ii])
+        axes_err[ii].title.set_text(plot_state_names[ii])
         axes_err[ii].legend()
 
     plt.tight_layout()  # Avoid overlap

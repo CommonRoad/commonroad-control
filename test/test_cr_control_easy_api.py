@@ -4,27 +4,13 @@ import os
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_reactive_planner
 from commonroad.common.file_reader import CommonRoadFileReader
+
+from commonroad_control.simulation.uncertainty_model.no_uncertainty import NoUncertainty
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
-from commonroad_control.cr_control_easy_api.default_building_blocks import (
-    gaussian_disturbance_for_db,
-    gaussian_noise_for_db,
-    gaussian_noise_for_kb,
-    gaussian_disturbance_for_kb
-)
+
 
 
 class TestCREasyAPI(unittest.TestCase):
-
-    def test_default_building_blocks(self) ->None:
-        """
-        Tests default building blocks
-        """
-        # Default gaussian noises
-        a = gaussian_disturbance_for_db()
-        b = gaussian_noise_for_db()
-        c = gaussian_noise_for_kb()
-        d = gaussian_disturbance_for_kb()
-
 
 
     def test_pid_for_reactive(self) -> None:
@@ -72,6 +58,7 @@ class TestCREasyAPI(unittest.TestCase):
                     save_imgs=False,
                     img_saving_path=None
                 )
+
 
     def test_pid_for_reactive_visualization(self) -> None:
         """

@@ -20,9 +20,9 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
@@ -35,8 +35,8 @@ class ReactivePlannerConverter(PlanningConverterInterface):
     def __init__(
             self,
             config: int = 0,
-            kb_factory: Union[KBSITFactory, Any] = KBSITFactory(),
-            db_factory: Union[DBSITFactory, Any] = DBSITFactory(),
+            kb_factory: Union[KBSITFactoryDisturbance, Any] = KBSITFactoryDisturbance(),
+            db_factory: Union[DBSIDTFactory, Any] = DBSIDTFactory(),
             vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams()
     ) -> None:
         """

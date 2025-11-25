@@ -2,18 +2,23 @@ from typing import Union, Dict, List
 
 import numpy as np
 
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance import KBDisturbance, KBDisturbanceIndices
 
 
-class KBSITFactory(StateInputTrajectoryFactoryInterface):
+class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
     """
     Kinematic single track model factory for state, input, and trajectory.
     """
+    state_dimension: int = KBStateIndices.dim
+    input_dimension: int = KBInputIndices.dim
+    disturbance_dimension: int = KBDisturbanceIndices.dim
+
     def state_from_args(
             self,
             position_x: float,
@@ -55,6 +60,31 @@ class KBSITFactory(StateInputTrajectoryFactoryInterface):
             steering_angle_velocity=steering_angle_velocity
         )
 
+    @staticmethod
+    def disturbance_from_args(
+            position_x: float = 0.0,
+            position_y: float = 0.0,
+            velocity: float = 0.0,
+            heading: float = 0.0,
+            steering_angle: float = 0.0
+    ) -> Union['KBDisturbance']:
+        """
+        Create KB disturbance from args
+        :param position_x: position x
+        :param position_y: position y
+        :param velocity: velocity
+        :param heading: heading from vehicle center
+        :param steering_angle: steering angle
+        :return: KBState
+        """
+        return KBDisturbance(
+            position_x=position_x,
+            position_y=position_y,
+            velocity=velocity,
+            heading=heading,
+            steering_angle=steering_angle
+        )
+
 
     def state_from_numpy_array(
             self,
@@ -93,6 +123,30 @@ class KBSITFactory(StateInputTrajectoryFactoryInterface):
         return KBInput(
             acceleration=u_np[KBInputIndices.acceleration],
             steering_angle_velocity=u_np[KBInputIndices.steering_angle_velocity]
+        )
+
+    @classmethod
+    def disturbance_from_numpy_array(
+            cls,
+            w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union['KBDisturbance']:
+        """
+        Sets values of kinematic bicycle disturbance from a given array.
+        :param w_np: disturbance - array of dimension (KBDisturbanceIndices.dim,)
+        :return: db disturbance
+        """
+
+        if w_np.shape[0] != cls.disturbance_dimension:
+            raise ValueError(f'Dimension {w_np.shape[0]} does not match')
+        if w_np.ndim > 1:
+            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+
+        return KBDisturbance(
+            position_x=w_np[KBDisturbanceIndices.position_x],
+            position_y=w_np[KBDisturbanceIndices.position_y],
+            velocity=w_np[KBDisturbanceIndices.velocity],
+            heading=w_np[KBDisturbanceIndices.heading],
+            steering_angle=w_np[KBDisturbanceIndices.steering_angle]
         )
 
 

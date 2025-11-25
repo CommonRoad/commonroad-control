@@ -7,7 +7,8 @@ import enum
 @enum.unique
 class TrajectoryMode(enum.Enum):
     State = 'state'
-    Input = 'mode'
+    Input = 'input'
+    Disturbance = 'disturbance'
 
 
 def rk4_integrator(

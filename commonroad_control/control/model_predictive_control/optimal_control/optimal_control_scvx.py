@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import warnings
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
@@ -33,7 +33,7 @@ class OptimalControlSCvx(OptimalControlSolver):
     """
     def __init__(self,
                  vehicle_model: VehicleModelInterface,
-                 sit_factory:StateInputTrajectoryFactoryInterface,
+                 sit_factory:StateInputDisturbanceTrajectoryFactoryInterface,
                  horizon: int,
                  delta_t: float,
                  cost_xx: np.ndarray,

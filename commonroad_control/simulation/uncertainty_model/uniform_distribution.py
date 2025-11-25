@@ -2,21 +2,33 @@ from typing import Union
 import numpy as np
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
 
 
 class UniformDistribution(UncertaintyModelInterface):
     def __init__(
             self,
             dim: int,
-            lower_bound: Union[np.ndarray, list[float]],
-            upper_bound: Union[np.ndarray, list[float]],
-            nominal_value: Union[np.ndarray, list[float]] = None
+            lower_bound: Union[np.ndarray, list[float], UncertaintyInterface],
+            upper_bound: Union[np.ndarray, list[float], UncertaintyInterface],
+            *args,
+            nominal_value: Union[np.ndarray, list[float], UncertaintyInterface] = None,
+            **kwargs
     ) -> None:
 
         super().__init__(dim=dim)
 
-        self._lower_bound: np.ndarray = np.array(lower_bound)
-        self._upper_bound: np.ndarray = np.array(upper_bound)
+        if isinstance(lower_bound, UncertaintyInterface):
+            lower_bound_np = lower_bound.convert_to_array()
+        else:
+            lower_bound_np : np.ndarray = np.array(lower_bound)
+        self._lower_bound: np.ndarray = lower_bound_np
+
+        if isinstance(upper_bound, UncertaintyInterface):
+            upper_bound_np = upper_bound.convert_to_array()
+        else:
+            upper_bound_np : np.ndarray = np.array(upper_bound)
+        self._upper_bound: np.ndarray = upper_bound_np
 
         # set nominal value
         if nominal_value is not None:

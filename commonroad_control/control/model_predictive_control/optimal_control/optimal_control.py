@@ -4,7 +4,7 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
@@ -17,7 +17,7 @@ class OCPSolverParameters(ABC):
 class OptimalControlSolver(ABC):
     def __init__(self,
                  vehicle_model: VehicleModelInterface,
-                 sit_factory: StateInputTrajectoryFactoryInterface,
+                 sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
                  horizon: int,
                  delta_t: float,
                  ocp_parameters: OCPSolverParameters):

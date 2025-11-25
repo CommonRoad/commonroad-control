@@ -1,8 +1,8 @@
 import unittest
 
-from commonroad_control.vehicle_dynamics.double_integrator.di_sit_factory import DISITFactory
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.simulation.simulation.simulation import Simulation
 
@@ -31,7 +31,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         kb = KinematicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
-        kb_factory: KBSITFactory = KBSITFactory()
+        kb_factory: KBSITFactoryDisturbance = KBSITFactoryDisturbance()
 
         # init simulation
         sim = Simulation(
@@ -53,7 +53,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         db = DynamicBicycle(params=BMW3seriesParams(), delta_t=0.1)
 
-        db_factory: DBSITFactory = DBSITFactory()
+        db_factory: DBSIDTFactory = DBSIDTFactory()
 
         # init simulation
         sim = Simulation(vehicle_model=db, state_input_factory=db_factory)
@@ -76,7 +76,7 @@ class VehicleModelSimulationTest(unittest.TestCase):
         # init vehicle model
         di = DoubleIntegrator(params=BMW3seriesParams(), delta_t=0.1)
 
-        di_factory = DISITFactory()
+        di_factory = DISIDTFactoryDisturbance()
 
         # init simulation
         sim = Simulation(

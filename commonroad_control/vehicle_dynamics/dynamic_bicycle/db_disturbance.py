@@ -24,13 +24,13 @@ class DBDisturbance(DisturbanceInterface):
     """
     Disturbance of the dynamic bicycle model.
     """
-    position_x: float = None
-    position_y: float = None
-    velocity_long: float = None
-    velocity_lat: float = None
-    heading: float = None
-    yaw_rate: float = None
-    steering_angle: float = None
+    position_x: float = 0.0
+    position_y: float = 0.0
+    velocity_long: float = 0.0
+    velocity_lat: float = 0.0
+    heading: float = 0.0
+    yaw_rate: float = 0.0
+    steering_angle: float = 0.0
 
     @property
     def dim(self):

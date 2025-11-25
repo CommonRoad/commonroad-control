@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Union
 import numpy as np
 
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 
 
 class Controller2VehicleInterface(ABC):
-    def __init__(self, sit_factory: StateInputTrajectoryFactoryInterface):
+    def __init__(self, sit_factory: StateInputDisturbanceTrajectoryFactoryInterface):
         self._sit_factory = sit_factory
 
     @abstractmethod

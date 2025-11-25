@@ -1,20 +1,20 @@
 from typing import Union, Tuple, List
 
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 
 
 class ReferenceTrajectoryFactory:
     def __init__(self,
                  delta_t_controller: float,
-                 sit_factory: StateInputTrajectoryFactoryInterface,
+                 sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
                  horizon: int = 0,
                  t_look_ahead: float = 0.0):
 
         self._horizon: int = horizon
         self._dt_controller: float = delta_t_controller
         self._t_look_ahead: float = t_look_ahead
-        self._sit_factory: StateInputTrajectoryFactoryInterface = sit_factory
+        self._sit_factory: StateInputDisturbanceTrajectoryFactoryInterface = sit_factory
 
         self._x_ref: Union[TrajectoryInterface, None] = None
         self._u_ref: Union[TrajectoryInterface, None] = None

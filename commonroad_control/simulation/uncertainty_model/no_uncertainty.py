@@ -4,8 +4,12 @@ from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface
 
 
 class NoUncertainty(UncertaintyModelInterface):
-    def __init__(self,
-                 dim: int):
+    def __init__(
+            self,
+            dim: int,
+            *args,
+            **kwargs
+    ):
 
         super().__init__(dim=dim)
         self._nominal_value = np.zeros(shape=(self._dim,))

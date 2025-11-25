@@ -5,18 +5,19 @@ import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sit_factory import DBSITFactory
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices
 
 from commonroad_control.simulation.simulation.simulation import Simulation
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
-from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
 from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
+from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
+from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
 
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
@@ -78,7 +79,7 @@ def main(
     vehicle_model_ctrl = KinematicBicycle(
         params=vehicle_params,
         delta_t=dt_controller)
-    sit_factory_ctrl = KBSITFactory()
+    sit_factory_ctrl = KBSITFactoryDisturbance()
     # ... initialize optimal control solver
     cost_xx = np.eye(KBStateIndices.dim)
     cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
@@ -106,20 +107,25 @@ def main(
 
     # simulation
     # ... disturbance model
-    sit_factory_sim = DBSITFactory()
+    sit_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.state_dimension,
         mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         std_deviation=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
     )
-    # ... noise model
-    sim_noise_model: MeasurementNoiseModel = MeasurementNoiseModel(
-        uncertainty_model=GaussianDistribution(
-            dim=vehicle_model_sim.state_dimension,
-            mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
-        )
+    # ... noise
+    sim_noise_model: UncertaintyModelInterface = GaussianDistribution(
+        dim=vehicle_model_sim.disturbance_dimension,
+        mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
+        std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+    # ... sensor model
+    sensor_model: SensorModelInterface = FullStateFeedback(
+        noise_model=sim_noise_model,
+        state_output_factory=sit_factory_sim,
+        state_dimension=sit_factory_sim.state_dimension,
+        input_dimension=sit_factory_sim.input_dimension
     )
     # ... simulation
     simulation: Simulation = Simulation(
@@ -127,7 +133,7 @@ def main(
         state_input_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
-        noise_model=sim_noise_model,
+        sensor_model=sensor_model,
         random_noise=True
     )
 
@@ -141,7 +147,7 @@ def main(
         horizon=mpc.horizon)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactory(),
+        sit_factory=KBSITFactoryDisturbance(),
         horizon=mpc.horizon,
     )
     # ... dummy reference trajectory: all inputs set to zero
@@ -202,7 +208,7 @@ def main(
             u=u_now,
             t_final=dt_controller
         )
-        traj_dict_measured[kk_sim+1] = x_measured.final_point
+        traj_dict_measured[kk_sim+1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(

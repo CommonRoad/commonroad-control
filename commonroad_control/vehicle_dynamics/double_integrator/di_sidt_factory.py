@@ -2,18 +2,22 @@ from typing import Union, List, Any, Dict
 import numpy as np
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
-from commonroad_control.vehicle_dynamics.sit_factory_interface import StateInputTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 from commonroad_control.vehicle_dynamics.double_integrator.di_trajectory import DITrajectory
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
+from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbance, DIDisturbanceIndices
 
 
-class DISITFactory(StateInputTrajectoryFactoryInterface):
+class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
     """
     Double integrator model factory for state, input, and trajectory.
     """
+    state_dimension = DIStateIndices.dim
+    input_dimension = DIInputIndices.dim
+    disturbance_dimension = DIDisturbanceIndices.dim
 
     def state_from_args(
             self,
@@ -51,6 +55,28 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
         return DIInput(
             acceleration_long=acceleration_long,
             acceleration_lat=acceleration_lat
+        )
+
+    @staticmethod
+    def disturbance_from_args(
+            position_long: float = 0.0,
+            position_lat: float = 0.0,
+            velocity_long: float = 0.0,
+            velocity_lat: float = 0.0,
+    ) -> Union['DIDisturbance']:
+        """
+        Create DB disturbance from args.
+        :param position_long:
+        :param position_lat:
+        :param velocity_long:
+        :param velocity_lat:
+        :return: DIDisturbance
+        """
+        return DIDisturbance(
+            position_long=position_long,
+            position_lat=position_lat,
+            velocity_long=velocity_long,
+            velocity_lat=velocity_lat
         )
 
     def state_from_numpy_array(
@@ -92,6 +118,30 @@ class DISITFactory(StateInputTrajectoryFactoryInterface):
             acceleration_long=u_np[DIInputIndices.acceleration_long],
             acceleration_lat=u_np[DIInputIndices.acceleration_lat]
         )
+
+    @classmethod
+    def disturbance_from_numpy_array(
+            cls,
+            w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union['DIDisturbance']:
+        """
+        Sets values of double integrator disturbance from a given array.
+        :param w_np: disturbance - array of dimension (DIDisturbanceIndices.dim,)
+        :return: di disturbance
+        """
+
+        if w_np.shape[0] != cls.disturbance_dimension:
+            raise ValueError(f'Dimension {w_np.shape[0]} does not match')
+        if w_np.ndim > 1:
+            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+
+        return DIDisturbance(
+            position_long=w_np[DIDisturbanceIndices.position_long],
+            position_lat=w_np[DIDisturbanceIndices.position_lat],
+            velocity_long=w_np[DIDisturbanceIndices.velocity_long],
+            velocity_lat=w_np[DIDisturbanceIndices.velocity_lat],
+        )
+
 
     def trajectory_from_state_or_input(
             self,
