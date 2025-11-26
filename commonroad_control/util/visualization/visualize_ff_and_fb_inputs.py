@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List, Optional, Union
 
-
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
     KBTrajectory,
 )
