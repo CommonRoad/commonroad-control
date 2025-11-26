@@ -1,7 +1,11 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.disturbance_interface import DisturbanceInterface, DisturbanceInterfaceIndex
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.disturbance_interface import (
+    DisturbanceInterface,
+    DisturbanceInterfaceIndex,
+)
 
 
 @dataclass(frozen=True)
@@ -9,6 +13,7 @@ class DBDisturbanceIndices(DisturbanceInterfaceIndex):
     """
     Indices of the disturbances.
     """
+
     dim: int = 7
     position_x: int = 0
     position_y: int = 1
@@ -24,6 +29,7 @@ class DBDisturbance(DisturbanceInterface):
     """
     Disturbance of the dynamic bicycle model.
     """
+
     position_x: float = 0.0
     position_y: float = 0.0
     velocity_long: float = 0.0

@@ -1,7 +1,11 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface, InputInterfaceIndex
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.input_interface import (
+    InputInterface,
+    InputInterfaceIndex,
+)
 
 
 # TODO should be an enum so no initialization?
@@ -10,6 +14,7 @@ class KBInputIndices(InputInterfaceIndex):
     """
     Indices of the control inputs.
     """
+
     dim: int = 2
     acceleration: int = 0
     steering_angle_velocity: int = 1
@@ -21,6 +26,7 @@ class KBInput(InputInterface):
     """
     Control input of the kinematic bicycle model.
     """
+
     acceleration: float = None
     steering_angle_velocity: float = None
 

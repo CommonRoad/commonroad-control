@@ -1,23 +1,27 @@
-from dataclasses import dataclass
-from typing import Union, List
-import numpy as np
 import logging
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, List, Union
 
+import numpy as np
 from commonroad.geometry.shape import Rectangle
-from commonroad.prediction.prediction import TrajectoryPrediction, Trajectory
+from commonroad.prediction.prediction import Trajectory, TrajectoryPrediction
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
-from commonroad.scenario.state import InitialState, CustomState
-
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
+from commonroad.scenario.state import CustomState, InitialState
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
+from commonroad_control.vehicle_dynamics.trajectory_interface import (
+    TrajectoryInterface,
+    TrajectoryMode,
+)
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
+    from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import (
+        DBSIDTFactory,
+    )
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DBTrajectory(TrajectoryInterface):
@@ -26,10 +30,8 @@ class DBTrajectory(TrajectoryInterface):
     """
 
     def get_point_at_time(
-            self,
-            time: float,
-            factory: 'DBSIDTFactory'
-    ) -> Union['DBState', 'DBInput']:
+        self, time: float, factory: "DBSIDTFactory"
+    ) -> Union["DBState", "DBInput"]:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
@@ -38,21 +40,23 @@ class DBTrajectory(TrajectoryInterface):
         :return: interpolated point
         """
 
-        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(
-            time=time
+        lower_point, upper_point, lower_idx, upper_idx = (
+            self.get_point_before_and_after_time(time=time)
         )
         if lower_idx == upper_idx:
             new_point = lower_point
         else:
-            alpha = (upper_idx*self.delta_t - time) / self.delta_t
+            alpha = (upper_idx * self.delta_t - time) / self.delta_t
             new_point_array: np.ndarray = (
-                    alpha*upper_point.convert_to_array() + (1-alpha)*lower_point.convert_to_array()
+                alpha * upper_point.convert_to_array()
+                + (1 - alpha) * lower_point.convert_to_array()
             )
-            new_point: Union[DBState,DBInput] = (
-                factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
+            new_point: Union[DBState, DBInput] = (
+                (factory.state_from_numpy_array(new_point_array))
+                if self.mode is TrajectoryMode.State
                 else factory.input_from_numpy_array(new_point_array)
+            )
         return new_point
-
 
     def to_cr_dynamic_obstacle(
         self,
@@ -74,9 +78,12 @@ class DBTrajectory(TrajectoryInterface):
 
         else:
             # convert to CR obstacle
-            initial_state: InitialState = self.initial_point.to_cr_initial_state(time_step=min(self.points.keys()))
+            initial_state: InitialState = self.initial_point.to_cr_initial_state(
+                time_step=min(self.points.keys())
+            )
             state_list: List[CustomState] = [
-                state.to_cr_custom_state(time_step=step) for step, state in self.points.items()
+                state.to_cr_custom_state(time_step=step)
+                for step, state in self.points.items()
             ]
 
             cr_trajectory = Trajectory(state_list[0].time_step, state_list)

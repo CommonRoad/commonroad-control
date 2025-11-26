@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
 import numpy as np
 
 
@@ -8,7 +9,9 @@ class UncertaintyInterfaceIndex(ABC):
     """
     Indices of the uncertainties.
     """
+
     dim: int
+
 
 @dataclass
 class UncertaintyInterface(ABC):

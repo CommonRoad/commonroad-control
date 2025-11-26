@@ -1,22 +1,31 @@
+from typing import Tuple, Union
+
 import casadi as cas
 import numpy as np
-from typing import Tuple, Union
 import scipy.signal as scsi
 
-from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
+from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import (
+    DIDisturbanceIndices,
+)
+from commonroad_control.vehicle_dynamics.double_integrator.di_input import (
+    DIInput,
+    DIInputIndices,
+)
+from commonroad_control.vehicle_dynamics.double_integrator.di_state import (
+    DIState,
+    DIStateIndices,
+)
+from commonroad_control.vehicle_dynamics.vehicle_model_interface import (
+    VehicleModelInterface,
+)
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
-from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState, DIStateIndices
-from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput, DIInputIndices
-from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbanceIndices
 
 class DoubleIntegrator(VehicleModelInterface):
 
     @classmethod
     def factory_method(
-            cls,
-            params: VehicleParameters,
-            delta_t: float
+        cls, params: VehicleParameters, delta_t: float
     ) -> "DoubleIntegrator":
         """
         Factory method to generate class
@@ -40,7 +49,7 @@ class DoubleIntegrator(VehicleModelInterface):
             nx=DIStateIndices.dim,
             nu=DIInputIndices.dim,
             nw=DIDisturbanceIndices.dim,
-            delta_t=delta_t
+            delta_t=delta_t,
         )
 
     @staticmethod
@@ -65,11 +74,12 @@ class DoubleIntegrator(VehicleModelInterface):
     def simulate_forward(self, x: DIState, u: DIInput) -> DIState:
         pass
 
-    def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
-            -> cas.SX.sym:
+    def _dynamics_cas(
+        self,
+        x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+    ) -> cas.SX.sym:
         """
         Dynamics function of the double integrator bicycle model.
         We model the movement of the center of gravity of the vehicle.
@@ -79,11 +89,9 @@ class DoubleIntegrator(VehicleModelInterface):
         :return: dynamics at (x,u,w) - casadi symbolic of dimension (self._nx,1)
         """
 
-        return self._sys_mat@x + self._input_mat@u + w
+        return self._sys_mat @ x + self._input_mat @ u + w
 
-    def _set_input_bounds(self,
-                          params: VehicleParameters) \
-            -> Tuple[DIInput, DIInput]:
+    def _set_input_bounds(self, params: VehicleParameters) -> Tuple[DIInput, DIInput]:
         """
         Extract input bounds from vehicle parameters and store as instance of InputInterface class.
         :param params: vehicle parameters
@@ -92,12 +100,12 @@ class DoubleIntegrator(VehicleModelInterface):
 
         # lower bound
         u_lb = DIInput(
-            acceleration_long=-params.a_long_max,
-            acceleration_lat=-params.a_lat_max)
+            acceleration_long=-params.a_long_max, acceleration_lat=-params.a_lat_max
+        )
         # upper bound
         u_ub = DIInput(
-            acceleration_long=params.a_long_max,
-            acceleration_lat=params.a_lat_max)
+            acceleration_long=params.a_long_max, acceleration_lat=params.a_lat_max
+        )
 
         return u_lb, u_ub
 
@@ -143,16 +151,22 @@ class DoubleIntegrator(VehicleModelInterface):
         """
 
         # compute matrices of discrete-time LTI system
-        lit_ct = scsi.lti(self._sys_mat, self._input_mat,
-                            np.eye(self._nx), np.zeros((self._nx, self._nu)))
-        lit_dt = lit_ct.to_discrete(dt=self._delta_t, method='zoh')
+        lit_ct = scsi.lti(
+            self._sys_mat,
+            self._input_mat,
+            np.eye(self._nx),
+            np.zeros((self._nx, self._nu)),
+        )
+        lit_dt = lit_ct.to_discrete(dt=self._delta_t, method="zoh")
         sys_mat_dt = lit_dt.A
         input_mat_dt = lit_dt.B
 
         # discrete-time dynamics
         xk = cas.SX.sym("xk", self._nx, 1)
         uk = cas.SX.sym("uk", self._nu, 1)
-        x_next = cas.Function("dynamics_dt", [xk, uk], [sys_mat_dt@xk + input_mat_dt@uk])
+        x_next = cas.Function(
+            "dynamics_dt", [xk, uk], [sys_mat_dt @ xk + input_mat_dt @ uk]
+        )
 
         # Jacobians of the discrete-time dynamics
         jac_x = cas.Function("jac_dynamics_dt_x", [xk, uk], [sys_mat_dt])
@@ -160,10 +174,11 @@ class DoubleIntegrator(VehicleModelInterface):
 
         return x_next, jac_x, jac_u
 
-    def compute_normalized_acceleration(self,
-                                        x: Union[DIState, cas.SX.sym, np.array],
-                                        u: Union[DIInput, cas.SX.sym, np.array]) \
-        -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+    def compute_normalized_acceleration(
+        self,
+        x: Union[DIState, cas.SX.sym, np.array],
+        u: Union[DIInput, cas.SX.sym, np.array],
+    ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
 
         # extract control input
         if isinstance(u, DIInput):

@@ -1,36 +1,34 @@
-from math import atan2
 import logging
-from typing import List, Tuple, Union
-import numpy as np
-from scipy.spatial.kdtree import KDTree
+from math import atan2
+from typing import List, Tuple
 
+import numpy as np
 from commonroad.planning.goal import GoalRegion
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.lanelet import LaneletNetwork
-from commonroad.scenario.state import InitialState, State
-
-from commonroad_route_planner.fast_api.fast_api import generate_reference_path_from_lanelet_network_and_planning_problem
-from commonroad_route_planner.reference_path import ReferencePath
-
-from commonroad_clcs.config import CLCSParams
+from commonroad.scenario.state import InitialState
 from commonroad_clcs.clcs import CurvilinearCoordinateSystem
+from commonroad_clcs.config import CLCSParams
+from commonroad_route_planner.fast_api.fast_api import (
+    generate_reference_path_from_lanelet_network_and_planning_problem,
+)
+from commonroad_route_planner.reference_path import ReferencePath
+from scipy.spatial.kdtree import KDTree
 
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
-
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-
-
 logger = logging.getLogger(__name__)
 
+
 def extend_ref_path_with_route_planner(
-        positional_trajectory: np.ndarray,
-        lanelet_network: LaneletNetwork,
-        final_state_time_step: int = 0,
-        planning_problem_id: int = 30000
+    positional_trajectory: np.ndarray,
+    lanelet_network: LaneletNetwork,
+    final_state_time_step: int = 0,
+    planning_problem_id: int = 30000,
 ) -> np.ndarray:
     """
     Extends the positional information of the trajectory using the CommonRoad route planner.
@@ -47,23 +45,21 @@ def extend_ref_path_with_route_planner(
         yaw_rate=0.0,
         acceleration=0.0,
         slip_angle=0.0,
-        time_step=final_state_time_step
+        time_step=final_state_time_step,
     )
 
-    goal_region: GoalRegion = GoalRegion(
-        state_list=list()
-    )
+    goal_region: GoalRegion = GoalRegion(state_list=list())
 
     planning_problem: PlanningProblem = PlanningProblem(
         planning_problem_id=planning_problem_id,
         initial_state=initial_state,
-        goal_region=goal_region
-
+        goal_region=goal_region,
     )
 
-    reference_path: ReferencePath = generate_reference_path_from_lanelet_network_and_planning_problem(
-        planning_problem=planning_problem,
-        lanelet_network=lanelet_network
+    reference_path: ReferencePath = (
+        generate_reference_path_from_lanelet_network_and_planning_problem(
+            planning_problem=planning_problem, lanelet_network=lanelet_network
+        )
     )
 
     kd_tree: KDTree = KDTree(reference_path.reference_path)
@@ -72,7 +68,9 @@ def extend_ref_path_with_route_planner(
     clcs_line: np.ndarray = np.concatenate(
         (
             positional_trajectory,
-            reference_path.reference_path[min(reference_path.reference_path.shape[0] - 1, idx + 1):]
+            reference_path.reference_path[
+                min(reference_path.reference_path.shape[0] - 1, idx + 1) :
+            ],
         )
     )
 
@@ -80,62 +78,68 @@ def extend_ref_path_with_route_planner(
 
 
 def extend_reference_trajectory_lane_following(
-        positional_trajectory: np.ndarray,
-        lanelet_network: LaneletNetwork,
-        final_state: StateInterface,
-        horizon: int,
-        delta_t: float,
-        l_wb: float,
-        planning_problem_id: int = 30000
-) -> Tuple[CurvilinearCoordinateSystem, List[np.ndarray], List[float], List[float], List [float], List[float], List[float]]:
+    positional_trajectory: np.ndarray,
+    lanelet_network: LaneletNetwork,
+    final_state: StateInterface,
+    horizon: int,
+    delta_t: float,
+    l_wb: float,
+    planning_problem_id: int = 30000,
+) -> Tuple[
+    CurvilinearCoordinateSystem,
+    List[np.ndarray],
+    List[float],
+    List[float],
+    List[float],
+    List[float],
+    List[float],
+]:
 
     # extend path with route planner
     clcs_line = extend_ref_path_with_route_planner(
-        positional_trajectory,
-        lanelet_network
+        positional_trajectory, lanelet_network
     )
 
     # convert to curvilinear coordinate system
-    clcs_traj_ext : CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
-        reference_path=clcs_line,
-        params=CLCSParams()
+    clcs_traj_ext: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
+        reference_path=clcs_line, params=CLCSParams()
     )
 
     # sample states along path using velocity of final state
     v_ref = final_state.velocity
-    position_s_0,_ = clcs_traj_ext.convert_to_curvilinear_coords(
-        x=final_state.position_x,
-        y=final_state.position_y
+    position_s_0, _ = clcs_traj_ext.convert_to_curvilinear_coords(
+        x=final_state.position_x, y=final_state.position_y
     )
     position_xy = []
     velocity = [v_ref for _ in range(horizon)]
     heading = []
-    yaw_rate =  []
+    yaw_rate = []
     steering_angle = []
     acceleration = [0.0 for _ in range(horizon)]
     steering_angle_velocity = []
-    if hasattr(final_state,"heading"):
+    if hasattr(final_state, "heading"):
         heading_0 = final_state.heading
-    elif hasattr(final_state,"velocity_y") and hasattr(final_state,"velocity_x"):
+    elif hasattr(final_state, "velocity_y") and hasattr(final_state, "velocity_x"):
         heading_0 = atan2(final_state.velocity_y, final_state.velocity_x)
     else:
-        logger.error("Could not compute heading at the final state of the reference trajectory!")
-        raise Exception("Could not compute heading at the final state of the reference trajectory!")
+        logger.error(
+            "Could not compute heading at the final state of the reference trajectory!"
+        )
+        raise Exception(
+            "Could not compute heading at the final state of the reference trajectory!"
+        )
 
-    if hasattr(final_state,"steering_angle"):
+    if hasattr(final_state, "steering_angle"):
         steering_angle_0 = final_state.steering_angle
     else:
         steering_angle_0: float = 0.0
 
     for kk in range(horizon):
-        position_s = position_s_0 + (kk+1)*delta_t*v_ref
+        position_s = position_s_0 + (kk + 1) * delta_t * v_ref
 
-         # convert position to Cartesian coordinates
+        # convert position to Cartesian coordinates
         position_xy.append(
-            clcs_traj_ext.convert_to_cartesian_coords(
-                s=position_s,
-                l=0.0
-            )
+            clcs_traj_ext.convert_to_cartesian_coords(s=position_s, l=0.0)
         )
 
         # orientation of reference trajectory at
@@ -143,15 +147,11 @@ def extend_reference_trajectory_lane_following(
         heading.append(atan2(tangent[1], tangent[0]))
 
         # compute yaw rate
-        yaw_rate.append(
-            float((heading[kk] - heading_0) / delta_t)
-        )
+        yaw_rate.append(float((heading[kk] - heading_0) / delta_t))
         heading_0: float = heading[kk]
 
         # compute steering angle
-        steering_angle.append(
-            float(atan2(yaw_rate[kk] * l_wb, v_ref))
-        )
+        steering_angle.append(float(atan2(yaw_rate[kk] * l_wb, v_ref)))
 
         # compute steering angle velocity
         steering_angle_velocity.append(
@@ -159,30 +159,49 @@ def extend_reference_trajectory_lane_following(
         )
         steering_angle_0 = steering_angle[kk]
 
-    return clcs_traj_ext, position_xy, velocity, acceleration, heading, yaw_rate, steering_angle, steering_angle_velocity
+    return (
+        clcs_traj_ext,
+        position_xy,
+        velocity,
+        acceleration,
+        heading,
+        yaw_rate,
+        steering_angle,
+        steering_angle_velocity,
+    )
 
 
 def extend_kb_reference_trajectory_lane_following(
-        x_ref: TrajectoryInterface,
-        u_ref: TrajectoryInterface,
-        lanelet_network: LaneletNetwork,
-        vehicle_params: VehicleParameters,
-        delta_t: float,
-        horizon: int)\
-    -> Tuple[CurvilinearCoordinateSystem, TrajectoryInterface, TrajectoryInterface]:
+    x_ref: TrajectoryInterface,
+    u_ref: TrajectoryInterface,
+    lanelet_network: LaneletNetwork,
+    vehicle_params: VehicleParameters,
+    delta_t: float,
+    horizon: int,
+) -> Tuple[CurvilinearCoordinateSystem, TrajectoryInterface, TrajectoryInterface]:
 
     # positional trajectory
-    positional_trajectory = np.asarray([[state.position_x, state.position_y] for state in x_ref.points.values()])
+    positional_trajectory = np.asarray(
+        [[state.position_x, state.position_y] for state in x_ref.points.values()]
+    )
 
     # extend trajectory
-    clcs_traj_ext, position_xy, velocity, acceleration, heading, yaw_rate, steering_angle, steering_angle_velocity \
-        = extend_reference_trajectory_lane_following(
+    (
+        clcs_traj_ext,
+        position_xy,
+        velocity,
+        acceleration,
+        heading,
+        yaw_rate,
+        steering_angle,
+        steering_angle_velocity,
+    ) = extend_reference_trajectory_lane_following(
         positional_trajectory=positional_trajectory,
         lanelet_network=lanelet_network,
         final_state=x_ref.final_point,
         horizon=horizon,
         delta_t=delta_t,
-        l_wb=vehicle_params.l_wb
+        l_wb=vehicle_params.l_wb,
     )
 
     # append states
@@ -193,7 +212,7 @@ def extend_kb_reference_trajectory_lane_following(
                 position_y=position_xy[kk][1],
                 velocity=velocity[kk],
                 heading=heading[kk],
-                steering_angle=steering_angle[kk]
+                steering_angle=steering_angle[kk],
             )
         )
 
@@ -202,7 +221,7 @@ def extend_kb_reference_trajectory_lane_following(
         u_ref.append_point(
             KBInput(
                 acceleration=acceleration[kk],
-                steering_angle_velocity=steering_angle_velocity[kk]
+                steering_angle_velocity=steering_angle_velocity[kk],
             )
         )
 

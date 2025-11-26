@@ -1,9 +1,7 @@
 import logging
 
 
-def configure_toolbox_logging(
-        level=logging.INFO
-) -> logging.Logger:
+def configure_toolbox_logging(level=logging.INFO) -> logging.Logger:
     """
     Configures toolbox level logging
     :param level: logging level
@@ -16,4 +14,3 @@ def configure_toolbox_logging(
     logger.addHandler(handler)
     logger.setLevel(level)
     return logger
-

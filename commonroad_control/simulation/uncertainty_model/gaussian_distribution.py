@@ -1,12 +1,17 @@
-from typing import List, Union
-import numpy as np
 import logging
+from typing import List, Union
 
-from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
-from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface
+import numpy as np
 
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import (
+    UncertaintyInterface,
+)
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import (
+    UncertaintyModelInterface,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class GaussianDistribution(UncertaintyModelInterface):
     """
@@ -14,13 +19,15 @@ class GaussianDistribution(UncertaintyModelInterface):
     """
 
     def __init__(
-            self,
-            dim: int,
-            mean: Union[np.ndarray, List[float], UncertaintyInterface],
-            std_deviation: Union[np.ndarray, List[float], UncertaintyInterface],
-            *args,
-            nominal_value: Union[np.ndarray, List[float], UncertaintyInterface, None] = None,
-            **kwargs
+        self,
+        dim: int,
+        mean: Union[np.ndarray, List[float], UncertaintyInterface],
+        std_deviation: Union[np.ndarray, List[float], UncertaintyInterface],
+        *args,
+        nominal_value: Union[
+            np.ndarray, List[float], UncertaintyInterface, None
+        ] = None,
+        **kwargs,
     ) -> None:
         """
         Generates Gaussian noise or disturbances.
@@ -46,7 +53,7 @@ class GaussianDistribution(UncertaintyModelInterface):
         if isinstance(mean, UncertaintyInterface):
             mean_np = mean.convert_to_array()
         else:
-            mean_np : np.ndarray = np.array(mean)
+            mean_np: np.ndarray = np.array(mean)
         self._mean: np.ndarray = mean_np
 
         if isinstance(std_deviation, UncertaintyInterface):
@@ -81,10 +88,8 @@ class GaussianDistribution(UncertaintyModelInterface):
                 f"expected dimension:{self._dim}, mean:{len(self._mean)}, std:{len(self._std_deviation)}"
             )
         if any(self._std_deviation < 0):
-            logger.error(f"Standard deviation must be non-negative.")
-            raise ValueError(
-                f"Standard deviation must be non-negative."
-            )
+            logger.error("Standard deviation must be non-negative.")
+            raise ValueError("Standard deviation must be non-negative.")
 
     @property
     def mean(self) -> np.ndarray:
@@ -95,7 +100,7 @@ class GaussianDistribution(UncertaintyModelInterface):
 
     @property
     def std_deviations(self) -> np.ndarray:
-        """"
+        """ "
         :return: standard deviations per entry
         """
         return self._std_deviation

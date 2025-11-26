@@ -1,37 +1,51 @@
-from typing import Union, Dict, List
 import logging
+from typing import Dict, List, Union
+
 import numpy as np
 
-from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import (
+    DBDisturbance,
+    DBDisturbanceIndices,
+)
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import (
+    DBInput,
+    DBInputIndices,
+)
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import (
+    DBState,
+    DBStateIndices,
+)
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import (
+    DBTrajectory,
+)
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
+    StateInputDisturbanceTrajectoryFactoryInterface,
+)
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState, DBStateIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import DBDisturbance, DBDisturbanceIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
-
-
 logger = logging.getLogger(__name__)
+
 
 class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
     """
     Dynamic bicycle model factory for state, input, and trajectory.
     """
+
     state_dimension: int = DBStateIndices.dim
     input_dimension: int = DBInputIndices.dim
     disturbance_dimension: int = DBDisturbanceIndices.dim
 
     def state_from_args(
-            self,
-            position_x: float,
-            position_y: float,
-            velocity_long: float,
-            velocity_lat: float,
-            heading: float,
-            yaw_rate: float,
-            steering_angle: float
-    ) -> Union['DBState']:
+        self,
+        position_x: float,
+        position_y: float,
+        velocity_long: float,
+        velocity_lat: float,
+        heading: float,
+        yaw_rate: float,
+        steering_angle: float,
+    ) -> Union["DBState"]:
         """
         Create DB state from args.
         :param position_x:
@@ -50,14 +64,12 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=velocity_lat,
             heading=heading,
             yaw_rate=yaw_rate,
-            steering_angle=steering_angle
+            steering_angle=steering_angle,
         )
 
     def input_from_args(
-            self,
-            acceleration: float,
-            steering_angle_velocity: float
-    ) -> Union['DBInput']:
+        self, acceleration: float, steering_angle_velocity: float
+    ) -> Union["DBInput"]:
         """
         Create DB input from args.
         :param acceleration: longitudinal acceleration
@@ -65,20 +77,19 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         :return: DIInput
         """
         return DBInput(
-            acceleration=acceleration,
-            steering_angle_velocity=steering_angle_velocity
+            acceleration=acceleration, steering_angle_velocity=steering_angle_velocity
         )
 
     @staticmethod
     def disturbance_from_args(
-            position_x: float = 0.0,
-            position_y: float = 0.0,
-            velocity_long: float = 0.0,
-            velocity_lat: float = 0.0,
-            heading: float = 0.0,
-            yaw_rate: float = 0.0,
-            steering_angle: float = 0.0
-    ) -> Union['DBDisturbance']:
+        position_x: float = 0.0,
+        position_y: float = 0.0,
+        velocity_long: float = 0.0,
+        velocity_lat: float = 0.0,
+        heading: float = 0.0,
+        yaw_rate: float = 0.0,
+        steering_angle: float = 0.0,
+    ) -> Union["DBDisturbance"]:
         """
         Create DB disturbance from args.
         :param position_x:
@@ -97,21 +108,21 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=velocity_lat,
             heading=heading,
             yaw_rate=yaw_rate,
-            steering_angle=steering_angle
+            steering_angle=steering_angle,
         )
 
     def state_from_numpy_array(
-            self,
-            x_np: np.ndarray[tuple[float], np.dtype[np.float64]],
-    ) -> Union['DBState']:
+        self,
+        x_np: np.ndarray[tuple[float], np.dtype[np.float64]],
+    ) -> Union["DBState"]:
         """
         Set values of class from a given array.
         :param x_np: state - array of dimension (dim,)
         :return: db state
         """
         if x_np.shape[0] != DBStateIndices.dim:
-            logger.error(f'Dimension {x_np.shape[0]} does not match')
-            raise ValueError(f'Dimension {x_np.shape[0]} does not match')
+            logger.error(f"Dimension {x_np.shape[0]} does not match")
+            raise ValueError(f"Dimension {x_np.shape[0]} does not match")
         if x_np.ndim > 1:
             logger.error(f"Size of np_array should be (dim,) but is {x_np.shape}")
             raise ValueError(f"Size of np_array should be (dim,) but is {x_np.shape}")
@@ -123,13 +134,12 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=x_np[DBStateIndices.velocity_lat],
             heading=x_np[DBStateIndices.heading],
             yaw_rate=x_np[DBStateIndices.yaw_rate],
-            steering_angle=x_np[DBStateIndices.steering_angle]
+            steering_angle=x_np[DBStateIndices.steering_angle],
         )
 
     def input_from_numpy_array(
-            self,
-            u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union['DBInput']:
+        self, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union["DBInput"]:
         """
         Set values from a given array.
         :param u_np: input vector - array of dimension (self.dim,)
@@ -144,14 +154,13 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
 
         return DBInput(
             acceleration=u_np[DBInputIndices.acceleration],
-            steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity]
+            steering_angle_velocity=u_np[DBInputIndices.steering_angle_velocity],
         )
 
     @classmethod
     def disturbance_from_numpy_array(
-            cls,
-            w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union['DBDisturbance']:
+        cls, w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union["DBDisturbance"]:
         """
         Sets values of dynamic bicycle disturbance from a given array.
         :param w_np: disturbance - array of dimension (DBDisturbanceIndices.dim,)
@@ -159,11 +168,15 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(f'Dimension {w_np.shape[0]} does not match')
-            raise ValueError(f'Dimension {w_np.shape[0]} does not match')
+            logger.error(f"Dimension {w_np.shape[0]} does not match")
+            raise ValueError(f"Dimension {w_np.shape[0]} does not match")
         if w_np.ndim > 1:
-            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
-            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+            logger.error(
+                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
+            )
+            raise ValueError(
+                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
+            )
 
         return DBDisturbance(
             position_x=w_np[DBDisturbanceIndices.position_x],
@@ -172,16 +185,16 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=w_np[DBDisturbanceIndices.velocity_lat],
             heading=w_np[DBDisturbanceIndices.heading],
             yaw_rate=w_np[DBDisturbanceIndices.yaw_rate],
-            steering_angle=w_np[DBDisturbanceIndices.steering_angle]
+            steering_angle=w_np[DBDisturbanceIndices.steering_angle],
         )
 
     def trajectory_from_state_or_input(
-            self,
-            trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
-            mode: TrajectoryMode,
-            t_0: float,
-            delta_t: float
-   ) -> DBTrajectory:
+        self,
+        trajectory_dict: Union[Dict[int, DBState], Dict[int, DBInput]],
+        mode: TrajectoryMode,
+        t_0: float,
+        delta_t: float,
+    ) -> DBTrajectory:
         """
         Build trajectory from db state or input
         :param trajectory_dict: dict of time steps to kst points
@@ -190,20 +203,15 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         :param delta_t:
         :return: KST-Trajectory
         """
-        return DBTrajectory(
-                points=trajectory_dict,
-                mode=mode,
-                t_0=t_0,
-                delta_t=delta_t
-            )
+        return DBTrajectory(points=trajectory_dict, mode=mode, t_0=t_0, delta_t=delta_t)
 
     def trajectory_from_numpy_array(
-            self,
-            traj_np: np.ndarray[tuple[float,float], np.dtype[np.float64]],
-            mode: TrajectoryMode,
-            time_steps: List[int],
-            t_0: float,
-            delta_t: float
+        self,
+        traj_np: np.ndarray[tuple[float, float], np.dtype[np.float64]],
+        mode: TrajectoryMode,
+        time_steps: List[int],
+        t_0: float,
+        delta_t: float,
     ) -> TrajectoryInterface:
         """
 
@@ -222,10 +230,6 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
             elif mode == TrajectoryMode.Input:
                 points.append(self.input_from_numpy_array(traj_np[:, kk]))
 
-
         return DBTrajectory(
-            points=dict(zip(time_steps, points)),
-            mode=mode,
-            delta_t=delta_t,
-            t_0=t_0
+            points=dict(zip(time_steps, points)), mode=mode, delta_t=delta_t, t_0=t_0
         )

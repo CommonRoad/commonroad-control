@@ -1,17 +1,9 @@
 from commonroad_control.control.control import ControllerInterface
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
 class PIDControl(ControllerInterface):
 
-    def __init__(
-            self,
-            kp: float,
-            ki: float,
-            kd: float,
-            dt: float
-    ):
+    def __init__(self, kp: float, ki: float, kd: float, dt: float):
         super().__init__()
         self._kp: float = kp
         self._ki: float = ki
@@ -22,9 +14,9 @@ class PIDControl(ControllerInterface):
         self._previous_error: float = 0.0
 
     def compute_control_input(
-            self,
-            measured_state: float,
-            desired_state: float,
+        self,
+        measured_state: float,
+        desired_state: float,
     ) -> float:
         """
         Computes control output for float input
@@ -33,7 +25,9 @@ class PIDControl(ControllerInterface):
         :return:
         """
         error: float = desired_state - measured_state
-        d_error: float = (error - self._previous_error) / self._dt # TODO: check if division is reasonable
+        d_error: float = (
+            error - self._previous_error
+        ) / self._dt  # TODO: check if division is reasonable
         self._integrated_error += error * self._dt
         self._previous_error = error
 

@@ -1,7 +1,11 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.full_state_noise_interface import FullStateNoiseInterface, FullStateNoiseInterfaceIndex
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.full_state_noise_interface import (
+    FullStateNoiseInterface,
+    FullStateNoiseInterfaceIndex,
+)
 
 
 @dataclass(frozen=True)
@@ -9,6 +13,7 @@ class DBNoiseIndices(FullStateNoiseInterfaceIndex):
     """
     Indices of the noise.
     """
+
     dim: int = 7
     position_x: int = 0
     position_y: int = 1
@@ -24,6 +29,7 @@ class DBNoise(FullStateNoiseInterface):
     """
     Full state noise of the dynamic bicycle model - required for the full state feedback sensor model.
     """
+
     position_x: float = 0.0
     position_y: float = 0.0
     velocity_long: float = 0.0

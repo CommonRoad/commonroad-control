@@ -1,22 +1,30 @@
-from typing import Type, Tuple, Union
-import numpy as np
+from typing import Tuple, Union
+
 import casadi as cas
+import numpy as np
 
-from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import (
+    DBDisturbanceIndices,
+)
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import (
+    DBInput,
+    DBInputIndices,
+)
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import (
+    DBState,
+    DBStateIndices,
+)
+from commonroad_control.vehicle_dynamics.vehicle_model_interface import (
+    VehicleModelInterface,
+)
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
-
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInput, DBInputIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState, DBStateIndices
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance import DBDisturbanceIndices
 
 
 class DynamicBicycle(VehicleModelInterface):
 
     @classmethod
     def factory_method(
-            cls,
-            params: VehicleParameters,
-            delta_t: float
+        cls, params: VehicleParameters, delta_t: float
     ) -> "DynamicBicycle":
         """
         Factory method to generate class
@@ -26,9 +34,7 @@ class DynamicBicycle(VehicleModelInterface):
         """
         return DynamicBicycle(params=params, delta_t=delta_t)
 
-    def __init__(self,
-                 params: VehicleParameters,
-                 delta_t: float):
+    def __init__(self, params: VehicleParameters, delta_t: float):
 
         # set vehicle parameters
         self._g = params.g
@@ -49,7 +55,7 @@ class DynamicBicycle(VehicleModelInterface):
             nx=DBStateIndices.dim,
             nu=DBInputIndices.dim,
             nw=DBDisturbanceIndices.dim,
-            delta_t=delta_t
+            delta_t=delta_t,
         )
 
     def position_to_clcs(self, x: DBState) -> DBState:
@@ -58,9 +64,7 @@ class DynamicBicycle(VehicleModelInterface):
     def position_to_cartesian(self, x: DBState) -> DBState:
         pass
 
-    def _set_input_bounds(self,
-                          params: VehicleParameters) \
-        -> Tuple[DBInput, DBInput]:
+    def _set_input_bounds(self, params: VehicleParameters) -> Tuple[DBInput, DBInput]:
         """
         Extract input bounds from vehicle parameters and store as instance of InputInterface class.
         :param params: vehicle parameters
@@ -70,22 +74,23 @@ class DynamicBicycle(VehicleModelInterface):
         # lower bound
         u_lb = DBInput(
             acceleration=-params.a_long_max,
-            steering_angle_velocity=-params.steering_angle_velocity_max
+            steering_angle_velocity=-params.steering_angle_velocity_max,
         )
 
         # upper bound
         u_ub = DBInput(
             acceleration=params.a_long_max,
-            steering_angle_velocity=params.steering_angle_velocity_max
+            steering_angle_velocity=params.steering_angle_velocity_max,
         )
 
         return u_lb, u_ub
 
-    def _dynamics_cas(self,
-                      x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-                      u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-                      w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]]) \
-            -> cas.SX.sym:
+    def _dynamics_cas(
+        self,
+        x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+    ) -> cas.SX.sym:
         """
         Dynamics function of the dynamic bicycle model.
         Equations are taken from
@@ -110,7 +115,7 @@ class DynamicBicycle(VehicleModelInterface):
         delta_dot = u[DBInputIndices.steering_angle_velocity]
 
         # compute lateral tyre forces
-        fc_f, fc_r = self._compute_lateral_tyre_forces(x,u)
+        fc_f, fc_r = self._compute_lateral_tyre_forces(x, u)
 
         # dynamics
         position_x_dot = v_bx * cas.cos(psi) - v_by * cas.sin(psi)
@@ -118,21 +123,31 @@ class DynamicBicycle(VehicleModelInterface):
         velocity_long_dot = psi_dot * v_by + a - (fc_f * cas.sin(delta)) / self._m
         velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) / self._m
         heading_dot = psi_dot
-        yaw_rate_dot = (self._l_f * fc_f * cas.cos(delta) - self._l_r * fc_r) / self._I_zz
+        yaw_rate_dot = (
+            self._l_f * fc_f * cas.cos(delta) - self._l_r * fc_r
+        ) / self._I_zz
         steering_angle_dot = delta_dot
 
-        f = cas.vertcat(position_x_dot, position_y_dot, velocity_long_dot, velocity_lat_dot,
-                        heading_dot, yaw_rate_dot, steering_angle_dot)
+        f = cas.vertcat(
+            position_x_dot,
+            position_y_dot,
+            velocity_long_dot,
+            velocity_lat_dot,
+            heading_dot,
+            yaw_rate_dot,
+            steering_angle_dot,
+        )
 
         # add disturbances
-        f = f + np.reshape(w, shape=(w.size,1))
+        f = f + np.reshape(w, shape=(w.size, 1))
 
         return f
 
-    def compute_normalized_acceleration(self,
-                                        x: Union[DBState, cas.SX.sym, np.array],
-                                        u: Union[DBInput, cas.SX.sym, np.array]) \
-            -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+    def compute_normalized_acceleration(
+        self,
+        x: Union[DBState, cas.SX.sym, np.array],
+        u: Union[DBInput, cas.SX.sym, np.array],
+    ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
 
         # extract state
         if isinstance(x, DBState):
@@ -145,18 +160,17 @@ class DynamicBicycle(VehicleModelInterface):
         a = u[DBInputIndices.acceleration]
 
         # compute lateral tyre forces
-        fc_f, fc_r = self._compute_lateral_tyre_forces(x,u)
+        fc_f, fc_r = self._compute_lateral_tyre_forces(x, u)
 
         # normalized acceleration
-        a_long_norm = (a - fc_f*cas.sin(delta)/self._m) / self._a_long_max
+        a_long_norm = (a - fc_f * cas.sin(delta) / self._m) / self._a_long_max
         a_lat_norm = ((fc_f * cas.cos(delta) + fc_r) / self._m) / self._a_lat_max
 
         return a_long_norm, a_lat_norm
 
-    def _compute_lateral_tyre_forces(self,
-                             x: Union[cas.SX.sym, np.array],
-                             u: Union[cas.SX.sym, np.array]) \
-            -> Tuple[Union[float,cas.SX.sym], Union[float, cas.SX.sym]]:
+    def _compute_lateral_tyre_forces(
+        self, x: Union[cas.SX.sym, np.array], u: Union[cas.SX.sym, np.array]
+    ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
         """
         Computes the lateral tyre forces at the front and rear axle.
         :param x: state - array of dimension (self._nx,)
@@ -173,15 +187,15 @@ class DynamicBicycle(VehicleModelInterface):
         a = u[DBInputIndices.acceleration]
 
         # (tyre) slip angles
-        alpha_f = cas.atan((v_by + self._l_f*psi_dot)/v_bx) - delta
-        alpha_r = cas.atan((v_by - self._l_r*psi_dot )/v_bx)
+        alpha_f = cas.atan((v_by + self._l_f * psi_dot) / v_bx) - delta
+        alpha_r = cas.atan((v_by - self._l_r * psi_dot) / v_bx)
 
         # compute normal forces per axle (including longitudinal load transfer)
-        fz_f = (self._m*self._g*self._l_r - self._m * a * self._h_cog) / self._l_wb
-        fz_r = (self._m*self._g*self._l_f + self._m * a * self._h_cog) / self._l_wb
+        fz_f = (self._m * self._g * self._l_r - self._m * a * self._h_cog) / self._l_wb
+        fz_r = (self._m * self._g * self._l_f + self._m * a * self._h_cog) / self._l_wb
 
         # lateral tyre forces per axle
-        fc_f = -self._C_f*alpha_f*fz_f
-        fc_r = -self._C_r*alpha_r*fz_r
+        fc_f = -self._C_f * alpha_f * fz_f
+        fc_r = -self._C_r * alpha_r * fz_r
 
         return fc_f, fc_r

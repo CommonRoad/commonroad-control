@@ -1,7 +1,11 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.disturbance_interface import DisturbanceInterface, DisturbanceInterfaceIndex
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.disturbance_interface import (
+    DisturbanceInterface,
+    DisturbanceInterfaceIndex,
+)
 
 
 # TODO should be an enum so no initialization?
@@ -10,6 +14,7 @@ class DIDisturbanceIndices(DisturbanceInterfaceIndex):
     """
     Indices of the disturbance.
     """
+
     dim: int = 4
     position_long: int = 0
     position_lat: int = 1
@@ -23,6 +28,7 @@ class DIDisturbance(DisturbanceInterface):
     """
     Disturbance of the double integrator model.
     """
+
     position_long: float = None
     position_lat: float = None
     velocity_long: float = None

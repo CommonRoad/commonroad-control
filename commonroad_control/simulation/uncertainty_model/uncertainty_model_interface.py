@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
+
 import numpy as np
 
 
 class UncertaintyModelInterface(ABC):
-    def __init__(
-            self,
-            dim: int
-    ) -> None:
+    def __init__(self, dim: int) -> None:
         self._dim: int = dim
 
     @property

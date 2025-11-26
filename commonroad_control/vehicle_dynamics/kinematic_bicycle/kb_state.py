@@ -1,9 +1,12 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad.scenario.state import InitialState, CustomState
+import numpy as np
+from commonroad.scenario.state import CustomState, InitialState
 
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface, StateInterfaceIndex
+from commonroad_control.vehicle_dynamics.state_interface import (
+    StateInterface,
+    StateInterfaceIndex,
+)
 
 
 # TODO should be an enum so no initialization?
@@ -12,6 +15,7 @@ class KBStateIndices(StateInterfaceIndex):
     """
     Indices of the states.
     """
+
     dim: int = 5
     position_x: int = 0
     position_y: int = 1
@@ -26,6 +30,7 @@ class KBState(StateInterface):
     """
     State vector of the kinematic bicycle model.
     """
+
     position_x: float = None
     position_y: float = None
     velocity: float = None
@@ -50,10 +55,7 @@ class KBState(StateInterface):
 
         return x_np
 
-    def to_cr_initial_state(
-            self,
-            time_step: int
-    ) -> InitialState:
+    def to_cr_initial_state(self, time_step: int) -> InitialState:
         """
         Convert to cr initial state
         :param time_step: time step
@@ -66,14 +68,10 @@ class KBState(StateInterface):
             acceleration=0,
             yaw_rate=0,
             slip_angle=0,
-            time_step=time_step
+            time_step=time_step,
         )
 
-
-    def to_cr_custom_state(
-            self,
-            time_step: int
-    ) -> CustomState:
+    def to_cr_custom_state(self, time_step: int) -> CustomState:
         """
         Convert to cr custom state
         :param time_step: time step
@@ -86,6 +84,5 @@ class KBState(StateInterface):
             acceleration=0,
             yaw_rate=0,
             slip_angle=0,
-            time_step=time_step
+            time_step=time_step,
         )
-

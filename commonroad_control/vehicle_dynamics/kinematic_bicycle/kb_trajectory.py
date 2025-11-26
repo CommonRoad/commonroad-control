@@ -1,21 +1,24 @@
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, List, Union
+
 import numpy as np
 from commonroad.geometry.shape import Rectangle
-from commonroad.prediction.prediction import TrajectoryPrediction, Trajectory
-
+from commonroad.prediction.prediction import Trajectory, TrajectoryPrediction
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
-from commonroad.scenario.state import InitialState, CustomState
+from commonroad.scenario.state import CustomState, InitialState
 
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-from typing import List, Union
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_dynamics.trajectory_interface import (
+    TrajectoryInterface,
+    TrajectoryMode,
+)
 
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
+    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
+        KBSITFactoryDisturbance,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +30,8 @@ class KBTrajectory(TrajectoryInterface):
     """
 
     def get_point_at_time(
-            self,
-            time: float,
-            factory: 'KBSITFactoryDisturbance'
-    ) -> Union['KBState', 'KBInput']:
+        self, time: float, factory: "KBSITFactoryDisturbance"
+    ) -> Union["KBState", "KBInput"]:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
@@ -39,22 +40,22 @@ class KBTrajectory(TrajectoryInterface):
         :return: interpolated point
         """
 
-        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(
-            time=time
+        lower_point, upper_point, lower_idx, upper_idx = (
+            self.get_point_before_and_after_time(time=time)
         )
         if lower_idx == upper_idx:
             new_point = lower_point
         else:
-            alpha = (upper_idx*self.delta_t - time) / self.delta_t
+            alpha = (upper_idx * self.delta_t - time) / self.delta_t
             new_point_array: np.ndarray = (
-                (1-alpha)*upper_point.convert_to_array() + alpha*lower_point.convert_to_array()
-            )
-            new_point: Union[KBState,KBInput] = (
-                factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
+                1 - alpha
+            ) * upper_point.convert_to_array() + alpha * lower_point.convert_to_array()
+            new_point: Union[KBState, KBInput] = (
+                (factory.state_from_numpy_array(new_point_array))
+                if self.mode is TrajectoryMode.State
                 else factory.input_from_numpy_array(new_point_array)
+            )
         return new_point
-
-
 
     def to_cr_dynamic_obstacle(
         self,
@@ -76,9 +77,12 @@ class KBTrajectory(TrajectoryInterface):
 
         else:
             # convert to CR obstacle
-            initial_state: InitialState = self.initial_point.to_cr_initial_state(time_step=min(self.points.keys()))
+            initial_state: InitialState = self.initial_point.to_cr_initial_state(
+                time_step=min(self.points.keys())
+            )
             state_list: List[CustomState] = [
-                state.to_cr_custom_state(time_step=step) for step, state in self.points.items()
+                state.to_cr_custom_state(time_step=step)
+                for step, state in self.points.items()
             ]
 
             cr_trajectory = Trajectory(state_list[0].time_step, state_list)
@@ -95,4 +99,3 @@ class KBTrajectory(TrajectoryInterface):
                 initial_state=initial_state,
                 prediction=trajectory_prediction,
             )
-

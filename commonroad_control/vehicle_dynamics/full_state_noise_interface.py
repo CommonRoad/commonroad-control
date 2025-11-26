@@ -1,8 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
+
 import numpy as np
 
-from commonroad_control.simulation.uncertainty_model.uncertainty_interface import UncertaintyInterface, UncertaintyInterfaceIndex
+from commonroad_control.simulation.uncertainty_model.uncertainty_interface import (
+    UncertaintyInterface,
+    UncertaintyInterfaceIndex,
+)
 
 
 @dataclass(frozen=True)
@@ -10,7 +14,9 @@ class FullStateNoiseInterfaceIndex(UncertaintyInterfaceIndex):
     """
     Indices of the noise variables.
     """
+
     dim: int
+
 
 @dataclass
 class FullStateNoiseInterface(UncertaintyInterface):
