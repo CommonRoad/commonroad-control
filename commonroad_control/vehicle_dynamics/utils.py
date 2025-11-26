@@ -1,14 +1,15 @@
-from typing import Union, Callable
-import numpy as np
-import casadi as cas
 import enum
+from typing import Callable, Union
+
+import casadi as cas
+import numpy as np
 
 
 @enum.unique
 class TrajectoryMode(enum.Enum):
-    State = 'state'
-    Input = 'input'
-    Disturbance = 'disturbance'
+    State = "state"
+    Input = "input"
+    Disturbance = "disturbance"
 
 
 def rk4_integrator(

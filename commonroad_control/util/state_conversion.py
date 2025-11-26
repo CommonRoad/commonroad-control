@@ -1,33 +1,32 @@
-from math import sqrt, atan, tan, sin, cos
-
-from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
+from math import atan, cos, sin, sqrt, tan
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
+from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
 
 def convert_state_kb2db(
-        kb_state: "KBState",
-        vehicle_params: VehicleParameters) \
-        -> DBState:
-    slip_angle = atan(tan(kb_state.steering_angle) * vehicle_params.l_r / vehicle_params.l_wb)
+    kb_state: "KBState", vehicle_params: VehicleParameters
+) -> DBState:
+    slip_angle = atan(
+        tan(kb_state.steering_angle) * vehicle_params.l_r / vehicle_params.l_wb
+    )
     return DBState(
         position_x=kb_state.position_x,
         position_y=kb_state.position_y,
-        velocity_long=kb_state.velocity*cos(slip_angle),
-        velocity_lat=kb_state.velocity*sin(slip_angle),
+        velocity_long=kb_state.velocity * cos(slip_angle),
+        velocity_lat=kb_state.velocity * sin(slip_angle),
         heading=kb_state.heading,
-        yaw_rate=kb_state.velocity*sin(slip_angle)/vehicle_params.l_r,
-        steering_angle=kb_state.steering_angle
+        yaw_rate=kb_state.velocity * sin(slip_angle) / vehicle_params.l_r,
+        steering_angle=kb_state.steering_angle,
     )
 
-def convert_state_db2kb(
-        db_state: "DBState") \
-        -> KBState:
+
+def convert_state_db2kb(db_state: "DBState") -> KBState:
     return KBState(
         position_x=db_state.position_x,
         position_y=db_state.position_y,
         velocity=sqrt(db_state.velocity_long**2 + db_state.velocity_lat**2),
         heading=db_state.heading,
-        steering_angle=db_state.steering_angle
+        steering_angle=db_state.steering_angle,
     )

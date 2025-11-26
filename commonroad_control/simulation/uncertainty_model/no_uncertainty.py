@@ -1,15 +1,12 @@
 import numpy as np
 
-from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import (
+    UncertaintyModelInterface,
+)
 
 
 class NoUncertainty(UncertaintyModelInterface):
-    def __init__(
-            self,
-            dim: int,
-            *args,
-            **kwargs
-    ):
+    def __init__(self, dim: int, *args, **kwargs):
 
         super().__init__(dim=dim)
         self._nominal_value = np.zeros(shape=(self._dim,))
@@ -20,4 +17,3 @@ class NoUncertainty(UncertaintyModelInterface):
 
     def sample_uncertainty(self):
         return self.nominal_value
-

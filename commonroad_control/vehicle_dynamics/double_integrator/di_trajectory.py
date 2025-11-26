@@ -1,15 +1,20 @@
 from dataclasses import dataclass
-import numpy as np
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
+import numpy as np
 
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
+from commonroad_control.vehicle_dynamics.trajectory_interface import (
+    TrajectoryInterface,
+    TrajectoryMode,
+)
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import DISIDTFactoryDisturbance
+    from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import (
+        DISIDTFactoryDisturbance,
+    )
+
 
 @dataclass
 class DITrajectory(TrajectoryInterface):
@@ -18,9 +23,8 @@ class DITrajectory(TrajectoryInterface):
     """
 
     def get_interpolated_point_at_time(
-            self,
-            time: float
-    ) -> Union['DIInput', 'DIState']:
+        self, time: float
+    ) -> Union["DIInput", "DIState"]:
         """
         :param time: time at which to interpolate
         :return: interpolated state
@@ -28,10 +32,8 @@ class DITrajectory(TrajectoryInterface):
         pass
 
     def get_point_at_time(
-            self,
-            time: float,
-            factory: 'DISIDTFactoryDisturbance'
-    ) -> Union['DIState', 'DIInput']:
+        self, time: float, factory: "DISIDTFactoryDisturbance"
+    ) -> Union["DIState", "DIInput"]:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
@@ -40,17 +42,20 @@ class DITrajectory(TrajectoryInterface):
         :return: interpolated point
         """
 
-        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(
-            time=time
+        lower_point, upper_point, lower_idx, upper_idx = (
+            self.get_point_before_and_after_time(time=time)
         )
         if lower_idx == upper_idx:
             new_point = lower_point
         else:
-            alpha = (upper_idx*self.delta_t - time) / self.delta_t
+            alpha = (upper_idx * self.delta_t - time) / self.delta_t
             new_point_array: np.ndarray = (
-                    alpha*upper_point.convert_to_array() + (1-alpha)*lower_point.convert_to_array()
+                alpha * upper_point.convert_to_array()
+                + (1 - alpha) * lower_point.convert_to_array()
             )
-            new_point: Union[DIState,DIInput] = (
-                factory.state_from_numpy_array(new_point_array)) if self.mode is TrajectoryMode.State \
+            new_point: Union[DIState, DIInput] = (
+                (factory.state_from_numpy_array(new_point_array))
+                if self.mode is TrajectoryMode.State
                 else factory.input_from_numpy_array(new_point_array)
+            )
         return new_point

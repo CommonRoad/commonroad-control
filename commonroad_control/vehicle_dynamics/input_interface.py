@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -10,6 +9,7 @@ class InputInterfaceIndex(ABC):
     """
     Indices of the control inputs.
     """
+
     dim: int
 
 

@@ -1,14 +1,11 @@
 from pathlib import Path
-import os
+from typing import List, Optional, Union
 
-import matplotlib.pyplot as plt
 
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
+    KBTrajectory,
+)
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
-
-from typing import Optional, List, Union
-
-
 
 
 def visualize_ff_and_fb_inputs(

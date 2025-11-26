@@ -1,7 +1,7 @@
 # standard imports
-from typing import List, Tuple, Union
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import List, Tuple, Union
 
 # commonroad
 from commonroad.planning.planning_problem import PlanningProblem, PlanningProblemSet
@@ -11,27 +11,27 @@ from commonroad.scenario.state import InputState
 # reactive planner
 from commonroad_rp.reactive_planner import ReactivePlanner
 from commonroad_rp.state import ReactivePlannerState
-from commonroad_rp.utility.evaluation import run_evaluation
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
+from commonroad_rp.utility.evaluation import run_evaluation
 from commonroad_rp.utility.logger import initialize_logger
 from commonroad_rp.utility.utils_coordinate_system import (
     CoordinateSystem,
+    create_coordinate_system,
     create_initial_ref_path,
-    create_coordinate_system
 )
-
 
 logger = logging.getLogger(__name__)
 
+
 def run_reactive_planner(
-        scenario: Scenario,
-        scenario_xml_file_name: str,
-        planning_problem: PlanningProblem,
-        planning_problem_set: PlanningProblemSet,
-        reactive_planner_config_path: Union[str, Path],
-        logging_level: str = "ERROR",
-        show_planner_debug_plots: bool = False,
-        maximum_iterations: int = 200
+    scenario: Scenario,
+    scenario_xml_file_name: str,
+    planning_problem: PlanningProblem,
+    planning_problem_set: PlanningProblemSet,
+    reactive_planner_config_path: Union[str, Path],
+    logging_level: str = "ERROR",
+    show_planner_debug_plots: bool = False,
+    maximum_iterations: int = 200,
 ) -> Tuple[List[ReactivePlannerState], List[InputState]]:
     """
     Util wrapper to (semi) easily run the reactive planner
@@ -46,7 +46,9 @@ def run_reactive_planner(
     :return: Tuple[list of reactive planner states, list of reactive planner inputs]
     """
 
-    config = ReactivePlannerConfiguration.load(reactive_planner_config_path, scenario_xml_file_name)
+    config = ReactivePlannerConfiguration.load(
+        reactive_planner_config_path, scenario_xml_file_name
+    )
     config.update(scenario=scenario, planning_problem=planning_problem)
     config.planning_problem_set = planning_problem_set
     config.debug.logging_level = logging_level
@@ -56,8 +58,7 @@ def run_reactive_planner(
     initialize_logger(config)
 
     ref_path_orig = create_initial_ref_path(
-        config.scenario.lanelet_network,
-        config.planning_problem
+        config.scenario.lanelet_network, config.planning_problem
     )
     rp_cosys: CoordinateSystem = create_coordinate_system(ref_path_orig)
 
@@ -96,9 +97,12 @@ def run_reactive_planner(
             planner.record_state_and_input(optimal[0].state_list[1])
 
             # reset planner state for re-planning
-            planner.reset(initial_state_cart=planner.record_state_list[-1],
-                          initial_state_curv=(optimal[1][1], optimal[2][1]),
-                          collision_checker=planner.collision_checker, coordinate_system=planner.coordinate_system)
+            planner.reset(
+                initial_state_cart=planner.record_state_list[-1],
+                initial_state_curv=(optimal[1][1], optimal[2][1]),
+                collision_checker=planner.collision_checker,
+                coordinate_system=planner.coordinate_system,
+            )
 
         else:
             # continue on optimal trajectory
@@ -108,20 +112,27 @@ def run_reactive_planner(
             planner.record_state_and_input(optimal[0].state_list[1 + temp])
 
             # reset planner state for re-planning
-            planner.reset(initial_state_cart=planner.record_state_list[-1],
-                          initial_state_curv=(optimal[1][1 + temp], optimal[2][1 + temp]),
-                          collision_checker=planner.collision_checker, coordinate_system=planner.coordinate_system)
-
+            planner.reset(
+                initial_state_cart=planner.record_state_list[-1],
+                initial_state_curv=(optimal[1][1 + temp], optimal[2][1 + temp]),
+                collision_checker=planner.collision_checker,
+                coordinate_system=planner.coordinate_system,
+            )
 
     if cnt >= maximum_iterations - 1:
-        logger.error(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
-        raise Exception(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
+        logger.error(
+            f"Reactive planner exceeded maximum number of iterations {maximum_iterations}"
+        )
+        raise Exception(
+            f"Reactive planner exceeded maximum number of iterations {maximum_iterations}"
+        )
 
     # Evaluate results
     evaluate = True
     if evaluate:
-        _, _ = run_evaluation(planner.config, planner.record_state_list,
-                                                       planner.record_input_list)
+        _, _ = run_evaluation(
+            planner.config, planner.record_state_list, planner.record_input_list
+        )
 
     # Move input up one time step so that the idx of the input correspond the state to which it is applied to to come
     # into the next state
@@ -130,7 +141,3 @@ def run_reactive_planner(
         el.time_step = el.time_step - 1
 
     return planner.record_state_list, input_list
-
-
-
-

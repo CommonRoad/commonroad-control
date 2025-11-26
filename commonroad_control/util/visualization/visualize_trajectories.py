@@ -1,30 +1,29 @@
+import copy
 import logging
 import os
 import time
-import copy
 from pathlib import Path
 
-import numpy as np
+# typing
+from typing import Any, List, Union
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+# commonroad
+from commonroad.planning.planning_problem import PlanningProblem
+from commonroad.scenario.scenario import Scenario
+from commonroad.visualization.mp_renderer import MPRenderer
 
 # third party
 from PIL import Image
 
-# commonroad
-from commonroad.planning.planning_problem import PlanningProblem
-from commonroad.geometry.shape import Circle
-from commonroad.visualization.mp_renderer import MPRenderer
-from commonroad.scenario.scenario import Scenario
-
-
-
-# typing
-from typing import List, Union, Any
-
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import KBTrajectory
-
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
+    KBTrajectory,
+)
 
 logger = logging.getLogger(__name__)
+
 
 def visualize_trajectories(
     scenario: Scenario,
@@ -39,15 +38,14 @@ def visualize_trajectories(
     opacity_planning: float = 0.3,
     opacity_control: float = 1.0,
     use_icon_controlled_traj: bool = True,
-    use_icon_planned_traj: bool = False
+    use_icon_planned_traj: bool = False,
 ) -> None:
     for step in planner_trajectory.steps:
         plt.cla()
 
         # get plot limits from reference idm_path
         plot_limits: List[float] = obtain_plot_limits_from_reference_path(
-            planner_trajectory,
-            margin=20
+            planner_trajectory, margin=20
         )
         ratio_x_y = (plot_limits[1] - plot_limits[0]) / (
             plot_limits[3] - plot_limits[2]
@@ -78,7 +76,9 @@ def visualize_trajectories(
             vehicle_id=30000,
         )
         draw_params.dynamic_obstacle.draw_icon = use_icon_planned_traj
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_planning
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = (
+            opacity_planning
+        )
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#000000"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#808080"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 20
@@ -92,7 +92,9 @@ def visualize_trajectories(
             vehicle_id=30001,
         )
         draw_params.dynamic_obstacle.draw_icon = use_icon_controlled_traj
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_control
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = (
+            opacity_control
+        )
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#E37222"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#9C4100"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 50
@@ -111,16 +113,18 @@ def visualize_trajectories(
         else:
             plt.show()
 
+
 def obtain_plot_limits_from_reference_path(
-    trajectory: Union[KBTrajectory, Any],
-    margin: float = 10.0
+    trajectory: Union[KBTrajectory, Any], margin: float = 10.0
 ) -> List[int]:
     """
     Obtrains plot limits from reference idm_path
     :param reference_path: reference idm_path (2,) np.ndarray
     :return: list [xmin, xmax, ymin, xmax] of plot limits
     """
-    arr = np.asarray([[point.position_x, point.position_y] for point in trajectory.points.values()])
+    arr = np.asarray(
+        [[point.position_x, point.position_y] for point in trajectory.points.values()]
+    )
 
     x_min = min(arr[:, 0])
     x_max = max(arr[:, 0])
@@ -144,7 +148,9 @@ def make_gif(
         or not os.path.isdir(path_to_img_dir)
         or not os.path.isabs(path_to_img_dir)
     ):
-        logger.error(f"image dir {path_to_img_dir} must exist, be a directory and be absolute")
+        logger.error(
+            f"image dir {path_to_img_dir} must exist, be a directory and be absolute"
+        )
         raise FileNotFoundError(
             f"image dir {path_to_img_dir} must exist, be a directory and be absolute"
         )

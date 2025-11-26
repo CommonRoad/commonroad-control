@@ -1,26 +1,34 @@
 from abc import ABC, abstractmethod
-from typing import Union, Any
+from typing import Any, Union
 
-import numpy as np
 import casadi as cas
+import numpy as np
 
-from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
-
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import (
+    UncertaintyModelInterface,
+)
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
+    StateInputDisturbanceTrajectoryFactoryInterface,
+)
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
 class SensorModelInterface(ABC):
-    def __init__(self,
-                 noise_model: UncertaintyModelInterface,
-                 state_output_factory: Union[StateInputDisturbanceTrajectoryFactoryInterface, Any],
-                 dim: int,
-                 state_dimension: int,
-                 input_dimension: int,
-                 ):
+    def __init__(
+        self,
+        noise_model: UncertaintyModelInterface,
+        state_output_factory: Union[
+            StateInputDisturbanceTrajectoryFactoryInterface, Any
+        ],
+        dim: int,
+        state_dimension: int,
+        input_dimension: int,
+    ):
         self._noise_model: UncertaintyModelInterface = noise_model
-        self._state_output_factory: Union[StateInputDisturbanceTrajectoryFactoryInterface, Any] = state_output_factory
+        self._state_output_factory: Union[
+            StateInputDisturbanceTrajectoryFactoryInterface, Any
+        ] = state_output_factory
         self._dim: int = dim
         self._state_dimension: int = state_dimension
         self._input_dimension: int = input_dimension
@@ -49,10 +57,9 @@ class SensorModelInterface(ABC):
         return self._input_dimension
 
     @abstractmethod
-    def _output_function_cas(self,
-                             x: Union[np.array, cas.SX.sym],
-                             u: Union[np.array, cas.SX.sym]
-                             ) -> Union[cas.SX.sym, np.array]:
+    def _output_function_cas(
+        self, x: Union[np.array, cas.SX.sym], u: Union[np.array, cas.SX.sym]
+    ) -> Union[cas.SX.sym, np.array]:
         """
         Implements the nominal output function y=h(x,u), where e.g., h(x,u) = C*x + D*u for linear systems.
         :param x: state
@@ -61,9 +68,9 @@ class SensorModelInterface(ABC):
         """
         pass
 
-    def _nominal_output(self,
-                       x: Union[StateInterface, np.array],
-                       u: Union[StateInterface, np.array]) -> np.ndarray:
+    def _nominal_output(
+        self, x: Union[StateInterface, np.array], u: Union[StateInterface, np.array]
+    ) -> np.ndarray:
         """
         Evaluates the nominal output value given a state and corresponding control input.
         :param x: state
@@ -88,11 +95,9 @@ class SensorModelInterface(ABC):
         return x_next.squeeze()
 
     @abstractmethod
-    def measure(self,
-                x: StateInterface,
-                u: InputInterface,
-                rand_noise: bool = True
-                ) -> Union[StateInterface, Any]:
+    def measure(
+        self, x: StateInterface, u: InputInterface, rand_noise: bool = True
+    ) -> Union[StateInterface, Any]:
         """
         Evaluates the output function and applies (random) noise to the output.
         :param x: state

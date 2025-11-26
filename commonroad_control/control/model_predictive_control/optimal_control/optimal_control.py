@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
-import numpy as np
-from typing import List, Tuple
 from dataclasses import dataclass
+from typing import List, Tuple
 
-from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
-from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
+    StateInputDisturbanceTrajectoryFactoryInterface,
+)
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+from commonroad_control.vehicle_dynamics.vehicle_model_interface import (
+    VehicleModelInterface,
+)
 
 
 @dataclass(frozen=True)
@@ -15,12 +20,14 @@ class OCPSolverParameters(ABC):
 
 
 class OptimalControlSolver(ABC):
-    def __init__(self,
-                 vehicle_model: VehicleModelInterface,
-                 sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
-                 horizon: int,
-                 delta_t: float,
-                 ocp_parameters: OCPSolverParameters):
+    def __init__(
+        self,
+        vehicle_model: VehicleModelInterface,
+        sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        horizon: int,
+        delta_t: float,
+        ocp_parameters: OCPSolverParameters,
+    ):
 
         self.vehicle_model = vehicle_model
         self.sit_factory = sit_factory
@@ -33,14 +40,17 @@ class OptimalControlSolver(ABC):
         self._nu = self.vehicle_model.input_dimension
 
     @abstractmethod
-    def solve(self,
-              x0: StateInterface,
-              x_ref: TrajectoryInterface,
-              u_ref: TrajectoryInterface,
-              x_init: TrajectoryInterface,
-              u_init: TrajectoryInterface) \
-            -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
+    def solve(
+        self,
+        x0: StateInterface,
+        x_ref: TrajectoryInterface,
+        u_ref: TrajectoryInterface,
+        x_init: TrajectoryInterface,
+        u_init: TrajectoryInterface,
+    ) -> Tuple[
+        TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]
+    ]:
         pass
 
-    def reset_ocp_parameters(self,new_ocp_parameters: OCPSolverParameters):
+    def reset_ocp_parameters(self, new_ocp_parameters: OCPSolverParameters):
         self._ocp_parameters = new_ocp_parameters

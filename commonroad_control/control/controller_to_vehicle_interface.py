@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Union
+
 import numpy as np
 
-from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
+    StateInputDisturbanceTrajectoryFactoryInterface,
+)
 
 
 class Controller2VehicleInterface(ABC):
@@ -12,15 +15,8 @@ class Controller2VehicleInterface(ABC):
 
     @abstractmethod
     def input_from_controller(
-            self,
-            u_res_control: Union[np.array],
-            x_res_control: Union[np.array, None] = None
+        self,
+        u_res_control: Union[np.array],
+        x_res_control: Union[np.array, None] = None,
     ) -> InputInterface:
         pass
-
-
-
-
-
-
-

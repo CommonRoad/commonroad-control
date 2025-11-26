@@ -1,7 +1,11 @@
-import numpy as np
 from dataclasses import dataclass
 
-from commonroad_control.vehicle_dynamics.full_state_noise_interface import FullStateNoiseInterface, FullStateNoiseInterfaceIndex
+import numpy as np
+
+from commonroad_control.vehicle_dynamics.full_state_noise_interface import (
+    FullStateNoiseInterface,
+    FullStateNoiseInterfaceIndex,
+)
 
 
 # TODO should be an enum so no initialization?
@@ -10,6 +14,7 @@ class KBNoiseIndices(FullStateNoiseInterfaceIndex):
     """
     Indices of the noise.
     """
+
     dim: int = 5
     position_x: int = 0
     position_y: int = 1
@@ -24,6 +29,7 @@ class KBNoise(FullStateNoiseInterface):
     """
     Full state noise of the kinematic bicycle model - required for the full state feedback sensor model.
     """
+
     position_x: float = None
     position_y: float = None
     velocity: float = None

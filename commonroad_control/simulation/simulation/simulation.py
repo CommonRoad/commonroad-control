@@ -1,33 +1,47 @@
-from typing import Union, Any, Optional, Tuple
+import math
+from typing import Optional, Tuple, Union
 
 import numpy as np
-import math
-from scipy.integrate import solve_ivp, OdeSolver
+from scipy.integrate import OdeSolver, solve_ivp
 
-from commonroad_control.vehicle_dynamics.vehicle_model_interface import VehicleModelInterface
-from commonroad_control.vehicle_dynamics.state_interface import StateInterface
-from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface, TrajectoryMode
-from commonroad_control.vehicle_dynamics.sidt_factory_interface import StateInputDisturbanceTrajectoryFactoryInterface
-
-from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
-from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
-from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
+from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import (
+    FullStateFeedback,
+)
+from commonroad_control.simulation.sensor_models.sensor_model_interface import (
+    SensorModelInterface,
+)
 from commonroad_control.simulation.uncertainty_model.no_uncertainty import NoUncertainty
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import (
+    UncertaintyModelInterface,
+)
+from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
+    StateInputDisturbanceTrajectoryFactoryInterface,
+)
+from commonroad_control.vehicle_dynamics.state_interface import StateInterface
+from commonroad_control.vehicle_dynamics.trajectory_interface import (
+    TrajectoryInterface,
+    TrajectoryMode,
+)
+from commonroad_control.vehicle_dynamics.vehicle_model_interface import (
+    VehicleModelInterface,
+)
+
 
 class Simulation:
     """
     Class for the simulation of a dynamic system.
     """
+
     def __init__(
-            self,
-            vehicle_model: VehicleModelInterface,
-            state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface,
-            disturbance_model: Optional[UncertaintyModelInterface] = None,
-            random_disturbance: Optional[bool] = False,
-            sensor_model: Optional[SensorModelInterface] = None,
-            random_noise: Optional[bool] = False,
-            delta_t_sim: Optional[float] = 0.1,
+        self,
+        vehicle_model: VehicleModelInterface,
+        state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        disturbance_model: Optional[UncertaintyModelInterface] = None,
+        random_disturbance: Optional[bool] = False,
+        sensor_model: Optional[SensorModelInterface] = None,
+        random_noise: Optional[bool] = False,
+        delta_t_sim: Optional[float] = 0.1,
     ) -> None:
         """
         Simulates a dynamical system given an initial state and a (constant) control input for a given time horizon with
@@ -45,15 +59,19 @@ class Simulation:
         """
 
         self._vehicle_model: VehicleModelInterface = vehicle_model
-        self._state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface = state_input_factory
+        self._state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
+            state_input_factory
+        )
         self._delta_t_sim: Optional[float] = delta_t_sim
 
         # set disturbance model
-        self._random_disturbance: bool = random_disturbance if disturbance_model is not None else False
+        self._random_disturbance: bool = (
+            random_disturbance if disturbance_model is not None else False
+        )
         # ... if none is provided, set default model (no uncertainty)
         if disturbance_model is None:
             disturbance_model: UncertaintyModelInterface = NoUncertainty(
-                    dim=self._vehicle_model.disturbance_dimension
+                dim=self._vehicle_model.disturbance_dimension
             )
         self._disturbance_model: UncertaintyModelInterface = disturbance_model
 
@@ -62,12 +80,10 @@ class Simulation:
         # ... if none is provided, set default model (full state feedback with no uncertainty
         if sensor_model is None:
             sensor_model: SensorModelInterface = FullStateFeedback(
-                noise_model=NoUncertainty(
-                    dim=self._vehicle_model.state_dimension
-                ),
+                noise_model=NoUncertainty(dim=self._vehicle_model.state_dimension),
                 state_output_factory=self._state_input_factory,
                 state_dimension=state_input_factory.state_dimension,
-                input_dimension=state_input_factory.input_dimension
+                input_dimension=state_input_factory.input_dimension,
             )
         self._sensor_model: Optional[SensorModelInterface] = sensor_model
 
@@ -115,11 +131,11 @@ class Simulation:
         return self._random_noise
 
     def simulate(
-            self,
-            x0: StateInterface,
-            u: InputInterface,
-            t_final: float,
-            ivp_method: Union[str, OdeSolver, None] = "RK45",
+        self,
+        x0: StateInterface,
+        u: InputInterface,
+        t_final: float,
+        ivp_method: Union[str, OdeSolver, None] = "RK45",
     ) -> Tuple[StateInterface, TrajectoryInterface, TrajectoryInterface]:
         """
         Simulates the dynamical system starting from the initial state x0 until time t_final. The control input is kept
@@ -136,18 +152,15 @@ class Simulation:
         x0_np: np.ndarray = x0.convert_to_array()
         u_np: np.ndarray = u.convert_to_array()
 
-        # initialize simulation time and state
-        t_sim: float = 0
+        # initialize simulated trajectory
         x_sim_nom: dict = {0: x0_np}
         x_sim_w: dict = {0: x0_np}
 
         # compute time step size (< self._delta_t_sim) - trajectory interface only allows evenly spaced time horizons
-        num_step_sim = math.ceil(t_final/self._delta_t_sim)
+        num_step_sim = math.ceil(t_final / self._delta_t_sim)
         delta_t_sim = t_final / num_step_sim
 
         for kk in range(num_step_sim):
-            # duration of simulation step
-            delta_t = max([min([t_final - t_sim, delta_t_sim]),0])
 
             # simulate nominal system
             w_np_nom: np.ndarray = self._disturbance_model.nominal_value
@@ -155,47 +168,55 @@ class Simulation:
                 lambda t, y: self._vehicle_model.dynamics_ct(y, u_np, w_np_nom),
                 [0, delta_t_sim],
                 y0=x_sim_nom[kk],
-                method=ivp_method
+                method=ivp_method,
             )
 
             # simulate perturbed system
             # ... sample disturbance
             w_np: np.ndarray = (
-                self._disturbance_model.sample_uncertainty()) if self._random_disturbance \
+                (self._disturbance_model.sample_uncertainty())
+                if self._random_disturbance
                 else self._disturbance_model.nominal_value
+            )
             # ... simulate
             res_sim_w = solve_ivp(
                 lambda t, y: self._vehicle_model.dynamics_ct(y, u_np, w_np),
                 [0, delta_t_sim],
                 y0=x_sim_w[kk],
-                method=ivp_method
+                method=ivp_method,
             )
 
             # extract result and update time
-            x_sim_nom[kk+1] = res_sim_nom.y[:, -1]
-            x_sim_w[kk+1] = res_sim_w.y[:, -1]
+            x_sim_nom[kk + 1] = res_sim_nom.y[:, -1]
+            x_sim_w[kk + 1] = res_sim_w.y[:, -1]
 
         # compute output and apply noise
         # ... for causality, we pass the control input applied during simulation
-        x_final = self._state_input_factory.state_from_numpy_array(x_sim_w[num_step_sim])
-        y_sim_noise: StateInterface = self._sensor_model.measure(x_final, u, rand_noise=self._random_noise)
+        x_final = self._state_input_factory.state_from_numpy_array(
+            x_sim_w[num_step_sim]
+        )
+        y_sim_noise: StateInterface = self._sensor_model.measure(
+            x_final, u, rand_noise=self._random_noise
+        )
 
         # output arguments
-        x_sim_nom: TrajectoryInterface = self._state_input_factory.trajectory_from_numpy_array(
-            traj_np=np.column_stack(list(x_sim_nom.values())),
-            mode=TrajectoryMode.State,
-            time_steps=list(x_sim_nom.keys()),
-            t_0=0.0,
-            delta_t=delta_t_sim
-
+        x_sim_nom: TrajectoryInterface = (
+            self._state_input_factory.trajectory_from_numpy_array(
+                traj_np=np.column_stack(list(x_sim_nom.values())),
+                mode=TrajectoryMode.State,
+                time_steps=list(x_sim_nom.keys()),
+                t_0=0.0,
+                delta_t=delta_t_sim,
+            )
         )
-        x_sim_w: TrajectoryInterface = self._state_input_factory.trajectory_from_numpy_array(
-            traj_np=np.column_stack(list(x_sim_w.values())),
-            mode=TrajectoryMode.State,
-            time_steps=list(x_sim_w.keys()),
-            t_0=0.0,
-            delta_t=delta_t_sim
-
+        x_sim_w: TrajectoryInterface = (
+            self._state_input_factory.trajectory_from_numpy_array(
+                traj_np=np.column_stack(list(x_sim_w.values())),
+                mode=TrajectoryMode.State,
+                time_steps=list(x_sim_w.keys()),
+                t_0=0.0,
+                delta_t=delta_t_sim,
+            )
         )
 
         return y_sim_noise, x_sim_w, x_sim_nom

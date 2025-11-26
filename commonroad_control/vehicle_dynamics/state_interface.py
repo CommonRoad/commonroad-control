@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
 import numpy as np
 
 
@@ -8,6 +9,7 @@ class StateInterfaceIndex(ABC):
     """
     Indices of the states.
     """
+
     dim: int
 
 
