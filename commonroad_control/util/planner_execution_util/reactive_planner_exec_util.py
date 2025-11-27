@@ -55,7 +55,8 @@ def run_reactive_planner(
     config.debug.show_plots = show_planner_debug_plots
 
     # initialize and get logger
-    initialize_logger(config)
+    rp_logger = initialize_logger(config)
+    rp_logger.setLevel(level=logger.getEffectiveLevel())
 
     ref_path_orig = create_initial_ref_path(
         config.scenario.lanelet_network, config.planning_problem

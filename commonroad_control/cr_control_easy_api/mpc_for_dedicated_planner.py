@@ -4,15 +4,20 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from commonroad.common.file_reader import CommonRoadFileReader
+import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import InputState
 from commonroad_rp.state import ReactivePlannerState
 from scipy.integrate import OdeSolver
-from shapely.geometry import LineString, Point
 
-from commonroad_control.control.pid.pid_long_lat import PIDLongLat
+from commonroad_control.control.model_predictive_control.model_predictive_control import (
+    ModelPredictiveControl,
+)
+from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import (
+    OptimalControlSCvx,
+    SCvxParameters,
+)
 from commonroad_control.control.reference_trajectory_factory import (
     ReferenceTrajectoryFactory,
 )
@@ -39,10 +44,6 @@ from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface
 from commonroad_control.util.clcs_control_util import (
     extend_kb_reference_trajectory_lane_following,
 )
-from commonroad_control.util.geometry import signed_distance_point_to_linestring
-from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import (
-    run_reactive_planner,
-)
 from commonroad_control.util.state_conversion import (
     convert_state_db2kb,
     convert_state_kb2db,
@@ -54,15 +55,26 @@ from commonroad_control.util.visualization.visualize_trajectories import (
     make_gif,
     visualize_trajectories,
 )
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input import DBInputIndices
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import (
     DBSIDTFactory,
 )
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBStateIndices
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import (
     DynamicBicycle,
 )
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import (
+    KBInputIndices,
+)
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
     KBSITFactoryDisturbance,
+)
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import (
+    KBStateIndices,
+)
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import (
+    KinematicBicycle,
 )
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
     StateInputDisturbanceTrajectoryFactoryInterface,
@@ -78,105 +90,27 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 logger = logging.getLogger(__name__)
 
 
-def pid_with_lookahead_for_reactive_planner_no_uncertainty(
+def mpc_for_reactive_planner_no_uncertainty(
     scenario: Scenario,
     planning_problem: PlanningProblem,
     reactive_planner_state_trajectory: List[ReactivePlannerState],
     reactive_planner_input_trajectory: List[InputState],
-    kp_long: float = 1.0,
-    ki_long: float = 0.0,
-    kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
-    kp_steer_heading: float = 0.01,
-    ki_steer_heading: float = 0.0,
-    kd_steer_heading: float = 0.02,
-    dt_controller: float = 0.1,
-    look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
-    vehicle_params=BMW3seriesParams(),
     planner_converter: Optional[
         PlanningConverterInterface
     ] = ReactivePlannerConverter(),
-    sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
-    vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
-    func_convert_planner2controller_state: Callable[
-        [StateInterface, VehicleParameters], StateInterface
-    ] = convert_state_kb2db,
-    func_convert_controller2planner_state: Callable[
-        [StateInterface], StateInterface
-    ] = convert_state_db2kb,
-    ivp_method: Union[str, OdeSolver, None] = "RK45",
-    visualize_scenario: bool = False,
-    visualize_control: bool = False,
-    save_imgs: bool = False,
-    img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
-    return pid_with_lookahead_for_reactive_planner(
-        scenario=scenario,
-        planning_problem=planning_problem,
-        reactive_planner_state_trajectory=reactive_planner_state_trajectory,
-        reactive_planner_input_trajectory=reactive_planner_input_trajectory,
-        kp_long=kp_long,
-        ki_long=ki_long,
-        kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
-        kp_steer_heading=kp_steer_heading,
-        ki_steer_heading=ki_steer_heading,
-        kd_steer_heading=kd_steer_heading,
-        dt_controller=dt_controller,
-        look_ahead_s=look_ahead_s,
-        extended_horizon_steps=extended_horizon_steps,
-        vehicle_params=vehicle_params,
-        planner_converter=planner_converter,
-        disturbance_model_typename=NoUncertainty,
-        noise_model_typename=NoUncertainty,
-        sit_factory_sim=sit_factory_sim,
-        vehicle_model_typename=vehicle_model_typename,
-        sensor_model_typename=sensor_model_typename,
-        func_convert_planner2controller_state=func_convert_planner2controller_state,
-        func_convert_controller2planner_state=func_convert_controller2planner_state,
-        ivp_method=ivp_method,
-        visualize_scenario=visualize_scenario,
-        visualize_control=visualize_control,
-        save_imgs=save_imgs,
-        img_saving_path=img_saving_path,
-    )
-
-
-def pid_with_lookahead_for_reactive_planner(
-    scenario: Scenario,
-    planning_problem: PlanningProblem,
-    reactive_planner_state_trajectory: List[ReactivePlannerState],
-    reactive_planner_input_trajectory: List[InputState],
-    kp_long: float = 1.0,
-    ki_long: float = 0.0,
-    kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
-    kp_steer_heading: float = 0.01,
-    ki_steer_heading: float = 0.0,
-    kd_steer_heading: float = 0.02,
     dt_controller: float = 0.1,
-    look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
+    horizon_ocp: int = 20,
     vehicle_params=BMW3seriesParams(),
-    planner_converter: Union[
-        PlanningConverterInterface, ReactivePlannerConverter
-    ] = ReactivePlannerConverter(),
-    disturbance_model_typename: Type[UncertaintyModelInterface] = GaussianDistribution,
-    noise_model_typename: Type[UncertaintyModelInterface] = GaussianDistribution,
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
-    vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
+    vehicle_model_control_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = KinematicBicycle,
+    vehicle_model_sim_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = DynamicBicycle,
+    state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
+    input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
     sensor_model_typename: Type[
         Union[SensorModelInterface, FullStateFeedback]
     ] = FullStateFeedback,
@@ -194,29 +128,23 @@ def pid_with_lookahead_for_reactive_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
-    return pid_with_lookahead_for_planner(
+    return mpc_for_planner(
         scenario=scenario,
         planning_problem=planning_problem,
         state_trajectory=reactive_planner_state_trajectory,
         input_trajectory=reactive_planner_input_trajectory,
-        kp_long=kp_long,
-        ki_long=ki_long,
-        kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
-        kp_steer_heading=kp_steer_heading,
-        ki_steer_heading=ki_steer_heading,
-        kd_steer_heading=kd_steer_heading,
-        dt_controller=dt_controller,
-        look_ahead_s=look_ahead_s,
-        extended_horizon_steps=extended_horizon_steps,
-        vehicle_params=vehicle_params,
         planner_converter=planner_converter,
-        disturbance_model_typename=disturbance_model_typename,
-        noise_model_typename=noise_model_typename,
+        dt_controller=dt_controller,
+        horizon_ocp=horizon_ocp,
+        vehicle_params=vehicle_params,
+        disturbance_model_typename=NoUncertainty,
+        noise_model_typename=NoUncertainty,
+        sit_factory_control=sit_factory_control,
         sit_factory_sim=sit_factory_sim,
-        vehicle_model_typename=vehicle_model_typename,
+        vehicle_model_control_typename=vehicle_model_control_typename,
+        vehicle_model_sim_typename=vehicle_model_sim_typename,
+        state_idxs_typename=state_idxs_typename,
+        input_idxs_typename=input_idxs_typename,
         sensor_model_typename=sensor_model_typename,
         func_convert_planner2controller_state=func_convert_planner2controller_state,
         func_convert_controller2planner_state=func_convert_controller2planner_state,
@@ -228,24 +156,16 @@ def pid_with_lookahead_for_reactive_planner(
     )
 
 
-def pid_with_lookahead_for_planner(
+def mpc_for_reactive_planner(
     scenario: Scenario,
     planning_problem: PlanningProblem,
-    state_trajectory: Any,
-    input_trajectory: Any,
-    planner_converter: Union[ReactivePlannerConverter, PlanningConverterInterface],
-    kp_long: float = 1.0,
-    ki_long: float = 0.0,
-    kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
-    kp_steer_heading: float = 0.01,
-    ki_steer_heading: float = 0.0,
-    kd_steer_heading: float = 0.02,
+    reactive_planner_state_trajectory: List[ReactivePlannerState],
+    reactive_planner_input_trajectory: List[InputState],
+    planner_converter: Optional[
+        PlanningConverterInterface
+    ] = ReactivePlannerConverter(),
     dt_controller: float = 0.1,
-    look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
+    horizon_ocp: int = 20,
     vehicle_params=BMW3seriesParams(),
     disturbance_model_typename: Type[
         Union[UncertaintyModelInterface, GaussianDistribution]
@@ -253,8 +173,16 @@ def pid_with_lookahead_for_planner(
     noise_model_typename: Type[
         Union[UncertaintyModelInterface, GaussianDistribution]
     ] = GaussianDistribution,
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
-    vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
+    vehicle_model_control_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = KinematicBicycle,
+    vehicle_model_sim_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = DynamicBicycle,
+    state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
+    input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
     sensor_model_typename: Type[
         Union[SensorModelInterface, FullStateFeedback]
     ] = FullStateFeedback,
@@ -272,7 +200,78 @@ def pid_with_lookahead_for_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    return mpc_for_planner(
+        scenario=scenario,
+        planning_problem=planning_problem,
+        state_trajectory=reactive_planner_state_trajectory,
+        input_trajectory=reactive_planner_input_trajectory,
+        planner_converter=planner_converter,
+        dt_controller=dt_controller,
+        horizon_ocp=horizon_ocp,
+        vehicle_params=vehicle_params,
+        disturbance_model_typename=disturbance_model_typename,
+        noise_model_typename=noise_model_typename,
+        sit_factory_control=sit_factory_control,
+        sit_factory_sim=sit_factory_sim,
+        vehicle_model_control_typename=vehicle_model_control_typename,
+        vehicle_model_sim_typename=vehicle_model_sim_typename,
+        state_idxs_typename=state_idxs_typename,
+        input_idxs_typename=input_idxs_typename,
+        sensor_model_typename=sensor_model_typename,
+        func_convert_planner2controller_state=func_convert_planner2controller_state,
+        func_convert_controller2planner_state=func_convert_controller2planner_state,
+        ivp_method=ivp_method,
+        visualize_scenario=visualize_scenario,
+        visualize_control=visualize_control,
+        save_imgs=save_imgs,
+        img_saving_path=img_saving_path,
+    )
 
+
+def mpc_for_planner(
+    scenario: Scenario,
+    planning_problem: PlanningProblem,
+    state_trajectory: Any,
+    input_trajectory: Any,
+    planner_converter: Union[ReactivePlannerConverter, PlanningConverterInterface],
+    dt_controller: float = 0.1,
+    horizon_ocp: int = 20,
+    vehicle_params=BMW3seriesParams(),
+    disturbance_model_typename: Type[
+        Union[UncertaintyModelInterface, GaussianDistribution]
+    ] = GaussianDistribution,
+    noise_model_typename: Type[
+        Union[UncertaintyModelInterface, GaussianDistribution]
+    ] = GaussianDistribution,
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
+    sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
+    vehicle_model_control_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = KinematicBicycle,
+    vehicle_model_sim_typename: Type[
+        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
+    ] = DynamicBicycle,
+    state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
+    input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
+    sensor_model_typename: Type[
+        Union[SensorModelInterface, FullStateFeedback]
+    ] = FullStateFeedback,
+    func_convert_planner2controller_state: Callable[
+        [StateInterface, VehicleParameters], StateInterface
+    ] = convert_state_kb2db,
+    func_convert_controller2planner_state: Callable[
+        [StateInterface], StateInterface
+    ] = convert_state_db2kb,
+    ivp_method: Union[str, OdeSolver, None] = "RK45",
+    visualize_scenario: bool = False,
+    visualize_control: bool = False,
+    save_imgs: bool = False,
+    img_saving_path: Union[Path, str] = None,
+) -> Tuple[
+    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
+]:
+    # TODO: there are some hardcoded params still
+    logger.info(f"solving scenario {str(scenario.scenario_id)}")
     x_ref = planner_converter.trajectory_p2c_kb(
         planner_traj=state_trajectory, mode=TrajectoryMode.State
     )
@@ -281,25 +280,53 @@ def pid_with_lookahead_for_planner(
     )
 
     logger.debug("initialize simulation")
-    # simulation
-    # ... vehicle model
-    vehicle_model_sim = vehicle_model_typename(
+    # ... vehicle model for prediction
+    vehicle_model_ctrl = vehicle_model_control_typename(
         params=vehicle_params, delta_t=dt_controller
     )
-    # ... disturbances
-    sim_disturbance_model = disturbance_model_typename(
-        dim=vehicle_model_sim.disturbance_dimension,
+    # ... initialize optimal control solver
+    cost_xx = np.eye(state_idxs_typename.dim)
+    cost_xx[state_idxs_typename.steering_angle, state_idxs_typename.steering_angle] = (
+        0.0
+    )
+    cost_uu = 0.1 * np.eye(input_idxs_typename.dim)
+    cost_final = cost_xx  # np.eye(KBStateIndices.dim)
+    # ... solver parameters for initial step-> iterate until convergence
+    solver_parameters_init = SCvxParameters(max_iterations=20)
+    # ... solver parameters for real time iteration -> only one iteration per time step
+    solver_parameters_rti = SCvxParameters(max_iterations=1)
+    # ... ocp solver (initial parameters)
+    scvx_solver = OptimalControlSCvx(
+        vehicle_model=vehicle_model_ctrl,
+        sit_factory=sit_factory_control,
+        horizon=horizon_ocp,
+        delta_t=dt_controller,
+        cost_xx=cost_xx,
+        cost_uu=cost_uu,
+        cost_final=cost_final,
+        ocp_parameters=solver_parameters_init,
+    )
+    # instantiate model predictive controller
+    mpc = ModelPredictiveControl(ocp_solver=scvx_solver)
+
+    # simulation
+    # ... disturbance model
+    vehicle_model_sim = vehicle_model_sim_typename(
+        params=vehicle_params, delta_t=dt_controller
+    )
+    sim_disturbance_model: UncertaintyModelInterface = disturbance_model_typename(
+        dim=vehicle_model_sim.state_dimension,
         mean=vehicle_params.disturbance_gaussian_mean,
         std_deviation=vehicle_params.disturbance_gaussian_std,
     )
     # ... noise
-    sim_noise_model = noise_model_typename(
+    sim_noise_model: UncertaintyModelInterface = noise_model_typename(
         dim=vehicle_model_sim.disturbance_dimension,
         mean=vehicle_params.noise_gaussian_mean,
         std_deviation=vehicle_params.noise_gaussian_std,
     )
     # ... sensor model
-    sensor_model = sensor_model_typename(
+    sensor_model: SensorModelInterface = sensor_model_typename(
         noise_model=sim_noise_model,
         state_output_factory=sit_factory_sim,
         state_dimension=sit_factory_sim.state_dimension,
@@ -313,30 +340,9 @@ def pid_with_lookahead_for_planner(
         random_disturbance=True,
         sensor_model=sensor_model,
         random_noise=True,
-        delta_t_sim=dt_controller,
     )
 
-    # Lookahead
-    # ... simulation
-    look_ahead_sim: Simulation = Simulation(
-        vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
-    )
-
-    pid_controller: PIDLongLat = PIDLongLat(
-        kp_long=kp_long,
-        ki_long=ki_long,
-        kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
-        kp_steer_heading=kp_steer_heading,
-        ki_steer_heading=ki_steer_heading,
-        kd_steer_heading=kd_steer_heading,
-        dt=dt_controller,
-    )
-
-    logger.debug("run controller")
+    # timer
     t_0 = time.perf_counter()
     eta: float = 0.0
 
@@ -347,85 +353,67 @@ def pid_with_lookahead_for_planner(
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=extended_horizon_steps,
+        horizon=mpc.horizon,
     )
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sit_factory=KBSITFactoryDisturbance(),
-        horizon=extended_horizon_steps,
+        horizon=mpc.horizon,
+    )
+    # ... dummy reference trajectory: all inputs set to zero
+    u_np = np.zeros((u_ref_ext.dim, len(u_ref_ext.steps)))
+    u_ref_0 = sit_factory_control.trajectory_from_numpy_array(
+        traj_np=u_np,
+        mode=TrajectoryMode.Input,
+        time_steps=u_ref_ext.steps,
+        t_0=u_ref_ext.t_0,
+        delta_t=u_ref_ext.delta_t,
     )
     reference_trajectory.set_reference_trajectory(
-        state_ref=x_ref_ext, input_ref=u_ref_ext, t_0=0
-    )
-    ref_path: LineString = LineString(
-        [
-            (p.position_x, p.position_y)
-            for p in reference_trajectory.state_trajectory.points.values()
-        ]
+        state_ref=x_ref_ext, input_ref=u_ref_0, t_0=0
     )
 
+    # simulation results
     x_measured = func_convert_planner2controller_state(
         kb_state=x_ref.initial_point, vehicle_params=vehicle_params
     )
-
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}
     traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
 
+    # for step, x_planner in kb_traj.points.items():
     for kk_sim in range(len(x_ref.steps)):
+
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller + look_ahead_s
+            t=kk_sim * dt_controller
         )
 
-        u_look_ahead_sim = sit_factory_sim.input_from_args(
-            acceleration=u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity,
-        )
+        # convert initial state to kb
+        x0_kb = func_convert_controller2planner_state(traj_dict_measured[kk_sim])
+        # x0_kb = traj_dict[kk_sim]
 
-        eta = eta + time.perf_counter() - t_0
-        _, _, x_look_ahead = look_ahead_sim.simulate(
-            x0=traj_dict_no_noise[kk_sim],
-            u=u_look_ahead_sim,
-            t_final=look_ahead_s,
-            ivp_method=ivp_method,
-        )
-        t_0 = time.perf_counter()
+        # compute control input
+        u_now = mpc.compute_control_input(x0=x0_kb, x_ref=tmp_x_ref, u_ref=tmp_u_ref)
+        if kk_sim == 0:
+            # at the initial step: iterate until convergence
+            # afterwards: real-time iteration
+            mpc.ocp_solver.reset_ocp_parameters(
+                new_ocp_parameters=solver_parameters_rti
+            )
 
-        # convert simulated forward step state back to KB for control
-        x0_kb = func_convert_controller2planner_state(x_look_ahead.final_point)
-        lateral_offset_lookahead = signed_distance_point_to_linestring(
-            point=Point(x0_kb.position_x, x0_kb.position_y), linestring=ref_path
-        )
-
-        u_vel, u_steer = pid_controller.compute_control_input(
-            measured_v_long=x0_kb.velocity,
-            desired_v_long=tmp_x_ref.points[0].velocity,
-            measured_heading=x0_kb.heading,
-            desired_heading=tmp_x_ref.points[0].heading,
-            measured_lat_offset=lateral_offset_lookahead,
-            desired_lat_offset=0.0,
-        )
-
-        u_now = sit_factory_sim.input_from_args(
-            acceleration=u_vel + u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_steer
-            + u_ref.points[kk_sim].steering_angle_velocity,
-        )
-
-        eta = eta + time.perf_counter() - t_0
-        t_0 = time.perf_counter()
+        # u_now = kb_input.points[kk_sim]
+        input_dict[kk_sim] = u_now
         # simulate
+        eta = eta + time.perf_counter() - t_0
         x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=traj_dict_no_noise[kk_sim],
             u=u_now,
             t_final=dt_controller,
             ivp_method=ivp_method,
         )
-
-        # update dicts
-        input_dict[kk_sim] = u_now
+        t_0 = time.perf_counter()
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
@@ -454,7 +442,6 @@ def pid_with_lookahead_for_planner(
                 scenario_name=str(scenario.scenario_id),
                 num_imgs=len(x_ref.points.values()),
             )
-
     if visualize_control:
         visualize_reference_vs_actual_states(
             reference_trajectory=x_ref,
@@ -465,43 +452,3 @@ def pid_with_lookahead_for_planner(
         )
 
     return traj_dict_measured, traj_dict_no_noise, input_dict
-
-
-if __name__ == "__main__":
-    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
-    scenario_file = (
-        Path(__file__).parents[2] / "scenarios" / str(scenario_name + ".xml")
-    )
-    planner_config_path = (
-        Path(__file__).parents[2]
-        / "scenarios"
-        / "reactive_planner_configs"
-        / str(scenario_name + ".yaml")
-    )
-    img_save_path = Path(__file__).parents[2] / "output" / scenario_name
-
-    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
-    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
-
-    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
-
-    # run planner
-    logger.info("run planner")
-    rp_states, rp_inputs = run_reactive_planner(
-        scenario=scenario,
-        scenario_xml_file_name=str(scenario_name + ".xml"),
-        planning_problem=planning_problem,
-        planning_problem_set=planning_problem_set,
-        reactive_planner_config_path=planner_config_path,
-    )
-
-    noisy_traj, disturbed_traj, input_traj = pid_with_lookahead_for_reactive_planner(
-        scenario=scenario,
-        planning_problem=planning_problem,
-        reactive_planner_state_trajectory=rp_states,
-        reactive_planner_input_trajectory=rp_inputs,
-        visualize_scenario=True,
-        visualize_control=True,
-        save_imgs=False,
-        img_saving_path=img_save_path,
-    )

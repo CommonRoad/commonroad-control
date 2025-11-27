@@ -2,6 +2,8 @@ import unittest
 from pathlib import Path
 import os
 import logging
+
+from commonroad_control.cr_control_easy_api.mpc_for_dedicated_planner import mpc_for_reactive_planner
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_reactive_planner
@@ -62,11 +64,12 @@ class TestCREasyAPI(unittest.TestCase):
                 )
 
 
+
     def test_pid_for_reactive_visualization(self) -> None:
         """
         Test pid long lat example script visualization
         """
-        scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
+        scenario_name = "ITA_Foggia-6_1_T-1"
         scenario_file = Path(__file__).parents[1] / "scenarios" / str(scenario_name + ".xml")
 
 
