@@ -122,9 +122,9 @@ def main(
         kp_steer_offset=0.05,
         ki_steer_offset=0.0,
         kd_steer_offset=0.1,
-        kp_steer_heading=0.01,
+        kp_steer_heading=0.0,
         ki_steer_heading=0.0,
-        kd_steer_heading=0.02,
+        kd_steer_heading=0.0,
         dt=dt_controller,
     )
     logger.info("run controller")
