@@ -122,9 +122,6 @@ def main(
         kp_steer_offset=0.05,
         ki_steer_offset=0.0,
         kd_steer_offset=0.1,
-        kp_steer_heading=0.0,
-        ki_steer_heading=0.0,
-        kd_steer_heading=0.0,
         dt=dt_controller,
     )
     logger.info("run controller")
@@ -188,8 +185,6 @@ def main(
         u_vel, u_steer = pid_controller.compute_control_input(
             measured_v_long=x0_kb.velocity,
             desired_v_long=tmp_x_ref.points[0].velocity,
-            measured_heading=x0_kb.heading,
-            desired_heading=tmp_x_ref.points[0].heading,
             measured_lat_offset=lateral_offset_lookahead,
             desired_lat_offset=0.0
         )
@@ -248,7 +243,7 @@ def main(
     )
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Over-1_1"
+    scenario_name = "ZAM_Tjunction-1_42_T-1"
     # scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
