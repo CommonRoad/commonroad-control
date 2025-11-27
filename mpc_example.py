@@ -249,7 +249,7 @@ def main(
 
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Over-1_1"
+    scenario_name = "ITA_Foggia-6_1_T-1"
     # scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
     # scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
