@@ -1,7 +1,7 @@
 site_name: CommonRoad Control
 
 theme:
-  name: readthedocs
+  name: material
   logo: assets/commonroad_white150.png
 
 plugins:
@@ -10,11 +10,41 @@ plugins:
         python:
           options:
             docstring_style: sphinx
-            show_root_heading: false
+            show_root_heading: true
             heading_level: 3
-            show_module_names: False
   - search
+
+markdown_extensions:
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
 
 nav:
   - Introduction:
     - "Introduction": index.md
+    - "Concept": index.md
+    - "Architecture": introduction/classdiagram.md
+
+  - Examples:
+      - "Minimal examples": examples/minimal_examples.md
+      - "Long examples": examples/long_examples.md
+      - "Visualization": examples/visualization_example.md
+
+  - Integrating your own work:
+    - "Planner integration": index.md
+    - "Controller integration": index.md
+    - "Dynamics integration": index.md
+
+  - Models and Simulation:
+      - "Vehicle Dynamics": index.md
+      - "Noise": index.md
+      - "Disturbance": index.md
+      - "Sensors": index.md
+
+  - Easy API:
+      - "PID": easy_api/easy_pid.md
+      - "MPC": easy_api/easy_mpc.md
+
+  - Core API:
+      - "Aasdf": index.md
+
+

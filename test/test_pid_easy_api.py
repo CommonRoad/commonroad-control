@@ -3,7 +3,6 @@ from pathlib import Path
 import os
 import logging
 
-from commonroad_control.cr_control_easy_api.mpc_for_dedicated_planner import mpc_for_reactive_planner
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import pid_with_lookahead_for_reactive_planner
