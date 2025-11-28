@@ -3,6 +3,9 @@ from typing import Any
 
 
 class ControllerInterface(ABC):
+    """
+    Abstract controller interface
+    """
 
     @abstractmethod
     def compute_control_input(

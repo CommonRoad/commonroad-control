@@ -40,6 +40,25 @@ def visualize_trajectories(
     use_icon_controlled_traj: bool = True,
     use_icon_planned_traj: bool = False,
 ) -> None:
+    """
+    Visualize scenario with planned and driven trajectory.
+    Per default, the driven trajectory is depicted as an orange car and the planned trajectory
+    as a black rectangle.
+    :param scenario: CommonRoad scenario.
+    :param planning_problem: Commonroad planning problem
+    :param planner_trajectory: Planned trajectory
+    :param controller_trajectory: Actual trajectory (from controller or simulation)
+    :param vehicle_width: vehicle width
+    :param vehicle_length: vehicle length
+    :param size_x: abscissa size of the figure
+    :param save_img: if true and save_path is valid, saves figure. If false, figure is displayed.
+    :param save_path: if valid and save_img is true, saves figure
+    :param opacity_planning: If planned trajectory does not use icon (default), opacity of black rectangle.
+    :param opacity_control: If actual trajectory does not use icon (not default default), opacity of orange rectangle.
+    :param use_icon_controlled_traj: If true, uses car icon for actual trajectory, else rectangle.
+    :param use_icon_planned_traj: If true, uses car icon for planned trajectory, else rectangle.
+    :return:
+    """
     for step in planner_trajectory.steps:
         plt.cla()
 
@@ -142,6 +161,14 @@ def make_gif(
     duration: float = 0.1,
     abort_img_threshold: int = 100,
 ) -> None:
+    """
+    Generates a .gif from a folder of .png images. Assumes images sorted by name.
+    :param path_to_img_dir: Path to the image folder
+    :param scenario_name: Name of the scenario for the .gif
+    :param num_imgs: how many images should the folder contain
+    :param duration: time duration between two consecutive images
+    :param abort_img_threshold: Safety threshold of number of images in folder, above which execution is aborted
+    """
 
     if (
         not os.path.exists(path_to_img_dir)

@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import InputState
@@ -40,9 +39,6 @@ from commonroad_control.util.clcs_control_util import (
     extend_kb_reference_trajectory_lane_following,
 )
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
-from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import (
-    run_reactive_planner,
-)
 from commonroad_control.util.state_conversion import (
     convert_state_db2kb,
     convert_state_kb2db,
@@ -115,6 +111,37 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    """
+    Separate long-lat PID controller with look-ahead for the CommonRoad reactive planner using no noises or disturbances.
+    Longitudinal velocity and lateral offset are calculated with respect to the lookahead time given a reactive planner
+    trajectory. Wrapper around pid_with_lookahead_for_planner().
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param reactive_planner_state_trajectory: CommonRoad reactive planner state trajectory
+    :param reactive_planner_input_trajectory: CommonRoad reactive planner input trajectory
+    :param kp_long: proportional gain longitudinal velocity
+    :param ki_long: integral gain longitudinal velocity
+    :param kd_long: derivative gain longitudinal velocity
+    :param kp_steer_offset: proportional gain lateral offset
+    :param ki_steer_offset: integral gain lateral offset
+    :param kd_steer_offset: derivative gain lateral offset
+    :param dt_controller: controller time step size in seconds
+    :param look_ahead_s: lookahead in seconds
+    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param vehicle_params: vehicle parameters object
+    :param planner_converter: planner converter
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model
+    :param vehicle_model_typename: typename (=class) of the vehicle dynamics model
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     return pid_with_lookahead_for_reactive_planner(
         scenario=scenario,
         planning_problem=planning_problem,
@@ -185,6 +212,38 @@ def pid_with_lookahead_for_reactive_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    """
+    Separate long-lat PID controller with look-ahead for the CommonRoad reactive planner. Longitudinal velocity and lateral offset are
+    calculated with respect to the lookahead time given a reactive planner trajectory. Wrapper around pid_with_lookahead_for_planner().
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param reactive_planner_state_trajectory: CommonRoad reactive planner state trajectory
+    :param reactive_planner_input_trajectory: CommonRoad reactive planner input trajectory
+    :param kp_long: proportional gain longitudinal velocity
+    :param ki_long: integral gain longitudinal velocity
+    :param kd_long: derivative gain longitudinal velocity
+    :param kp_steer_offset: proportional gain lateral offset
+    :param ki_steer_offset: integral gain lateral offset
+    :param kd_steer_offset: derivative gain lateral offset
+    :param dt_controller: controller time step size in seconds
+    :param look_ahead_s: lookahead in seconds
+    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param vehicle_params: vehicle parameters object
+    :param planner_converter: planner converter
+    :param disturbance_model_typename: typename (=class) of the disturbance
+    :param noise_model_typename: typename (=class) of the noise
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model
+    :param vehicle_model_typename: typename (=class) of the vehicle dynamics model
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     return pid_with_lookahead_for_planner(
         scenario=scenario,
         planning_problem=planning_problem,
@@ -257,7 +316,38 @@ def pid_with_lookahead_for_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
-
+    """
+    Separate long-lat PID controller with look-ahead for a planner. Longitudinal velocity and lateral offset are
+    calculated with respect to the lookahead time given a planner trajectory.
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param state_trajectory: planner state trajectory
+    :param input_trajectory: planner input trajectory
+    :param kp_long: proportional gain longitudinal velocity
+    :param ki_long: integral gain longitudinal velocity
+    :param kd_long: derivative gain longitudinal velocity
+    :param kp_steer_offset: proportional gain lateral offset
+    :param ki_steer_offset: integral gain lateral offset
+    :param kd_steer_offset: derivative gain lateral offset
+    :param dt_controller: controller time step size in seconds
+    :param look_ahead_s: lookahead in seconds
+    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param vehicle_params: vehicle parameters object
+    :param planner_converter: planner converter
+    :param disturbance_model_typename: typename (=class) of the disturbance
+    :param noise_model_typename: typename (=class) of the noise
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model
+    :param vehicle_model_typename: typename (=class) of the vehicle dynamics model
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     x_ref = planner_converter.trajectory_p2c_kb(
         planner_traj=state_trajectory, mode=TrajectoryMode.State
     )
@@ -445,43 +535,3 @@ def pid_with_lookahead_for_planner(
         )
 
     return traj_dict_measured, traj_dict_no_noise, input_dict
-
-
-if __name__ == "__main__":
-    scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
-    scenario_file = (
-        Path(__file__).parents[2] / "scenarios" / str(scenario_name + ".xml")
-    )
-    planner_config_path = (
-        Path(__file__).parents[2]
-        / "scenarios"
-        / "reactive_planner_configs"
-        / str(scenario_name + ".yaml")
-    )
-    img_save_path = Path(__file__).parents[2] / "output" / scenario_name
-
-    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
-    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
-
-    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
-
-    # run planner
-    logger.info("run planner")
-    rp_states, rp_inputs = run_reactive_planner(
-        scenario=scenario,
-        scenario_xml_file_name=str(scenario_name + ".xml"),
-        planning_problem=planning_problem,
-        planning_problem_set=planning_problem_set,
-        reactive_planner_config_path=planner_config_path,
-    )
-
-    noisy_traj, disturbed_traj, input_traj = pid_with_lookahead_for_reactive_planner(
-        scenario=scenario,
-        planning_problem=planning_problem,
-        reactive_planner_state_trajectory=rp_states,
-        reactive_planner_input_trajectory=rp_inputs,
-        visualize_scenario=True,
-        visualize_control=True,
-        save_imgs=False,
-        img_saving_path=img_save_path,
-    )

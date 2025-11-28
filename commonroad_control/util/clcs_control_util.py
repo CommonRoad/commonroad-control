@@ -1,6 +1,6 @@
 import logging
 from math import atan2
-from typing import List, Tuple
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 from commonroad.planning.goal import GoalRegion
@@ -15,6 +15,7 @@ from commonroad_route_planner.fast_api.fast_api import (
 from commonroad_route_planner.reference_path import ReferencePath
 from scipy.spatial.kdtree import KDTree
 
+from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
@@ -32,10 +33,10 @@ def extend_ref_path_with_route_planner(
 ) -> np.ndarray:
     """
     Extends the positional information of the trajectory using the CommonRoad route planner.
-    :param positional_trajectory: (n,2)
-    :param lanelet_network:
-    :param planning_problem_id:
-    :return:
+    :param positional_trajectory: (n,2) positional trajectory
+    :param lanelet_network: CommonRoad lanelet network object.
+    :param planning_problem_id: Id of current planning problem
+    :return: (n,2) positional trajectory of extended reference path
     """
 
     initial_state: InitialState = InitialState(
@@ -80,21 +81,30 @@ def extend_ref_path_with_route_planner(
 def extend_reference_trajectory_lane_following(
     positional_trajectory: np.ndarray,
     lanelet_network: LaneletNetwork,
-    final_state: StateInterface,
+    final_state: Union[StateInterface, KBState, DBState, Any],
     horizon: int,
     delta_t: float,
     l_wb: float,
-    planning_problem_id: int = 30000,
 ) -> Tuple[
     CurvilinearCoordinateSystem,
+    List[np.ndarray],
     List[np.ndarray],
     List[float],
     List[float],
     List[float],
     List[float],
-    List[float],
 ]:
-
+    """
+    Extrends planned trajectory using the CommonRoad reference path planner to account for
+    extended MPC horizons, controller overshoot etc.
+    :param positional_trajectory: (n,2) positional planner trajectory
+    :param lanelet_network: CommonRoad lanelet network
+    :param final_state: Final planner trajectory state
+    :param horizon: time horizon in steps
+    :param delta_t: time step size in seconds
+    :param l_wb: wheelbase length
+    :return: Curvilinear coordinate system object, (n,2) positions in cartesian coordinates, acceleration, heading, yaw_rate, steering angle, steering angle velocity,
+    """
     # extend path with route planner
     clcs_line = extend_ref_path_with_route_planner(
         positional_trajectory, lanelet_network
@@ -179,7 +189,17 @@ def extend_kb_reference_trajectory_lane_following(
     delta_t: float,
     horizon: int,
 ) -> Tuple[CurvilinearCoordinateSystem, TrajectoryInterface, TrajectoryInterface]:
-
+    """
+    Extends kinematic bicycle trajectory using the CommonRoad reference path planner to account for
+    extended MPC horizons, controller overshoot etc.
+    :param x_ref: State trajectory
+    :param u_ref: Input trajectory
+    :param lanelet_network: CommonRoad lanelet network
+    :param vehicle_params: Vehicle parameters object
+    :param delta_t: time step size in seconds
+    :param horizon: time horizon in steps
+    :return: Curvilinear coordinate system, extended state trajectory, extended input trajectory
+    """
     # positional trajectory
     positional_trajectory = np.asarray(
         [[state.position_x, state.position_y] for state in x_ref.points.values()]

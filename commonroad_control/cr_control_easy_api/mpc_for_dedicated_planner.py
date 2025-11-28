@@ -128,6 +128,33 @@ def mpc_for_reactive_planner_no_uncertainty(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    """
+    Combined MPC controller for the CommonRoad reactive planner without noise and disturbances.
+    Wrapper around mpc_for_planner().
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param reactive_planner_state_trajectory: CommonRoad reactive planner state trajectory
+    :param reactive_planner_input_trajectory: CommonRoad reactive planner input trajectory
+    :param planner_converter: CommonRoad reactive planner converter
+    :param dt_controller: controller time step size in seconds
+    :param horizon_ocp: horizon for the optimal control problem in steps
+    :param vehicle_params: vehicle parameters object
+    :param sit_factory_control: StateInputTrajectory factory for a given dynamics model used in the sim
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model used for control
+    :param vehicle_model_control_typename: typename (=class) of the vehicle dynamics model used in control
+    :param vehicle_model_sim_typename: typename (=class) of the vehicle dynamics model used in sim
+    :param state_idxs_typename: typename (=class) of the state idxs, mapping semantic meaning to an idx
+    :param input_idxs_typename: typename (=class) of the input idxs, mapping semantic meaning to an idx
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     return mpc_for_planner(
         scenario=scenario,
         planning_problem=planning_problem,
@@ -200,6 +227,34 @@ def mpc_for_reactive_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    """
+    Combined MPC controller for the CommonRoad reactive planner. Wrapper around mpc_for_planner().
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param reactive_planner_state_trajectory: CommonRoad reactive planner state trajectory
+    :param reactive_planner_input_trajectory: CommonRoad reactive planner input trajectory
+    :param planner_converter: CommonRoad reactive planner converter
+    :param dt_controller: controller time step size in seconds
+    :param horizon_ocp: horizon for the optimal control problem in steps
+    :param vehicle_params: vehicle parameters object
+    :param disturbance_model_typename: typename (=class) of the disturbance
+    :param noise_model_typename: typename (=class) of the noise
+    :param sit_factory_control: StateInputTrajectory factory for a given dynamics model used in the sim
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model used for control
+    :param vehicle_model_control_typename: typename (=class) of the vehicle dynamics model used in control
+    :param vehicle_model_sim_typename: typename (=class) of the vehicle dynamics model used in sim
+    :param state_idxs_typename: typename (=class) of the state idxs, mapping semantic meaning to an idx
+    :param input_idxs_typename: typename (=class) of the input idxs, mapping semantic meaning to an idx
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     return mpc_for_planner(
         scenario=scenario,
         planning_problem=planning_problem,
@@ -270,6 +325,34 @@ def mpc_for_planner(
 ) -> Tuple[
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
+    """
+    Combined MPC controller for a planner.
+    :param scenario: CommonRoad scenario
+    :param planning_problem: CommonRoad planning problem
+    :param state_trajectory: planner state trajectory
+    :param input_trajectory: planner input trajectory
+    :param planner_converter: planner converter
+    :param dt_controller: controller time step size in seconds
+    :param horizon_ocp: horizon for the optimal control problem in steps
+    :param vehicle_params: vehicle parameters object
+    :param disturbance_model_typename: typename (=class) of the disturbance
+    :param noise_model_typename: typename (=class) of the noise
+    :param sit_factory_control: StateInputTrajectory factory for a given dynamics model used in the sim
+    :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model used for control
+    :param vehicle_model_control_typename: typename (=class) of the vehicle dynamics model used in control
+    :param vehicle_model_sim_typename: typename (=class) of the vehicle dynamics model used in sim
+    :param state_idxs_typename: typename (=class) of the state idxs, mapping semantic meaning to an idx
+    :param input_idxs_typename: typename (=class) of the input idxs, mapping semantic meaning to an idx
+    :param sensor_model_typename: typename (=class) of the sensor model / state feedback
+    :param func_convert_planner2controller_state: function to convert a planner state into a controller state
+    :param func_convert_controller2planner_state: function to convert a controller state into a planner state
+    :param ivp_method: IVP-Method used by the ODE-Solver
+    :param visualize_scenario: If true, visualizes the scenario
+    :param visualize_control: If true, visualizes control and error outputs
+    :param save_imgs: If true and img_saving_path is given, saves visualizations instead of displaying them
+    :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
+    :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
+    """
     # TODO: there are some hardcoded params still
     logger.info(f"solving scenario {str(scenario.scenario_id)}")
     x_ref = planner_converter.trajectory_p2c_kb(

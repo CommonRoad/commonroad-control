@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -5,6 +6,8 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
     KBTrajectory,
 )
 from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
+
+logger = logging.getLogger(__name__)
 
 
 def visualize_ff_and_fb_inputs(
@@ -18,4 +21,5 @@ def visualize_ff_and_fb_inputs(
     save_img: bool = False,
     save_path: Union[str, Path] = None,
 ) -> None:
-    pass
+    logger.error("Not implemented")
+    raise NotImplementedError("Not implemented")

@@ -47,6 +47,15 @@ def main(
         save_imgs: bool,
         create_scenario: bool = True
 ) -> None:
+    """
+    Example function for building a combined MCP controller for the CommonRoad reactive planner.
+    :param scenario_file: Path to scenario file
+    :param scenario_name: Scenario name
+    :param img_save_path: Path to save images to
+    :param planner_config_path: Reactive planner config
+    :param save_imgs: If true and img_save_path is valid, save imgs to this path
+    :param create_scenario: Needs to be true for any visualization to happen
+    """
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
