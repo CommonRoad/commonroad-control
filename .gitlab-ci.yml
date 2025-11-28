@@ -28,6 +28,7 @@ unittest:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+    expire_in: 2 days
 
 test_build_pages:
   stage: test
@@ -37,6 +38,7 @@ test_build_pages:
   artifacts:
     paths:
       - site
+    expire_in: 2 days
   needs: [ ]
 
 
@@ -85,14 +87,6 @@ black:
     - release
   script:
     - black --check --verbose --diff --color commonroad_control/
-
-
-
-
-
-
-
-
 
 
 ################# Deploy ##########
