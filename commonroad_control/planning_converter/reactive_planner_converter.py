@@ -47,20 +47,17 @@ class ReactivePlannerConverter(PlanningConverterInterface):
 
     def __init__(
         self,
-        config: int = 0,
         kb_factory: Union[KBSITFactoryDisturbance, Any] = KBSITFactoryDisturbance(),
         db_factory: Union[DBSIDTFactory, Any] = DBSIDTFactory(),
         vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams(),
     ) -> None:
         """
-        Converter for CommonRoad reactive planner
-        :param config: dummy
+        Converter for CommonRoad reactive planner to different vehicle models
         :param kb_factory: kb Factory
         :param db_factory: db Factory
         :param vehicle_params: vehicle params
         """
         super().__init__(
-            config=config,
             kb_factory=kb_factory,
             db_factory=db_factory,
             vehicle_params=vehicle_params,
@@ -75,8 +72,8 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         dt: float = 0.1,
     ) -> KBTrajectory:
         """
-        Convert Reactive Planner Trajectory To kb-Trajectory
-        :param planner_traj: state or input trajectory
+        Convert reactive planner state or input trajectory to KB trajectory
+        :param planner_traj: planner state or input trajectory
         :param mode: state or input mode
         :param t_0: starting time of trajectory
         :param dt: time step size
@@ -142,6 +139,14 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         kb_traj: KBTrajectory,
         mode: TrajectoryMode,
     ) -> Union[List[ReactivePlannerState], List[InputState]]:
+        """
+        Convert kinematic bicycle state or input trajectory to reactive planner state or input trajectory
+        :param kb_traj: KB trajectory
+        :param mode: state or input mode
+        :param t_0: starting time of trajectory
+        :param dt: time step size
+        :return: Reactive planner state or input trajectory
+        """
         ordered_points_by_step = dict(sorted(kb_traj.points.items()))
         retval: List[ReactivePlannerState] = list()
         for step, point in ordered_points_by_step.items():
@@ -152,14 +157,13 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         self, kb_state: Union[KBState, KBInput], mode: TrajectoryMode, time_step: int
     ) -> Union[ReactivePlannerState, InputState]:
         """
-        Get Reactive planner state or input from kb state or input
-        :param kb_state:
-        :param mode:
-        :param time_step:
-        :return:
+        Convert kinematic bycicle state or input to reactive planner state or input at time step.
+        :param kb_state: KB state or input
+        :param mode: state or input mode
+        :param time_step: time step
+        :return: Reactive planner state or input
         """
         if mode == TrajectoryMode.State:
-            # TODO: convert back to rear axle
             # transform velocity to rear axle
             v_ra = map_velocity_from_cog_to_ra(
                 l_wb=self._vehicle_params.l_wb,
@@ -204,12 +208,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         dt: float = 0.1,
     ) -> DBTrajectory:
         """
-        Build dynamic-single-track trajectory from reactive planner
-        :param planner_traj:
-        :param mode:
-        :param t_0:
-        :param dt:
-        :return: DBTrajectory
+        Convert reactive planner state or input trajectory to dynamic bicycle trajectory
+        :param planner_traj: reactive planner state or input trajectory
+        :param mode: state or input mode
+        :param t_0: starting time of trajectory
+        :param dt: time step size
+        :return: Dynamic bycicle state or input trajectory
         """
         db_dict: Dict[int, Union[DBState, DBInput]] = dict()
         for db_point in planner_traj:
@@ -226,10 +230,10 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         mode: TrajectoryMode,
     ) -> Union[DBState, DBInput]:
         """
-        Create dynamic-single-track state or input from reactive planner
-        :param planner_state:
-        :param mode:
-        :return: DBState or DBInput
+        Convert reactive planner state or input to dynamic bicycle state or input
+        :param planner_state: reactive planner state or input
+        :param mode: state or input mode
+        :return: Dynamic bicycle state or input
         """
         if mode == TrajectoryMode.State:
             # compute velocity at center of gravity
@@ -276,6 +280,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         return retval
 
     def trajectory_c2p_db(self, db_traj: DBTrajectory, mode: TrajectoryMode) -> Any:
+        """
+        NOT IMPLEMENTED!
+        :param db_traj:
+        :param mode:
+        :return:
+        """
         logger.error("Currently not implemented")
         raise NotImplementedError("Currently not implemented")
 
@@ -286,13 +296,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         time_step: int,
     ) -> Union[ReactivePlannerState, InputState]:
         """
-        Convert control output to Reactive planner
-        :param db_state:
-        :param mode: choose between state and input
-        :param time_step:
-        :return: ReactivePlannerState or InputState
+        Convert dynamic bycicle state or input to reactive planner state or input at time step.
+        :param db_state: Dynamic bicycle state or input
+        :param mode: state or input mode
+        :param time_step: time step
+        :return: reactive planner state or input
         """
-        # TODO check conversion
         if mode == TrajectoryMode.State:
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,

@@ -34,10 +34,10 @@ def run_reactive_planner(
     maximum_iterations: int = 200,
 ) -> Tuple[List[ReactivePlannerState], List[InputState]]:
     """
-    Util wrapper to (semi) easily run the reactive planner
-    :param scenario: scenario object
+    Util wrapper to easily run the reactive planner
+    :param scenario: CommonRoad scenario object
     :param scenario_xml_file_name: e.g. ZAM-1_1.xml
-    :param planning_problem: planning problem object
+    :param planning_problem: CommonRoad planning problem object
     :param planning_problem_set: planning problem set orbject
     :param reactive_planner_config_path: path to reactive planner config
     :param logging_level: logging level as string (see reactive planner documentation)

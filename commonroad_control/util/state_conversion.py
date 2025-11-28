@@ -8,6 +8,12 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 def convert_state_kb2db(
     kb_state: "KBState", vehicle_params: VehicleParameters
 ) -> DBState:
+    """
+    Converts kinematic bicycle state to dynamic bicycle state
+    :param kb_state: KB state
+    :param vehicle_params: Vehicle parameters
+    :return: KB state
+    """
     slip_angle = atan(
         tan(kb_state.steering_angle) * vehicle_params.l_r / vehicle_params.l_wb
     )
@@ -23,6 +29,11 @@ def convert_state_kb2db(
 
 
 def convert_state_db2kb(db_state: "DBState") -> KBState:
+    """
+    Converts dynamic bicycle state to kinematic bycicle state.
+    :param db_state: DB state
+    :return: KB State
+    """
     return KBState(
         position_x=db_state.position_x,
         position_y=db_state.position_y,

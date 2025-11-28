@@ -10,7 +10,9 @@ from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
 
 
 class Controller2VehicleInterface(ABC):
-    def __init__(self, sit_factory: StateInputDisturbanceTrajectoryFactoryInterface):
+    def __init__(
+        self, sit_factory: StateInputDisturbanceTrajectoryFactoryInterface
+    ) -> None:
         self._sit_factory = sit_factory
 
     @abstractmethod
