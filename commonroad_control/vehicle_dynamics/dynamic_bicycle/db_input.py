@@ -11,7 +11,7 @@ from commonroad_control.vehicle_dynamics.input_interface import (
 @dataclass(frozen=True)
 class DBInputIndices(InputInterfaceIndex):
     """
-    Indices of the control inputs.
+    Indices of the control inputs of the dynamic bicycle model.
     """
 
     dim: int = 2
@@ -22,14 +22,17 @@ class DBInputIndices(InputInterfaceIndex):
 @dataclass
 class DBInput(InputInterface):
     """
-    Control input of the dynamic bicycle model.
+    Dataclass storing the control input of the dynamic bicycle model.
     """
 
     acceleration: float = None
     steering_angle_velocity: float = None
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: control input dimension
+        """
         return DBInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:

@@ -8,11 +8,10 @@ from commonroad_control.vehicle_dynamics.input_interface import (
 )
 
 
-# TODO should be an enum so no initialization?
 @dataclass(frozen=True)
 class KBInputIndices(InputInterfaceIndex):
     """
-    Indices of the control inputs.
+    Indices of the control inputs of the kinematic bicycle model.
     """
 
     dim: int = 2
@@ -20,18 +19,20 @@ class KBInputIndices(InputInterfaceIndex):
     steering_angle_velocity: int = 1
 
 
-# TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass()
 class KBInput(InputInterface):
     """
-    Control input of the kinematic bicycle model.
+    Dataclass storing the control input of the kinematic bicycle model.
     """
 
     acceleration: float = None
     steering_angle_velocity: float = None
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: control input dimension
+        """
         return KBInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:

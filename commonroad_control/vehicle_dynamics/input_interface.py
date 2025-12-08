@@ -7,7 +7,7 @@ import numpy as np
 @dataclass(frozen=True)
 class InputInterfaceIndex(ABC):
     """
-    Indices of the control inputs.
+    Interface for the indices of the control inputs.
     """
 
     dim: int
@@ -16,11 +16,14 @@ class InputInterfaceIndex(ABC):
 @dataclass
 class InputInterface(ABC):
     """
-    Control input interface
+    Interface for dataclass objects storing control inputs of the vehicle models.
     """
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: control input dimension
+        """
         return InputInterfaceIndex.dim
 
     @abstractmethod

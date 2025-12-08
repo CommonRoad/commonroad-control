@@ -21,6 +21,10 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class KinematicBicycle(VehicleModelInterface):
+    """
+    Kinematic bicycle model.
+    Reference point for the vehicle dynamics: center of gravity.
+    """
 
     @classmethod
     def factory_method(
@@ -28,7 +32,7 @@ class KinematicBicycle(VehicleModelInterface):
     ) -> "KinematicBicycle":
         """
         Factory method to generate class
-        :param params: CommonRoad vehicle params
+        :param params: CommonRoad-Control vehicle parameters
         :param delta_t: sampling time
         :return: instance
         """
@@ -51,17 +55,11 @@ class KinematicBicycle(VehicleModelInterface):
             delta_t=delta_t,
         )
 
-    def position_to_clcs(self, x: KBState) -> KBState:
-        pass
-
-    def position_to_cartesian(self, x: KBState) -> KBState:
-        pass
-
     def _set_input_bounds(self, params: VehicleParameters) -> Tuple[KBInput, KBInput]:
         """
-        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        Extract input bounds from vehicle parameters and returns them as instances of the Input class.
         :param params: vehicle parameters
-        :return: lower and upper bound on the inputs
+        :return: lower and upper bound on the inputs - KBInputs
         """
 
         # lower bound
@@ -83,14 +81,13 @@ class KinematicBicycle(VehicleModelInterface):
         x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-    ) -> cas.SX.sym:
+    ) -> Union[cas.SX.sym, np.array]:
         """
-        Dynamics function of the kinematic bicycle model.
-        We model the movement of the center of gravity of the vehicle.
-        :param x: state - array of dimension (self._nx,)
-        :param u: control input - - array of dimension (self._nu,)
-        :param w: disturbance - - array of dimension (self._nw,)
-        :return: dynamics at (x,u,w) - casadi symbolic of dimension (self._nx,1)
+        Continuous-time dynamics function of the vehicle model for simulation and symbolic operations using CasADi.
+        :param x: state - CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - CasADi symbolic/ array of dimension (self._nu,)
+        :param w: disturbance - CasADi symbolic/ array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x,u,w) - CasADi symbolic/ array of dimension (self._nx,)
         """
 
         # extract state
@@ -130,6 +127,12 @@ class KinematicBicycle(VehicleModelInterface):
         x: Union[KBState, cas.SX.sym, np.array],
         u: Union[KBInput, cas.SX.sym, np.array],
     ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+        """
+        Computes the normalized longitudinal and lateral acceleration (w.r.t. the maximum acceleration).
+        :param x: state - StateInterface/ CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - InputInterface/ CasADi symbolic/ array of dimension (self._nu,)
+        :return: normalized longitudinal and lateral acceleration - float/ CasADi symbolic
+        """
 
         # extract state
         if isinstance(x, KBState):

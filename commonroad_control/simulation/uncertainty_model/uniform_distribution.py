@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class UniformDistribution(UncertaintyModelInterface):
+    """
+    Uncertainty model for generating uniformly distributed noise or disturbances.
+    """
+
     def __init__(
         self,
         dim: int,
@@ -23,6 +27,13 @@ class UniformDistribution(UncertaintyModelInterface):
         nominal_value: Union[np.ndarray, list[float], UncertaintyInterface] = None,
         **kwargs,
     ) -> None:
+        """
+        Initialize uncertainty model. If no user-defined nominal value is provided, the mean of the uniform distribution serves as the nominal value.
+        :param dim: dimension of the uncertainty - int
+        :param lower_bound: lower bound of the uncertainty values - array/ list of floats/ instance of class UncertaintyInterface
+        :param upper_bound: upper bound of the uncertainty values - array/ list of floats/ instance of class UncertaintyInterface
+        :param nominal_value: if not None: user-defined nominal value of the uncertainty - array/ list of floats/ instance of class UncertaintyInterface
+        """
 
         super().__init__(dim=dim)
 
@@ -40,16 +51,19 @@ class UniformDistribution(UncertaintyModelInterface):
 
         # set nominal value
         if nominal_value is not None:
-            self._nominal_value = nominal_value
+            if isinstance(nominal_value, UncertaintyInterface):
+                nominal_value_np = nominal_value.convert_to_array()
+            else:
+                nominal_value_np: np.ndarray = np.array(nominal_value)
+            self._nominal_value: np.ndarray = nominal_value_np
         else:
-            self._nominal_value = 0.5 * (upper_bound + lower_bound)
+            self._nominal_value = 0.5 * (self._upper_bound + self._lower_bound)
 
         self._sanity_check()
 
     def _sanity_check(self) -> None:
         """
         Check args.
-        :return:
         """
         # check dimension
         if len(self._lower_bound) != self._dim or len(self._upper_bound) != self._dim:
@@ -76,7 +90,15 @@ class UniformDistribution(UncertaintyModelInterface):
 
     @property
     def nominal_value(self) -> np.ndarray:
+        """
+        Returns the nominal value, which is either the user-defined nominal value (passed as an input argument) or the mean of the uniform distribution
+        :return: np.ndarray of dimension (self.dim,)
+        """
         return self._nominal_value
 
-    def sample_uncertainty(self):
+    def sample_uncertainty(self) -> np.ndarray:
+        """
+        Generates a random sample from the uniform distribution.
+        :return: np.ndarray of dimension (self.dim,)
+        """
         return np.random.uniform(self._lower_bound, self._upper_bound)

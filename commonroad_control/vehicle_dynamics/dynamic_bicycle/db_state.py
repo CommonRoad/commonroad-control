@@ -5,7 +5,8 @@ import numpy as np
 from commonroad.scenario.state import CustomState, InitialState
 
 from commonroad_control.util.conversion_util import (
-    compute_total_velocity_from_components,
+    compute_slip_angle_from_velocity_components,
+    compute_velocity_from_components,
 )
 from commonroad_control.vehicle_dynamics.state_interface import (
     StateInterface,
@@ -16,7 +17,7 @@ from commonroad_control.vehicle_dynamics.state_interface import (
 @dataclass(frozen=True)
 class DBStateIndices(StateInterfaceIndex):
     """
-    Indices of the states.
+    Indices of the states of the dynamic bicycle model.
     """
 
     dim: int = 7
@@ -32,7 +33,7 @@ class DBStateIndices(StateInterfaceIndex):
 @dataclass
 class DBState(StateInterface):
     """
-    State of the dynamic bicycle model
+    Dataclass storing the states of the dynamic bicycle model.
     """
 
     position_x: float = None
@@ -44,17 +45,23 @@ class DBState(StateInterface):
     steering_angle: float = None
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: state dimension
+        """
         return DBStateIndices.dim
 
     @property
-    def velocity(self):
+    def velocity(self) -> float:
+        """
+        :return: absolute value of velocity of the vehicle
+        """
         return sqrt(self.velocity_long**2 + self.velocity_lat**2)
 
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,)
+        :return: np.ndarray of dimension (self.dim,)
         """
 
         x_np = np.zeros((self.dim,))
@@ -68,40 +75,42 @@ class DBState(StateInterface):
 
         return x_np
 
-    # TODO: Add conversion of slip angle etc.
     def to_cr_initial_state(self, time_step: int) -> InitialState:
         """
-        Convert to cr initial state
-        :param time_step: time step
-        :return: cr InitialState
+        Convert to CommonRoad initial state
+        :param time_step: time step - int
+        :return: CommonRoad InitialState
         """
         return InitialState(
             position=np.asarray([self.position_x, self.position_y]),
-            velocity=compute_total_velocity_from_components(
+            velocity=compute_velocity_from_components(
                 v_long=self.velocity_long, v_lat=self.velocity_lat
             ),
             orientation=self.heading,
             acceleration=0,
             yaw_rate=self.yaw_rate,
-            slip_angle=0,
+            slip_angle=compute_slip_angle_from_velocity_components(
+                self.velocity_long, self.velocity_lat
+            ),
             time_step=time_step,
         )
 
-    # TODO: Add conversion of slip angle etc.
     def to_cr_custom_state(self, time_step: int) -> CustomState:
         """
-        Convert to cr custom state
-        :param time_step: time step
-        :return: cr custom state
+        Convert to CommonRoad custom state
+        :param time_step: time step - int
+        :return: CommonRoad custom state
         """
         return CustomState(
             position=np.asarray([self.position_x, self.position_y]),
-            velocity=compute_total_velocity_from_components(
+            velocity=compute_velocity_from_components(
                 v_long=self.velocity_long, v_lat=self.velocity_lat
             ),
             orientation=self.heading,
             acceleration=0,
             yaw_rate=0,
-            slip_angle=0,
+            slip_angle=compute_slip_angle_from_velocity_components(
+                self.velocity_long, self.velocity_lat
+            ),
             time_step=time_step,
         )

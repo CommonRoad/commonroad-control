@@ -11,7 +11,7 @@ from commonroad_control.vehicle_dynamics.full_state_noise_interface import (
 @dataclass(frozen=True)
 class DBNoiseIndices(FullStateNoiseInterfaceIndex):
     """
-    Indices of the noise.
+    Indices of the noise variables.
     """
 
     dim: int = 7
@@ -39,7 +39,10 @@ class DBNoise(FullStateNoiseInterface):
     steering_angle: float = 0.0
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: noise dimension
+        """
         return DBNoiseIndices.dim
 
     def convert_to_array(self) -> np.ndarray:

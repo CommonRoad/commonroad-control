@@ -67,8 +67,8 @@ from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import (
     KBInputIndices,
 )
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
-    KBSITFactoryDisturbance,
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
+    KBSIDTFactory,
 )
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import (
     KBStateIndices,
@@ -99,9 +99,9 @@ def mpc_for_reactive_planner_no_uncertainty(
         PlanningConverterInterface
     ] = ReactivePlannerConverter(),
     dt_controller: float = 0.1,
-    horizon_ocp: int = 20,
+    horizon_ocp: int = 25,
     vehicle_params=BMW3seriesParams(),
-    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSIDTFactory(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
@@ -200,7 +200,7 @@ def mpc_for_reactive_planner(
     noise_model_typename: Type[
         Union[UncertaintyModelInterface, GaussianDistribution]
     ] = GaussianDistribution,
-    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSIDTFactory(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
@@ -298,7 +298,7 @@ def mpc_for_planner(
     noise_model_typename: Type[
         Union[UncertaintyModelInterface, GaussianDistribution]
     ] = GaussianDistribution,
-    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSITFactoryDisturbance(),
+    sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSIDTFactory(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
@@ -375,7 +375,7 @@ def mpc_for_planner(
     cost_uu = 0.1 * np.eye(input_idxs_typename.dim)
     cost_final = cost_xx  # np.eye(KBStateIndices.dim)
     # ... solver parameters for initial step-> iterate until convergence
-    solver_parameters_init = SCvxParameters(max_iterations=20)
+    solver_parameters_init = SCvxParameters()
     # ... solver parameters for real time iteration -> only one iteration per time step
     solver_parameters_rti = SCvxParameters(max_iterations=1)
     # ... ocp solver (initial parameters)
@@ -440,8 +440,8 @@ def mpc_for_planner(
     )
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactoryDisturbance(),
-        horizon=mpc.horizon,
+        sidt_factory=KBSIDTFactory(),
+        mpc_horizon=mpc.horizon,
     )
     # ... dummy reference trajectory: all inputs set to zero
     u_np = np.zeros((u_ref_ext.dim, len(u_ref_ext.steps)))
@@ -466,7 +466,7 @@ def mpc_for_planner(
     input_dict = {}
 
     # for step, x_planner in kb_traj.points.items():
-    for kk_sim in range(len(x_ref.steps)):
+    for kk_sim in range(len(u_ref.steps)):
 
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
@@ -475,7 +475,6 @@ def mpc_for_planner(
 
         # convert initial state to kb
         x0_kb = func_convert_controller2planner_state(traj_dict_measured[kk_sim])
-        # x0_kb = traj_dict[kk_sim]
 
         # compute control input
         u_now = mpc.compute_control_input(x0=x0_kb, x_ref=tmp_x_ref, u_ref=tmp_u_ref)
@@ -500,8 +499,8 @@ def mpc_for_planner(
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
-    logger.info(f"Control took: {eta * 1000} millisec.")
-    simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
+    logger.debug(f"Control took: {eta * 1000} millisec.")
+    simulated_traj = sit_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
@@ -529,7 +528,7 @@ def mpc_for_planner(
         visualize_reference_vs_actual_states(
             reference_trajectory=x_ref,
             actual_trajectory=simulated_traj,
-            time_steps=list(simulated_traj.points.keys())[:-2],
+            time_steps=list(simulated_traj.points.keys()),
             save_img=save_imgs,
             save_path=img_saving_path,
         )

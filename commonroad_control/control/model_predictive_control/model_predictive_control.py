@@ -14,7 +14,15 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 
 class ModelPredictiveControl(ControllerInterface):
+    """
+    Model predictive controller (MPC). This class mostly serves as a wrapper for a given optimal control problem (OCP) solver and provides methods for computign an initial guess, e.g., by shifting the solution from the previous time step or linear interpolation between the initial state and a desired final state.
+    """
+
     def __init__(self, ocp_solver: OptimalControlSolver):
+        """
+        Initialize controller.
+        :param ocp_solver: OCP solver - OptimalControlSolver
+        """
 
         # init base class
         super().__init__()
@@ -36,12 +44,12 @@ class ModelPredictiveControl(ControllerInterface):
     ) -> InputInterface:
         """
         Computes the control input by solving an optimal control problem.
-        :param x0: initial state of the vehicle
-        :param x_ref: state reference trajectory
-        :param u_ref: input reference trajectory
-        :param x_init: (optional) initial guess for the state trajectory
-        :param u_init: (optional) initial state for the input trajectory
-        :return: optimal control input
+        :param x0: initial state of the vehicle - StateInterface
+        :param x_ref: state reference trajectory - TrajectoryInterface
+        :param u_ref: input reference trajectory - TrajectoryInterface
+        :param x_init: (optional) initial guess for the state trajectory -TrajectoryInterface
+        :param u_init: (optional) initial state for the input trajectory - TrajectoryInterface
+        :return: optimal control input - InputInterface
         """
 
         # set initial guess for optimal control: if no initial guess is provided (x_init = None and or u_init = None),
@@ -70,9 +78,9 @@ class ModelPredictiveControl(ControllerInterface):
         """
         Computes an initial guess by linearly interpolating between the initial state x0 and the final reference state
         xf. The control inputs are set to zero.
-        :param x0: initial state
-        :param xf: final reference state
-        :return: initial guess for the state and control inputs
+        :param x0: initial state - StateInterface
+        :param xf: desired final state - StateInterface
+        :return: initial guess for the state and control inputs - TrajectoryInterface, TrajectoryInterface
         """
 
         # ... state: linear interpolation between x0 and xf
@@ -128,7 +136,7 @@ class ModelPredictiveControl(ControllerInterface):
         Computes an initial guess by shifting the solution from the previous time step and appending the last control
         input from the reference trajectory. The initial guess for the state at the end of the prediction horizon is
         obtained by simulating the system using the reference input.
-        :param u_ref: reference trajectory - control input
+        :param u_ref: input reference trajectory - TrajectoryInterface
         :return: initial guess for the state and control inputs
         """
 
@@ -157,7 +165,7 @@ class ModelPredictiveControl(ControllerInterface):
         # convert to trajectory interface
         # ... state trajectory
         time_steps = [kk for kk in range(0, self.ocp_solver.horizon + 1)]
-        x_init = self.ocp_solver.sit_factory.trajectory_from_state_or_input(
+        x_init = self.ocp_solver.sit_factory.trajectory_from_points(
             trajectory_dict=dict(zip(time_steps, x_init_points)),
             mode=TrajectoryMode.State,
             t_0=u_ref.t_0,
@@ -165,7 +173,7 @@ class ModelPredictiveControl(ControllerInterface):
         )
         # ... input trajectory
         time_steps = [kk for kk in range(0, self.ocp_solver.horizon)]
-        u_init = self.ocp_solver.sit_factory.trajectory_from_state_or_input(
+        u_init = self.ocp_solver.sit_factory.trajectory_from_points(
             trajectory_dict=dict(zip(time_steps, u_init_points)),
             mode=TrajectoryMode.Input,
             t_0=u_ref.t_0,
@@ -177,11 +185,13 @@ class ModelPredictiveControl(ControllerInterface):
     def clear_initial_guess(self):
         """
         Delete stored initial guess.
-        :return:
         """
         self._x_init = None
         self._u_init = None
 
     @property
-    def horizon(self):
+    def horizon(self) -> int:
+        """
+        :return: discrete prediction horizon of the OCP
+        """
         return self.ocp_solver.horizon

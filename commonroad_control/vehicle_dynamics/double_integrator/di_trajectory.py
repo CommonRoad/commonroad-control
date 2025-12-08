@@ -1,8 +1,12 @@
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
+from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import (
+    DIDisturbance,
+)
 from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
 from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
 from commonroad_control.vehicle_dynamics.trajectory_interface import (
@@ -12,34 +16,27 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import (
 
 if TYPE_CHECKING:
     from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import (
-        DISIDTFactoryDisturbance,
+        DISIDTFactory,
     )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DITrajectory(TrajectoryInterface):
     """
-    Dynamic Single Track Trajectory
+    Double integrator model Trajectory
     """
 
-    def get_interpolated_point_at_time(
-        self, time: float
-    ) -> Union["DIInput", "DIState"]:
-        """
-        :param time: time at which to interpolate
-        :return: interpolated state
-        """
-        pass
-
     def get_point_at_time(
-        self, time: float, factory: "DISIDTFactoryDisturbance"
-    ) -> Union["DIState", "DIInput"]:
+        self, time: float, factory: "DISIDTFactory"
+    ) -> Union["DIState", "DIInput", "DIDisturbance"]:
         """
-        Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
+        Computes a point at a given point in time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
-        :param time: time at which to interpolate
-        :param factory: sit_factory for instantiating the interpolated point (dataclass object)
-        :return: interpolated point
+        :param time: time at which to interpolate - float
+        :param factory: sidt_factory for instantiating the interpolated point (dataclass object)
+        :return: interpolated point - DIState/DIInput/DIDisturbance
         """
 
         lower_point, upper_point, lower_idx, upper_idx = (
@@ -50,12 +47,38 @@ class DITrajectory(TrajectoryInterface):
         else:
             alpha = (upper_idx * self.delta_t - time) / self.delta_t
             new_point_array: np.ndarray = (
-                alpha * upper_point.convert_to_array()
-                + (1 - alpha) * lower_point.convert_to_array()
-            )
-            new_point: Union[DIState, DIInput] = (
-                (factory.state_from_numpy_array(new_point_array))
-                if self.mode is TrajectoryMode.State
-                else factory.input_from_numpy_array(new_point_array)
-            )
+                1 - alpha
+            ) * upper_point.convert_to_array() + alpha * lower_point.convert_to_array()
+            if self.mode is TrajectoryMode.State:
+                new_point: DIState = factory.state_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Input:
+                new_point: DIInput = factory.input_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Disturbance:
+                new_point: DIDisturbance = factory.disturbance_from_numpy_array(
+                    new_point_array
+                )
+            else:
+                logger.error(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
+                raise TypeError(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
         return new_point
+
+    def to_cr_dynamic_obstacle(
+        self,
+        vehicle_width: float,
+        vehicle_length: float,
+        vehicle_id: int,
+    ):
+        """
+        Converts state trajectory to CommonRoad dynamic obstacles for plotting
+        :param vehicle_width: vehicle width
+        :param vehicle_length: vehicle length
+        :param vehicle_id: vehicle id
+        :return: CommonRoad dynamic obstacle
+        """
+        raise NotImplementedError(
+            "to_cr_dynamic_obstacle() has not been implemented yet."
+        )

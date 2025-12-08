@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class GaussianDistribution(UncertaintyModelInterface):
     """
-    Generates Gaussian noise or disturbances
+    Uncertainty model for generating Gaussian noise or disturbances.
     """
 
     def __init__(
@@ -30,23 +30,11 @@ class GaussianDistribution(UncertaintyModelInterface):
         **kwargs,
     ) -> None:
         """
-        Generates Gaussian noise or disturbances.
-
-        Reasonable Values for disturbance
-        std deviation of position (x,y) are 0.001m to 0.025m, given
-        a maximum continuous-time diffusion with a drift over 10m between 0.1m and 0.5m and a control time step of
-        dt=0.01. For a control time step of dt=0.1, 0.02 to 0.05 is common.
-        std deviation of steering angle: 0.0010rad to 0.0017 for control dt=0.01; and 0.0031 to 0.01 for control dt=0.1
-
-        Reasonable values for noise:
-        std deviation of position (x,y): Automative Grade GPS+SBAS 0.5m to 1.0m, GNSS+RTK 0.02m – 0.1 m,
-        Lidar SLAM 0.01m – 0.05m,
-        std deviation for steering angle: 0.0035–0.0087 rad
-
-
-        :param dim: dimension of vector
-        :param mean: list of mean values per entry
-        :param std_deviation: list of standard deviations per entry
+        Initialize uncertainty model. If no user-defined nominal value is provided, the mean of the Gaussian distribution serves as the nominal value.
+        :param dim: dimension of the uncertainty - int
+        :param mean: mean value - array/ list of floats/ instance of class UncertaintyInterface
+        :param std_deviation: standard deviations (component-wise) -  array/ list of floats/ instance of class UncertaintyInterface
+        :param nominal_value: if not None: user-defined nominal value of the uncertainty - array/ list of floats/ instance of class UncertaintyInterface
         """
         super().__init__(dim=dim)
 
@@ -59,7 +47,7 @@ class GaussianDistribution(UncertaintyModelInterface):
         if isinstance(std_deviation, UncertaintyInterface):
             std_deviation_np = std_deviation.convert_to_array()
         else:
-            std_deviation_np = np.array(mean)
+            std_deviation_np = np.array(std_deviation)
         self._std_deviation: np.ndarray = std_deviation_np
 
         # set nominal value
@@ -108,13 +96,14 @@ class GaussianDistribution(UncertaintyModelInterface):
     @property
     def nominal_value(self) -> np.ndarray:
         """
-        :return: nominal value of the uncertainty
+        Returns the nominal value, which is either the user-defined nominal value (passed as an input argument) or the mean of the Gaussian distribution
+        :return: np.ndarray of dimension (self.dim,)
         """
         return self._nominal_value
 
     def sample_uncertainty(self) -> np.ndarray:
         """
         Generates a random sample from the Gaussian distribution.
-        :return:
+        :return: np.ndarray of dimension (self.dim,)
         """
         return np.random.normal(self._mean, self._std_deviation, size=self._dim)

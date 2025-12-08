@@ -21,6 +21,10 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DynamicBicycle(VehicleModelInterface):
+    """
+    Dynamic bicycle model with linear tyre model.
+    Reference point for the vehicle dynamics: center of gravity.
+    """
 
     @classmethod
     def factory_method(
@@ -28,7 +32,7 @@ class DynamicBicycle(VehicleModelInterface):
     ) -> "DynamicBicycle":
         """
         Factory method to generate class
-        :param params: CommonRoad vehicle params
+        :param params: CommonRoad-Control vehicle params
         :param delta_t: sampling time
         :return: instance
         """
@@ -58,17 +62,11 @@ class DynamicBicycle(VehicleModelInterface):
             delta_t=delta_t,
         )
 
-    def position_to_clcs(self, x: DBState) -> DBState:
-        pass
-
-    def position_to_cartesian(self, x: DBState) -> DBState:
-        pass
-
     def _set_input_bounds(self, params: VehicleParameters) -> Tuple[DBInput, DBInput]:
         """
-        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        Extract input bounds from vehicle parameters and returns them as instances of the Input class.
         :param params: vehicle parameters
-        :return: lower and upper bound on the inputs
+        :return: lower and upper bound on the inputs - DBInputs
         """
 
         # lower bound
@@ -90,17 +88,13 @@ class DynamicBicycle(VehicleModelInterface):
         x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-    ) -> cas.SX.sym:
+    ) -> Union[cas.SX.sym, np.array]:
         """
-        Dynamics function of the dynamic bicycle model.
-        Equations are taken from
-        - 'J. Kabzan et al. "Learning-Based Model Predictive Control for Autonomous Racing", IEEE RA-L, 2019'
-        - 'J. M. Snider, "Automatic Steering Methods for Autonomous Automobile Path Tracking", CMU-RI-TR-09-08, 2009'
-        (tyre slip angles, p. 29)
-
-        :param x: state - array of dimension (self._nx,1)
-        :param u: control input - array of dimension (self._nu,1)
-        :return: dynamics at (x,u) - casadi symbolic of dimension (self._nx,1)
+        Continuous-time dynamics function of the vehicle model for simulation and symbolic operations using CasADi.
+        :param x: state - CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - CasADi symbolic/ array of dimension (self._nu,)
+        :param w: disturbance - CasADi symbolic/ array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x,u,w) - CasADi symbolic/ array of dimension (self._nx,)
         """
 
         # extract state
@@ -148,6 +142,12 @@ class DynamicBicycle(VehicleModelInterface):
         x: Union[DBState, cas.SX.sym, np.array],
         u: Union[DBInput, cas.SX.sym, np.array],
     ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+        """
+        Computes the normalized longitudinal and lateral acceleration (w.r.t. the maximum acceleration).
+        :param x: state - StateInterface/ CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - InputInterface/ CasADi symbolic/ array of dimension (self._nu,)
+        :return: normalized longitudinal and lateral acceleration - float/ CasADi symbolic
+        """
 
         # extract state
         if isinstance(x, DBState):
@@ -173,9 +173,9 @@ class DynamicBicycle(VehicleModelInterface):
     ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
         """
         Computes the lateral tyre forces at the front and rear axle.
-        :param x: state - array of dimension (self._nx,)
-        :param u: control input - array of dimension (self._nu,)
-        :return: lateral tyre forces at front and rear axle
+        :param x: state - CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - CasADi symbolic/ array of dimension (self._nu,)
+        :return: lateral tyre forces at front and rear axle - float/ CasADi symbolic
         """
         # extract state
         v_bx = x[DBStateIndices.velocity_long]

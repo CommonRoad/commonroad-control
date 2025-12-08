@@ -11,7 +11,7 @@ from commonroad_control.vehicle_dynamics.input_interface import (
 @dataclass(frozen=True)
 class DIInputIndices(InputInterfaceIndex):
     """
-    Indices of the control inputs.
+    Indices of the control inputs of the double integrator model.
     """
 
     dim: int = 2
@@ -22,14 +22,17 @@ class DIInputIndices(InputInterfaceIndex):
 @dataclass
 class DIInput(InputInterface):
     """
-    Control input of the double integrator model.
+    Dataclass storing the control input of the double integrator model.
     """
 
     acceleration_long: float = None
     acceleration_lat: float = None
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: control input dimension
+        """
         return DIInputIndices.dim
 
     def convert_to_array(self) -> np.ndarray:

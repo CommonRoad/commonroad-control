@@ -12,8 +12,8 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import (
     DBTrajectory,
 )
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
-    KBSITFactoryDisturbance,
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
+    KBSIDTFactory,
 )
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
@@ -26,7 +26,7 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 class PlanningConverterInterface(ABC):
     def __init__(
         self,
-        kb_factory: Union[KBSITFactoryDisturbance, Any],
+        kb_factory: Union[KBSIDTFactory, Any],
         db_factory: Union[DBSIDTFactory, Any],
         vehicle_params: Union[BMW3seriesParams, Any],
         *args,
@@ -38,14 +38,12 @@ class PlanningConverterInterface(ABC):
         :param db_factory: factory for dynamic single track states and inputs
         :param vehicle_params: vehicle parameters
         """
-        self._kb_factory: Union[KBSITFactoryDisturbance, DBSIDTFactory, Any] = (
-            kb_factory
-        )
+        self._kb_factory: Union[KBSIDTFactory, DBSIDTFactory, Any] = kb_factory
         self._db_factory: Union[DBSIDTFactory, DBSIDTFactory, Any] = db_factory
         self._vehicle_params: Union[BMW3seriesParams, Any] = vehicle_params
 
     @property
-    def kb_factory(self) -> Union[KBSITFactoryDisturbance, DBSIDTFactory, Any]:
+    def kb_factory(self) -> Union[KBSIDTFactory, DBSIDTFactory, Any]:
         """
         :return: planner state factory
         """
@@ -70,12 +68,12 @@ class PlanningConverterInterface(ABC):
         self, planner_traj: Any, mode: TrajectoryMode, t_0: float, dt: float
     ) -> KBTrajectory:
         """
-        Generate Kinematic bycicle state or input trajectory from planner
+        Generate Kinematic bicycle state or input trajectory from planner
         :param planner_traj: planner trajectory
         :param mode: state or input mode
-        :param t_0: starting time
+        :param t_0: initial time
         :param dt: time step size
-        :return: Kinematic bycicle trajectory
+        :return: KBTrajectory
         """
         pass
 
@@ -83,8 +81,8 @@ class PlanningConverterInterface(ABC):
     @abstractmethod
     def trajectory_c2p_kb(self, kb_traj: KBTrajectory, mode: TrajectoryMode) -> Any:
         """
-        Generate planner trajectory from kinematic bycicle trajectory
-        :param kb_traj: Kinematic bycicle trajectory
+        Generate planner trajectory from kinematic bicycle trajectory
+        :param kb_traj: Kinematic bicycle trajectory
         :param mode: state or input mode
         :return: planner trajectory
         """
@@ -97,10 +95,10 @@ class PlanningConverterInterface(ABC):
         mode: TrajectoryMode,
     ) -> Union[KBState, KBInput]:
         """
-        Convert planner state or input to kinematic bycicle state or input
+        Convert planner state or input to kinematic bicycle state or input
         :param planner_state: planner state or input
         :param mode: state or input mode
-        :return: Kinematic bycicle state or input
+        :return: Kinematic bicycle state or input
         """
         pass
 
@@ -109,8 +107,8 @@ class PlanningConverterInterface(ABC):
         self, kb_state: KBState, mode: TrajectoryMode, time_step: int
     ) -> Any:
         """
-        Converts kinematic bycicle state or input to planner state or input time step
-        :param kb_state: kinematic bycicle state
+        Converts kinematic bicycle state or input to planner state or input time step
+        :param kb_state: kinematic bicycle state
         :param mode: state or input mode
         :param time_step: time step
         :return: planner state or input
@@ -123,7 +121,7 @@ class PlanningConverterInterface(ABC):
         self, planner_traj: Any, mode: TrajectoryMode
     ) -> DBTrajectory:
         """
-        Generate dynamic bycicle trajectory from planner trajectory
+        Generate dynamic bicycle trajectory from planner trajectory
         :param planner_traj: planner trajectory
         :param mode: state or input mode
         :return: Dynamic bicycle trajectory
@@ -148,7 +146,7 @@ class PlanningConverterInterface(ABC):
         Convert planner state or input to dynamic bicycle state or input
         :param planner_state: planner state or input
         :param mode: state or input mode
-        :return: Dynamic bicycle state or input
+        :return: DBState or DBInput
         """
         pass
 

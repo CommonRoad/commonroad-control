@@ -11,7 +11,7 @@ from commonroad_control.vehicle_dynamics.disturbance_interface import (
 @dataclass(frozen=True)
 class DBDisturbanceIndices(DisturbanceInterfaceIndex):
     """
-    Indices of the disturbances.
+    Indices of the disturbances of the dynamic bicycle model.
     """
 
     dim: int = 7
@@ -27,7 +27,7 @@ class DBDisturbanceIndices(DisturbanceInterfaceIndex):
 @dataclass
 class DBDisturbance(DisturbanceInterface):
     """
-    Disturbance of the dynamic bicycle model.
+    Dataclass storing the disturbances of the kinematic bicycle model.
     """
 
     position_x: float = 0.0
@@ -39,7 +39,10 @@ class DBDisturbance(DisturbanceInterface):
     steering_angle: float = 0.0
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: disturbance dimension
+        """
         return DBDisturbanceIndices.dim
 
     def convert_to_array(self) -> np.ndarray:

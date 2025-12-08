@@ -9,11 +9,10 @@ from commonroad_control.vehicle_dynamics.state_interface import (
 )
 
 
-# TODO should be an enum so no initialization?
 @dataclass(frozen=True)
 class KBStateIndices(StateInterfaceIndex):
     """
-    Indices of the states.
+    Indices of the states of the kinematic bicycle model.
     """
 
     dim: int = 5
@@ -24,11 +23,10 @@ class KBStateIndices(StateInterfaceIndex):
     steering_angle: int = 4
 
 
-# TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass
 class KBState(StateInterface):
     """
-    State vector of the kinematic bicycle model.
+    Dataclass storing the states of the kinematic bicycle model.
     """
 
     position_x: float = None
@@ -38,13 +36,16 @@ class KBState(StateInterface):
     steering_angle: float = None
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: state dimension
+        """
         return KBStateIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,)
+        :return: np.ndarray of dimension (self.dim,)
         """
         x_np = np.zeros((self.dim,))
         x_np[KBStateIndices.position_x] = self.position_x
@@ -57,9 +58,9 @@ class KBState(StateInterface):
 
     def to_cr_initial_state(self, time_step: int) -> InitialState:
         """
-        Convert to cr initial state
+        Convert to CommonRoad initial state
         :param time_step: time step
-        :return: cr InitialState
+        :return: CommonRoad InitialState
         """
         return InitialState(
             position=np.asarray([self.position_x, self.position_y]),
@@ -73,9 +74,9 @@ class KBState(StateInterface):
 
     def to_cr_custom_state(self, time_step: int) -> CustomState:
         """
-        Convert to cr custom state
-        :param time_step: time step
-        :return: cr custom state
+        Convert to CommonRoad custom state
+        :param time_step: time step -int
+        :return: CommonRoad custom state
         """
         return CustomState(
             position=np.asarray([self.position_x, self.position_y]),

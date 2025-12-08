@@ -1,6 +1,7 @@
 import copy
 import logging
 from pathlib import Path
+from math import ceil
 
 from commonroad.common.file_reader import CommonRoadFileReader
 from shapely.geometry import LineString, Point
@@ -14,7 +15,7 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import KBSIDTFactory
 
 from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 
@@ -42,7 +43,7 @@ def main(
         create_scenario: bool = True
 ) -> None:
     """
-    Example function for building a Long-Lat seperated PID controller for the CommonRoad reactive planner.
+    Example function for building a Long-Lat separated PID controller for the CommonRoad reactive planner.
     :param scenario_file: Path to scenario file
     :param scenario_name: Scenario name
     :param img_save_path: Path to save images to
@@ -77,11 +78,10 @@ def main(
     logger.info("initialize params")
     # controller
     dt_controller = 0.1
-    look_ahead_s = 0.5
+    t_look_ahead = 0.5
 
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
-    extended_horizon_steps = 10
 
     # simulation
     # ... vehicle model
@@ -136,6 +136,7 @@ def main(
     logger.info("run controller")
 
     # extend reference trajectory
+    extended_horizon_steps = ceil(t_look_ahead/dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
         x_ref=copy.copy(x_ref),
         u_ref=copy.copy(u_ref),
@@ -145,8 +146,8 @@ def main(
         horizon=extended_horizon_steps)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactoryDisturbance(),
-        horizon=extended_horizon_steps,
+        sidt_factory=KBSIDTFactory(),
+        t_look_ahead=t_look_ahead
     )
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
@@ -168,10 +169,12 @@ def main(
     input_dict = {}
 
 
-    for kk_sim in range(len(x_ref.steps)):
+    for kk_sim in range(len(u_ref.steps)):
         # extract reference trajectory
+        if kk_sim *dt_controller > 10.0:
+            logger.info('debug')
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller + look_ahead_s
+            t=kk_sim * dt_controller
         )
 
         u_look_ahead_sim = sit_factory_sim.input_from_args(
@@ -181,7 +184,7 @@ def main(
         _, _, x_look_ahead = look_ahead_sim.simulate(
             x0=traj_dict_measured[kk_sim],
             u=u_look_ahead_sim,
-            t_final=look_ahead_s
+            t_final=t_look_ahead
         )
 
         # convert simulated forward step state back to KB for control
@@ -218,7 +221,7 @@ def main(
 
 
     logger.info(f"visualization")
-    simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
+    simulated_traj = sit_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
@@ -246,14 +249,14 @@ def main(
     visualize_reference_vs_actual_states(
         reference_trajectory=x_ref,
         actual_trajectory=simulated_traj,
-        time_steps=list(simulated_traj.points.keys())[:-2],
+        time_steps=list(simulated_traj.points.keys()),
         save_img=save_imgs,
         save_path=img_save_path
     )
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Tjunction-1_42_T-1"
-    # scenario_name = "C-DEU_B471-2_1"
+    # scenario_name = "ZAM_Tjunction-1_42_T-1"
+    scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name

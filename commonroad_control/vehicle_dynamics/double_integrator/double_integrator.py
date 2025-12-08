@@ -22,6 +22,9 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class DoubleIntegrator(VehicleModelInterface):
+    """
+    Double integrator model.
+    """
 
     @classmethod
     def factory_method(
@@ -29,7 +32,7 @@ class DoubleIntegrator(VehicleModelInterface):
     ) -> "DoubleIntegrator":
         """
         Factory method to generate class
-        :param params: CommonRoad vehicle params
+        :param params: CommonRoad-Control vehicle params
         :param delta_t: sampling time
         :return: instance
         """
@@ -55,8 +58,7 @@ class DoubleIntegrator(VehicleModelInterface):
     @staticmethod
     def _system_matrices() -> Tuple[np.array, np.array]:
         """
-
-        :return:
+        :return: system and input matrix - arrays of dimension (self._nx, self._nx) and (self._nx, self._nu)
         """
 
         # system matrix
@@ -71,31 +73,11 @@ class DoubleIntegrator(VehicleModelInterface):
 
         return sys_mat, input_mat
 
-    def simulate_forward(self, x: DIState, u: DIInput) -> DIState:
-        pass
-
-    def _dynamics_cas(
-        self,
-        x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-        u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-        w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-    ) -> cas.SX.sym:
-        """
-        Dynamics function of the double integrator bicycle model.
-        We model the movement of the center of gravity of the vehicle.
-        :param x: state - array of dimension (self._nx,)
-        :param u: control input - - array of dimension (self._nu,)
-        :param w: disturbance - - array of dimension (self._nw,)
-        :return: dynamics at (x,u,w) - casadi symbolic of dimension (self._nx,1)
-        """
-
-        return self._sys_mat @ x + self._input_mat @ u + w
-
     def _set_input_bounds(self, params: VehicleParameters) -> Tuple[DIInput, DIInput]:
         """
-        Extract input bounds from vehicle parameters and store as instance of InputInterface class.
+        Extract input bounds from vehicle parameters and returns them as instances of the Input class.
         :param params: vehicle parameters
-        :return: lower and upper bound on the inputs
+        :return: lower and upper bound on the inputs - DIInputs
         """
 
         # lower bound
@@ -109,6 +91,23 @@ class DoubleIntegrator(VehicleModelInterface):
 
         return u_lb, u_ub
 
+    def _dynamics_cas(
+        self,
+        x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+        w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
+    ) -> cas.SX.sym:
+        """
+        Continuous-time dynamics function of the vehicle model for simulation and symbolic operations using CasADi.
+        :param x: state - CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - CasADi symbolic/ array of dimension (self._nu,)
+        :param w: disturbance - CasADi symbolic/ array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x,u,w) - CasADi symbolic/ array of dimension (self._nx,)
+        """
+
+        return self._sys_mat @ x + self._input_mat @ u + w
+
+    @staticmethod
     def state_bounds(self) -> Tuple[np.array, np.array, np.array, np.array]:
         """
 
@@ -134,19 +133,9 @@ class DoubleIntegrator(VehicleModelInterface):
 
         return mat_lb, lb, mat_ub, ub
 
-    def linearize(self, x: DIState, u: DIInput) -> Tuple[DIState, np.array, np.array]:
-        pass
-
-    def position_to_clcs(self, x: DIState) -> DIState:
-        pass
-
-    def position_to_cartesian(self, x: DIState) -> DIState:
-        pass
-
     def _discretize_nominal(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
-        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time
-        interval t in [0, dt].
+        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time interval [0, dt].
         :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 
@@ -179,6 +168,12 @@ class DoubleIntegrator(VehicleModelInterface):
         x: Union[DIState, cas.SX.sym, np.array],
         u: Union[DIInput, cas.SX.sym, np.array],
     ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+        """
+        Computes the normalized longitudinal and lateral acceleration (w.r.t. the maximum acceleration).
+        :param x: state - State/ CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - Input/ CasADi symbolic/ array of dimension (self._nu,)
+        :return: normalized longitudinal and lateral acceleration - float/ CasADi symbolic
+        """
 
         # extract control input
         if isinstance(u, DIInput):

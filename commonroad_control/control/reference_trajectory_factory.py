@@ -13,22 +13,36 @@ logger = logging.getLogger(__name__)
 
 
 class ReferenceTrajectoryFactory:
+    """
+    Stores the reference trajectory (provided by a given planner) and provides the required snippet to the controller.
+    For most controllers, this snippet consists of a single pair of state and control input at a given point in time. For model predictive control (MPC), the snippet spans the full MPC prediction horizon. If desired, a look-ahead horizon can be included; it will be handled automatically when querying the reference trajectory.
+    """
+
     def __init__(
         self,
         delta_t_controller: float,
-        sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
-        horizon: int = 0,
+        sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        mpc_horizon: int = 0,
         t_look_ahead: float = 0.0,
     ):
+        """
+        Initialize class.
+        :param delta_t_controller: sampling time of the controller - float
+        :param sidt_factory: factory for creating Trajectory objects
+        :param mpc_horizon: prediction horizon of a model predictive controller (number of time steps) - int
+        :param t_look_ahead: look-ahead for non-MPCs (in seconds) - float
+        """
 
-        self._horizon: int = horizon
+        self._horizon: int = mpc_horizon
         self._dt_controller: float = delta_t_controller
         self._t_look_ahead: float = t_look_ahead
-        self._sit_factory: StateInputDisturbanceTrajectoryFactoryInterface = sit_factory
+        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
+            sidt_factory
+        )
 
         self._x_ref: Union[TrajectoryInterface, None] = None
         self._u_ref: Union[TrajectoryInterface, None] = None
-        if horizon > 0:
+        if mpc_horizon > 0:
             self._x_ref_steps: List[int] = [kk for kk in range(self._horizon + 1)]
             self._u_ref_steps: List[int] = [kk for kk in range(self._horizon)]
         else:
@@ -47,8 +61,8 @@ class ReferenceTrajectoryFactory:
     ) -> None:
         """
         Function for updating the reference trajectory (e.g. given a new planned trajectory).
-        :param state_ref: state reference trajectory
-        :param input_ref: input reference trajectory
+        :param state_ref: state reference trajectory - TrajectoryInterface
+        :param input_ref: input reference trajectory - TrajectoryInterface
         :param t_0: initial time step of the reference trajectories
         """
 
@@ -96,19 +110,19 @@ class ReferenceTrajectoryFactory:
         """
         Returns a snippet from the reference trajectory (single or multiple points, depending on the controller, which
         is passed to the controller for computing the control inputs.
-        :param t: current time
-        :return: state and input reference trajectory
+        :param t: current time - float
+        :return: state and input reference trajectory - TrajectoryInterface
         """
 
         # ... extract state reference trajectory
         t_0 = t + self._t_look_ahead
         tmp_x_ref_points = [
             self._x_ref.get_point_at_time(
-                t_0 + kk * self._dt_controller, self._sit_factory
+                time=t_0 + kk * self._dt_controller, factory=self._sidt_factory
             )
             for kk in self._x_ref_steps
         ]
-        x_ref = self._sit_factory.trajectory_from_state_or_input(
+        x_ref = self._sidt_factory.trajectory_from_points(
             trajectory_dict=dict(zip(self._x_ref_steps, tmp_x_ref_points)),
             mode=TrajectoryMode.State,
             t_0=t_0,
@@ -117,11 +131,11 @@ class ReferenceTrajectoryFactory:
         # ... extract input reference trajectory
         tmp_u_ref_points = [
             self._u_ref.get_point_at_time(
-                t_0 + kk * self._dt_controller, self._sit_factory
+                time=t_0 + kk * self._dt_controller, factory=self._sidt_factory
             )
             for kk in self._u_ref_steps
         ]
-        u_ref = self._sit_factory.trajectory_from_state_or_input(
+        u_ref = self._sidt_factory.trajectory_from_points(
             trajectory_dict=dict(zip(self._u_ref_steps, tmp_u_ref_points)),
             mode=TrajectoryMode.Input,
             t_0=t_0,

@@ -36,7 +36,7 @@ Our [CommonRoad control github page]() contains a mirror of our gitlab source co
 
 
 
-## Contributers
+## Contributors
 Lukas Schäfer: lukas.schaefer[at]tum.de  
 Tobias Mascetta: tobias.mascetta[at]tum.de  
 Sven Pflaumbaum: sven.pflaumbaum[at]tum.de  
