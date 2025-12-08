@@ -30,7 +30,6 @@ def signed_distance_point_to_linestring(point: Point, linestring: LineString) ->
             break
 
     if point_before_line is None:
-        # TODO: Robustify
         logger.error("point before line is none")
         raise ValueError("point before line is none")
 

@@ -15,6 +15,10 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 
 
 class SensorModelInterface(ABC):
+    """
+    Interface for sensor models which take the current state and control input as an input argument and simulate a (noisy) measurement.
+    """
+
     def __init__(
         self,
         noise_model: UncertaintyModelInterface,
@@ -25,6 +29,14 @@ class SensorModelInterface(ABC):
         state_dimension: int,
         input_dimension: int,
     ):
+        """
+        Initialize baseclass.
+        :param noise_model: uncertainty model representing sensor noise - UncertaintyModelInterface
+        :param state_output_factory: factory for creating States or Outputs as output arguments - StateInputDisturbanceTrajectoryFactoryInterface
+        :param dim: dimension of the output - int
+        :param state_dimension: state dimension - int
+        :param input_dimension: input dimension - int
+        """
         self._noise_model: UncertaintyModelInterface = noise_model
         self._state_output_factory: Union[
             StateInputDisturbanceTrajectoryFactoryInterface, Any
@@ -41,19 +53,31 @@ class SensorModelInterface(ABC):
         )
 
     @property
-    def noise_model(self):
+    def noise_model(self) -> UncertaintyModelInterface:
+        """
+        :return: Uncertainty model representing sensor noise
+        """
         return self._noise_model
 
     @property
-    def output_dimension(self):
+    def output_dimension(self) -> int:
+        """
+        :return: output dimension
+        """
         return self._dim
 
     @property
-    def state_dimension(self):
+    def state_dimension(self) -> int:
+        """
+        :return: state dimension
+        """
         return self._state_dimension
 
     @property
-    def input_dimension(self):
+    def input_dimension(self) -> int:
+        """
+        :return: input dimension
+        """
         return self._input_dimension
 
     @abstractmethod

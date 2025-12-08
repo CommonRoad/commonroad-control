@@ -15,6 +15,7 @@ from commonroad_route_planner.fast_api.fast_api import (
 from commonroad_route_planner.reference_path import ReferencePath
 from scipy.spatial.kdtree import KDTree
 
+from commonroad_control.util.conversion_util import unwrap_angle
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
@@ -95,7 +96,7 @@ def extend_reference_trajectory_lane_following(
     List[float],
 ]:
     """
-    Extrends planned trajectory using the CommonRoad reference path planner to account for
+    Extends planned trajectory using the CommonRoad reference path planner to account for
     extended MPC horizons, controller overshoot etc.
     :param positional_trajectory: (n,2) positional planner trajectory
     :param lanelet_network: CommonRoad lanelet network
@@ -154,7 +155,9 @@ def extend_reference_trajectory_lane_following(
 
         # orientation of reference trajectory at
         tangent = clcs_traj_ext.tangent(position_s)
-        heading.append(atan2(tangent[1], tangent[0]))
+        # ... unwrap heading to ensure continuity (avoid discontinuity)
+        tmp_heading = atan2(tangent[1], tangent[0])
+        heading.append(unwrap_angle(alpha_prev=heading_0, alpha_next=tmp_heading))
 
         # compute yaw rate
         yaw_rate.append(float((heading[kk] - heading_0) / delta_t))
@@ -191,13 +194,13 @@ def extend_kb_reference_trajectory_lane_following(
 ) -> Tuple[CurvilinearCoordinateSystem, TrajectoryInterface, TrajectoryInterface]:
     """
     Extends kinematic bicycle trajectory using the CommonRoad reference path planner to account for
-    extended MPC horizons, controller overshoot etc.
+    extended MPC horizons, or controllers with look-ahead etc.
     :param x_ref: State trajectory
     :param u_ref: Input trajectory
     :param lanelet_network: CommonRoad lanelet network
     :param vehicle_params: Vehicle parameters object
-    :param delta_t: time step size in seconds
-    :param horizon: time horizon in steps
+    :param delta_t: sampling time in seconds - float
+    :param horizon: time horizon for extension (number of time steps) - int
     :return: Curvilinear coordinate system, extended state trajectory, extended input trajectory
     """
     # positional trajectory

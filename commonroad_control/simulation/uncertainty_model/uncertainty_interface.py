@@ -16,17 +16,20 @@ class UncertaintyInterfaceIndex(ABC):
 @dataclass
 class UncertaintyInterface(ABC):
     """
-    Abstract base class for noise/disturbance interfaces.
+    Interface for dataclasses storing noise/disturbances.
     """
 
     @property
     def dim(self):
+        """
+        :return: uncertainty dimension - int
+        """
         return UncertaintyInterfaceIndex.dim
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,1)
+        :return: np.ndarray of dimension (self.dim,1)
         """
         pass

@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class FullStateFeedback(SensorModelInterface):
+    """
+    Full state feedback sensor model, i.e., the output function is y = x + n, where n denotes (random) measurement noise.
+    """
+
     def __init__(
         self,
         noise_model: UncertaintyModelInterface,
@@ -27,6 +31,13 @@ class FullStateFeedback(SensorModelInterface):
         state_dimension: int,
         input_dimension: int,
     ):
+        """
+        Initialize sensor model.
+        :param noise_model: uncertainty model representing sensor noise - UncertaintyModelInterface
+        :param state_output_factory: factory for creating States or Outputs as output arguments - StateInputDisturbanceTrajectoryFactoryInterface
+        :param state_dimension: state dimension - int
+        :param input_dimension: input dimension - int
+        """
 
         # init base class
         super().__init__(
@@ -52,6 +63,9 @@ class FullStateFeedback(SensorModelInterface):
         return x
 
     def _sanity_check(self):
+        """
+        Check args.
+        """
 
         # dimension of noise model must match dimension of the output
         if self._noise_model.dim != self._dim != self.state_dimension:

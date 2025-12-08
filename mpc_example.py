@@ -10,7 +10,7 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import KBSITFactoryDisturbance
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import KBSIDTFactory
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices
 
@@ -25,15 +25,14 @@ from commonroad_control.planning_converter.reactive_planner_converter import Rea
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
+from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
-from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
-
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
-
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
+
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
@@ -85,13 +84,13 @@ def main(
     vehicle_params = BMW3seriesParams()
 
     # controller parameters
-    horizon_ocp = 20
+    horizon_ocp = 25
     dt_controller = 0.1
     # ... vehicle model for prediction
     vehicle_model_ctrl = KinematicBicycle(
         params=vehicle_params,
         delta_t=dt_controller)
-    sit_factory_ctrl = KBSITFactoryDisturbance()
+    sit_factory_ctrl = KBSIDTFactory()
     # ... initialize optimal control solver
     cost_xx = np.eye(KBStateIndices.dim)
     cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
@@ -123,14 +122,14 @@ def main(
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.state_dimension,
-        mean=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        std_deviation=[0.05, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+        mean=vehicle_params.disturbance_gaussian_mean,
+        std_deviation=vehicle_params.disturbance_gaussian_std
     )
     # ... noise
     sim_noise_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.disturbance_dimension,
-        mean=np.zeros(shape=vehicle_model_sim.disturbance_dimension),
-        std_deviation=[0.075, 0.075, 0.0, 0.0, 0.0, 0.0, 0.0]
+        mean=vehicle_params.noise_gaussian_mean,
+        std_deviation=vehicle_params.noise_gaussian_std
     )
     # ... sensor model
     sensor_model: SensorModelInterface = FullStateFeedback(
@@ -159,8 +158,8 @@ def main(
         horizon=mpc.horizon)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactoryDisturbance(),
-        horizon=mpc.horizon,
+        sidt_factory=KBSIDTFactory(),
+        mpc_horizon=mpc.horizon,
     )
     # ... dummy reference trajectory: all inputs set to zero
     u_np = np.zeros((u_ref_ext.dim,len(u_ref_ext.steps)))
@@ -188,7 +187,7 @@ def main(
     input_dict = {}
 
     # for step, x_planner in kb_traj.points.items():
-    for kk_sim in range(len(x_ref.steps)):
+    for kk_sim in range(len(u_ref.steps)):
 
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
@@ -197,7 +196,6 @@ def main(
 
         # convert initial state to kb
         x0_kb = convert_state_db2kb(traj_dict_measured[kk_sim])
-        # x0_kb = traj_dict[kk_sim]
 
         # compute control input
         u_now = mpc.compute_control_input(
@@ -223,7 +221,7 @@ def main(
         traj_dict_measured[kk_sim+1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
-    simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
+    simulated_traj = sit_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
@@ -238,7 +236,7 @@ def main(
             planner_trajectory=x_ref,
             controller_trajectory=simulated_traj,
             save_path=img_save_path,
-            save_img=save_imgs
+            save_img=save_imgs,
         )
 
         if save_imgs:
@@ -249,9 +247,9 @@ def main(
             )
 
     visualize_reference_vs_actual_states(
-        reference_trajectory=x_ref,
+        reference_trajectory=x_ref_ext,
         actual_trajectory=simulated_traj,
-        time_steps=list(simulated_traj.points.keys())[:-2],
+        time_steps=list(simulated_traj.points.keys()),
         save_img=save_imgs,
         save_path=img_save_path
     )

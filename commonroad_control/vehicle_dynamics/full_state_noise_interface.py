@@ -25,13 +25,16 @@ class FullStateNoiseInterface(UncertaintyInterface):
     """
 
     @property
-    def dim(self):
-        return FullStateNoiseInterface.dim
+    def dim(self) -> int:
+        """
+        :return: noise dimension
+        """
+        return FullStateNoiseInterfaceIndex.dim
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,1)
+        :return: np.ndarray of dimension (self.dim,)
         """
         pass

@@ -5,7 +5,6 @@ from typing import Tuple
 import math
 
 from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
-from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
@@ -17,11 +16,16 @@ from commonroad_control.vehicle_dynamics.state_interface import StateInterface
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 from commonroad_control.simulation.simulation.simulation import Simulation
-from commonroad_control.simulation.measurement_noise_model.measurement_noise_model import MeasurementNoiseModel
 from commonroad_control.simulation.uncertainty_model.uniform_distribution import UniformDistribution
 
 
-class TestSimulation(unittest.TestCase):
+class TestNominalAndUncertainSimulation(unittest.TestCase):
+    """
+    Simulation tests using the dynamic bicycle model:
+        - nominal simulation: no disturbances, no measurement noise
+        - simulation with disturbance, no measurement noise
+        - simulation with disturbances and measurement noise
+    """
 
     @staticmethod
     def make_vehicle(
@@ -40,8 +44,12 @@ class TestSimulation(unittest.TestCase):
     @staticmethod
     def problem_accelerate_steering_ramp(
     ) -> Tuple[DBState, DBInput, float]:
+        """
+        Maneuver for testing: constant acceleration with steering angle ramp.
+        :return:
+        """
         # problem
-        # ,,, initial state
+        # ... initial state
         x0 = DBState(
             position_x=0.0,
             position_y=0.0,
@@ -97,7 +105,6 @@ class TestSimulation(unittest.TestCase):
         """
         Nominal simulation, i.e., no noise and no disturbances - thus, the final states must coincide for the nominal,
         perturbed, and measured trajectory.
-        :return:
         """
         # get vehicle model
         vehicle_sim, sit_factory_sim = self.make_vehicle()
@@ -144,7 +151,6 @@ class TestSimulation(unittest.TestCase):
         Simulation of the perturbed system, noise: final state of the perturbed and measured trajectory must coincide.
         For testing, we choose the set of disturbances so that the origin is not contained - hence, the final state of
         the nominal trajectory must not coincide with the final state of the perturbed trajectory.
-        :return:
         """
         # get vehicle model
         vehicle_sim, sit_factory_sim = self.make_vehicle()
@@ -205,7 +211,6 @@ class TestSimulation(unittest.TestCase):
         and noises so that the origin is not contained. Hence, the final state of the nominal trajectory must not
         coincide with the final state of the perturbed trajectory, which must not coincide with the final state of the
         measured trajectory.
-        :return:
         """
         # get vehicle model
         vehicle_sim, sit_factory_sim = self.make_vehicle()

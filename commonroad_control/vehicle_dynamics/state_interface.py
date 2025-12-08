@@ -7,7 +7,7 @@ import numpy as np
 @dataclass(frozen=True)
 class StateInterfaceIndex(ABC):
     """
-    Indices of the states.
+    Interface for indices of the state variables.
     """
 
     dim: int
@@ -16,17 +16,20 @@ class StateInterfaceIndex(ABC):
 @dataclass
 class StateInterface(ABC):
     """
-    State interface.
+    Interface for dataclass objects storing states of the vehicle models.
     """
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: state dimension
+        """
         return StateInterfaceIndex.dim
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,1)
+        :return: np.ndarray of dimension (self.dim,1)
         """
         pass

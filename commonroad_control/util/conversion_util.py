@@ -1,25 +1,38 @@
 import math
 from typing import Tuple
 
+import numpy as np
+
 
 def compute_slip_angle_from_steering_angle_in_cog(
-    steering_angle: float, l_wb: float, l_r: float
+    steering_angle: float, velocity: float, l_wb: float, l_r: float
 ) -> float:
     """
     Compute slip angle in center of gravity from steering angle and wheelbase.
     :param steering_angle: steering angle
+    :param velocity: longitudinal velocity - float
     :param l_wb: wheelbase
     :param l_r: distance from center of rear-axle to the center of gravity
     :return: slip angle in radian
     """
-    return math.atan(math.tan(steering_angle) * l_r / l_wb)
+    return np.sign(velocity) * math.atan(math.tan(steering_angle) * l_r / l_wb)
+
+
+def compute_slip_angle_from_velocity_components(v_lon: float, v_lat: float) -> float:
+    """
+    Computes the slip angle from the long. and lat. velocity (body frame) at the center of gravity.
+    :param v_lon: longitudinal velocity at the center of gravity - float
+    :param v_lat: lateral velocity at the center of gravity - float
+    :return:
+    """
+    return math.atan2(v_lat, v_lon)
 
 
 def compute_velocity_components_from_slip_angle_and_velocity_in_cog(
     slip_angle: float, velocity: float
 ) -> Tuple[float, float]:
     """
-    Compute velocity components in long. and lat. in center of gravity from slip angle.
+    Compute velocity components in long. and lat. direction (body frame) at the center of gravity from slip angle.
     :param slip_angle: slip angle
     :param velocity: total velocity
     :return: v_lon, v_lat
@@ -40,7 +53,7 @@ def compute_velocity_components_from_steering_angle_in_cog(
     :return: v_lon, v_lat
     """
     slip_angle: float = compute_slip_angle_from_steering_angle_in_cog(
-        steering_angle=steering_angle, l_wb=l_wb, l_r=l_r
+        steering_angle=steering_angle, velocity=velocity_cog, l_wb=l_wb, l_r=l_r
     )
 
     return compute_velocity_components_from_slip_angle_and_velocity_in_cog(
@@ -48,14 +61,14 @@ def compute_velocity_components_from_steering_angle_in_cog(
     )
 
 
-def compute_total_velocity_from_components(v_long: float, v_lat: float) -> float:
+def compute_velocity_from_components(v_long: float, v_lat: float) -> float:
     """
-    Compute length of velocity vector given its components.
+    Computes the total velocity from its components.
     :param v_long: longitudinal velocity
     :param v_lat: lateral velocity
     :return: v
     """
-    return math.sqrt(v_long**2 + v_lat**2)
+    return np.sign(v_long) * math.sqrt(v_long**2 + v_lat**2)
 
 
 def map_velocity_from_ra_to_cog(
@@ -120,7 +133,7 @@ def compute_position_of_cog_from_ra_cc(
     position_cog_x = position_ra_x + l_r * math.cos(heading)
     position_cog_y = position_ra_y + l_r * math.sin(heading)
 
-    return (position_cog_x, position_cog_y)
+    return position_cog_x, position_cog_y
 
 
 def compute_position_of_ra_from_cog_cartesian(
@@ -138,4 +151,19 @@ def compute_position_of_ra_from_cog_cartesian(
     position_ra_x = position_cog_x - l_r * math.cos(heading)
     position_ra_y = position_cog_y - l_r * math.sin(heading)
 
-    return (position_ra_x, position_ra_y)
+    return position_ra_x, position_ra_y
+
+
+def unwrap_angle(alpha_prev: float, alpha_next: float) -> float:
+    """
+    This function returns an alpha_next adjusted to be "continuous" with alpha_prev. To this end, alpha_next is mapped to ]-pi, pi].
+    As an example, if the desired heading of the vehicle is 10° and the current heading is 340°, wrapping the angle makes the vehicle turn 30° clockwise, not 330° counter-clockwise.
+    :param alpha_prev: previous angle - float
+    :param alpha_next: next angle before wrapping - float
+    :return: next angle after wrapping - float
+    """
+
+    # wrap to ]pi, pi]
+    diff = (alpha_next - alpha_prev + np.pi) % (2 * np.pi) - np.pi
+    # unwrap
+    return alpha_prev + diff

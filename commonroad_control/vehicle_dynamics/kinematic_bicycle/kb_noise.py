@@ -8,11 +8,10 @@ from commonroad_control.vehicle_dynamics.full_state_noise_interface import (
 )
 
 
-# TODO should be an enum so no initialization?
 @dataclass(frozen=True)
 class KBNoiseIndices(FullStateNoiseInterfaceIndex):
     """
-    Indices of the noise.
+    Indices of the noise variables.
     """
 
     dim: int = 5
@@ -23,27 +22,29 @@ class KBNoiseIndices(FullStateNoiseInterfaceIndex):
     steering_angle: int = 4
 
 
-# TODO: Move to python3.10 and use kw_only dataclass arg?
 @dataclass
 class KBNoise(FullStateNoiseInterface):
     """
     Full state noise of the kinematic bicycle model - required for the full state feedback sensor model.
     """
 
-    position_x: float = None
-    position_y: float = None
-    velocity: float = None
-    heading: float = None
-    steering_angle: float = None
+    position_x: float = 0.0
+    position_y: float = 0.0
+    velocity: float = 0.0
+    heading: float = 0.0
+    steering_angle: float = 0.0
 
     @property
-    def dim(self):
+    def dim(self) -> int:
+        """
+        :return: noise dimension
+        """
         return KBNoiseIndices.dim
 
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: np.ndarray of dimension (dim,)
+        :return: np.ndarray of dimension (self.dim,)
         """
         w_np = np.zeros((self.dim,))
         w_np[KBNoiseIndices.position_x] = self.position_x

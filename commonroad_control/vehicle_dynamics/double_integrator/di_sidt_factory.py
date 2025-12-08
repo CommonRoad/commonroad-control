@@ -18,9 +18,6 @@ from commonroad_control.vehicle_dynamics.double_integrator.di_state import (
 from commonroad_control.vehicle_dynamics.double_integrator.di_trajectory import (
     DITrajectory,
 )
-from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import (
-    DBTrajectory,
-)
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
     StateInputDisturbanceTrajectoryFactoryInterface,
 )
@@ -29,27 +26,28 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 logger = logging.getLogger(__name__)
 
 
-class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
+class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
     """
-    Double integrator model factory for state, input, and trajectory.
+    Factory for creating double integrator model State, Input, Disturbance, and Trajectory.
     """
 
     state_dimension = DIStateIndices.dim
     input_dimension = DIInputIndices.dim
     disturbance_dimension = DIDisturbanceIndices.dim
 
+    @classmethod
     def state_from_args(
-        self,
+        cls,
         position_long: float,
         position_lat: float,
         velocity_long: float,
         velocity_lat: float,
     ) -> Union["DIState"]:
         """
-        Create DI state from args.
+        Create State from args
         :param position_long: longitudinal position
         :param position_lat: lateral position
-        :param velocity_long: longitudinal veloctiy
+        :param velocity_long: longitudinal velocity
         :param velocity_lat: lateral velocity
         :return: DIState
         """
@@ -60,11 +58,12 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=velocity_lat,
         )
 
+    @classmethod
     def input_from_args(
-        self, acceleration_long: float, acceleration_lat: float
+        cls, acceleration_long: float, acceleration_lat: float
     ) -> Union["DIInput"]:
         """
-        Create DI input from args.
+        Create Input from args
         :param acceleration_long: longitudinal acceleration
         :param acceleration_lat: lateral acceleration
         :return: DIInput
@@ -73,19 +72,20 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             acceleration_long=acceleration_long, acceleration_lat=acceleration_lat
         )
 
-    @staticmethod
+    @classmethod
     def disturbance_from_args(
+        cls,
         position_long: float = 0.0,
         position_lat: float = 0.0,
         velocity_long: float = 0.0,
         velocity_lat: float = 0.0,
     ) -> Union["DIDisturbance"]:
         """
-        Create DB disturbance from args.
-        :param position_long:
-        :param position_lat:
-        :param velocity_long:
-        :param velocity_lat:
+        Create Disturbance from args - the default value of all variables is zero.
+        :param position_long: longitudinal position
+        :param position_lat: lateral position
+        :param velocity_long: longitudinal velocity
+        :param velocity_lat: lateral velocity
         :return: DIDisturbance
         """
         return DIDisturbance(
@@ -95,25 +95,23 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=velocity_lat,
         )
 
+    @classmethod
     def state_from_numpy_array(
-        self, x_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+        cls, x_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union["DIState"]:
         """
-        Set values of state from a given array
-        :param x_np: state - array of dimension
-        :return: state object
+        Create State from numpy array
+        :param x_np: state vector - array of dimension (cls.state_dimension,)
+        :return: DIState
         """
 
-        if int(x_np.shape[0]) != DIStateIndices.dim:
+        if x_np.ndim > 1 or x_np.shape[0] != cls.state_dimension:
             logger.error(
-                f"Dimension {x_np.shape[0]} does not match required {DIStateIndices.dim}"
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
             )
             raise ValueError(
-                f"Dimension {x_np.shape[0]} does not match required {DIStateIndices.dim}"
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
             )
-        if x_np.ndim > 1:
-            logger.error(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
-            raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
 
         return DIState(
             position_long=x_np[DIStateIndices.position_long],
@@ -122,22 +120,22 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=x_np[DIStateIndices.velocity_lat],
         )
 
+    @classmethod
     def input_from_numpy_array(
-        self, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+        cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union["DIInput"]:
         """
-        Set values of control input from a given array.
-        :param u_np: input vector - array of dimension (self.dim,)
+        Create Input from numpy array
+        :param u_np: control input - array of dimension (cls.input_dimension,)
+        :return: DIInput
         """
-        if u_np.ndim > 1:
-            logger.error(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
-            raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
-        if u_np.shape[0] != DIInputIndices.dim:
+
+        if u_np.ndim > 1 or u_np.shape[0] != cls.input_dimension:
             logger.error(
-                f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}"
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
             )
             raise ValueError(
-                f"input should be ({DIInputIndices.dim},) but is {u_np.shape[0]}"
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
             )
 
         return DIInput(
@@ -150,15 +148,12 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         cls, w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union["DIDisturbance"]:
         """
-        Sets values of double integrator disturbance from a given array.
-        :param w_np: disturbance - array of dimension (DIDisturbanceIndices.dim,)
-        :return: di disturbance
+        Create Disturbance from numpy array
+        :param w_np: disturbance - array of dimension (cls.disturbance_dimension,)
+        :return: DIDisturbance
         """
 
-        if w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(f"Dimension {w_np.shape[0]} does not match")
-            raise ValueError(f"Dimension {w_np.shape[0]} does not match")
-        if w_np.ndim > 1:
+        if w_np.ndim > 1 or w_np.shape[0] != cls.disturbance_dimension:
             logger.error(
                 f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
             )
@@ -173,25 +168,27 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             velocity_lat=w_np[DIDisturbanceIndices.velocity_lat],
         )
 
-    def trajectory_from_state_or_input(
-        self,
+    @classmethod
+    def trajectory_from_points(
+        cls,
         trajectory_dict: Union[Dict[int, DIState], Dict[int, DIInput]],
         mode: TrajectoryMode,
         t_0: float,
         delta_t: float,
-    ) -> DBTrajectory:
+    ) -> DITrajectory:
         """
-        Build trajectory from di state or input
-        :param trajectory_dict: dict of time steps to kst points
-        :param mode:
-        :param t_0:
-        :param delta_t:
-        :return: KST-Trajectory
+        Create State, Input, or Disturbance Trajectory from list of DI points.
+        :param trajectory_dict: dict of time steps to kb points
+        :param mode: type of points (State, Input, or Disturbance)
+        :param t_0: initial time - float
+        :param delta_t: sampling time - float
+        :return: DITrajectory
         """
-        return DBTrajectory(points=trajectory_dict, mode=mode, t_0=t_0, delta_t=delta_t)
+        return DITrajectory(points=trajectory_dict, mode=mode, t_0=t_0, delta_t=delta_t)
 
+    @classmethod
     def trajectory_from_numpy_array(
-        self,
+        cls,
         traj_np: np.ndarray[tuple[float, float], np.dtype[np.float64]],
         mode: TrajectoryMode,
         time_steps: List[int],
@@ -199,21 +196,24 @@ class DISIDTFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         delta_t: float,
     ) -> DITrajectory:
         """
-
-        :param traj_np:
-        :param mode:
-        :param time_steps:
-        :param t_0:
-        :param delta_t:
-        :return:
+        Create State, Input, or Disturbance Trajectory from numpy array.
+        :param traj_np: numpy array storing the values of the point variables
+        :param mode: type of points (State, Input, or Disturbance)
+        :param time_steps: time steps of the points in the columns of traj_np
+        :param t_0: initial time - float
+        :param delta_t: sampling time - float
+        :return: DITrajectory
         """
-        # convert trajectory to State/InputInterface
+
+        # convert trajectory points to State/Input/DisturbanceInterface
         points_val = []
         for kk in range(len(time_steps)):
             if mode == TrajectoryMode.State:
-                points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
+                points_val.append(cls.state_from_numpy_array(traj_np[:, kk]))
             elif mode == TrajectoryMode.Input:
-                points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
+                points_val.append(cls.input_from_numpy_array(traj_np[:, kk]))
+            elif mode == TrajectoryMode.Disturbance:
+                points_val.append(cls.disturbance_from_numpy_array(traj_np[:, kk]))
 
         return DITrajectory(
             points=dict(zip(time_steps, points_val)),

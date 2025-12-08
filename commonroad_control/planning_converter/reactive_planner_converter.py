@@ -14,8 +14,8 @@ from commonroad_control.planning_converter.planning_converter_interface import (
 from commonroad_control.util.conversion_util import (
     compute_position_of_cog_from_ra_cc,
     compute_position_of_ra_from_cog_cartesian,
-    compute_total_velocity_from_components,
     compute_velocity_components_from_steering_angle_in_cog,
+    compute_velocity_from_components,
     map_velocity_from_cog_to_ra,
     map_velocity_from_ra_to_cog,
 )
@@ -28,8 +28,8 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import (
     DBTrajectory,
 )
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
-    KBSITFactoryDisturbance,
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
+    KBSIDTFactory,
 )
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
@@ -42,12 +42,13 @@ logger = logging.getLogger(__name__)
 
 
 class ReactivePlannerConverter(PlanningConverterInterface):
-    # TODO decide if it needs a config? Otherwise methods static.
-    # TODO: Aggregation makes sense?
+    """
+    #TODO add docstring
+    """
 
     def __init__(
         self,
-        kb_factory: Union[KBSITFactoryDisturbance, Any] = KBSITFactoryDisturbance(),
+        kb_factory: Union[KBSIDTFactory, Any] = KBSIDTFactory(),
         db_factory: Union[DBSIDTFactory, Any] = DBSIDTFactory(),
         vehicle_params: Union[BMW3seriesParams, Any] = BMW3seriesParams(),
     ) -> None:
@@ -84,7 +85,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             kb_dict[kb_point.time_step] = self.sample_p2c_kb(
                 planner_state=kb_point, mode=mode
             )
-        return self._kb_factory.trajectory_from_state_or_input(
+        return self._kb_factory.trajectory_from_points(
             trajectory_dict=kb_dict, mode=mode, t_0=t_0, delta_t=dt
         )
 
@@ -220,7 +221,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             db_dict[db_point.time_step] = self.sample_p2c_db(
                 planner_state=db_point, mode=mode
             )
-        return self._db_factory.trajectory_from_state_or_input(
+        return self._db_factory.trajectory_from_points(
             trajectory_dict=db_dict, mode=mode, t_0=t_0, delta_t=dt
         )
 
@@ -306,7 +307,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
                 position=np.asarray([db_state.position_x, db_state.position_y]),
-                velocity=compute_total_velocity_from_components(
+                velocity=compute_velocity_from_components(
                     db_state.velocity_long, db_state.velocity_lat
                 ),
                 orientation=db_state.heading,

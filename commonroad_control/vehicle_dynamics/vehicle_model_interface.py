@@ -14,13 +14,16 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 
 
 class VehicleModelInterface(ABC):
+    """
+    Interface for vehicle dynamics models: among others, the classes implementing this interface provide the dynamics function, both in continous- and discrete-time, or methods for computing the longitudinal and lateral accelerations.
+    """
 
     @classmethod
     @abstractmethod
     def factory_method(cls, params: VehicleParameters, delta_t: float) -> Any:
         """
         Factory method to generate class
-        :param params: CommonRoad vehicle params
+        :param params: CommonRoad-Control vehicle parameters
         :param delta_t: sampling time
         :return: instance
         """
@@ -31,7 +34,7 @@ class VehicleModelInterface(ABC):
     ):
         """
         Initialize abstract baseclass.
-        :param params: CommonRoad vehicle params
+        :param params: CommonRoad-Control vehicle parameters
         :param nx: dimension of the state space
         :param nu: dimension of the input space
         :param nw: dimension of the disturbance space
@@ -65,9 +68,9 @@ class VehicleModelInterface(ABC):
         u: Union[InputInterface, np.ndarray[tuple[float], np.dtype[np.float64]]],
     ) -> np.ndarray:
         """
-        One-step simulation of the time-discretized nominal model.
-        :param x: initial state - array of dimension (self._nx,)
-        :param u: control input - array of dimension (self._nu,)
+        One-step simulation of the time-discretized nominal vehicle dynamics.
+        :param x: initial state - StateInterface/ array of dimension (self._nx,)
+        :param u: control input - InputInterface/ array of dimension (self._nu,)
         :return: nominal state at next time step
         """
 
@@ -94,11 +97,11 @@ class VehicleModelInterface(ABC):
         w: Union[DisturbanceInterface, np.ndarray[tuple[float], np.dtype[np.float64]]],
     ) -> np.ndarray:
         """
-        Continuous-time dynamics of the vehicle model.
-        :param x: state - array of dimension (self._nx,)
-        :param u: control input - array of dimension (self._nu,)
-        :param w: disturbance - array of dimension (self._nw,)
-        :return: dynamics function evaluated at (x, u, w)
+        Interface to the continuous-time dynamics function of the vehicle model.
+        :param x: state - StateInterface/ array of dimension (self._nx,)
+        :param u: control input - InputInterface/ array of dimension (self._nu,)
+        :param w: disturbance - DisturbanceInterface/ array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x, u, w) - array of dimension (self._nx,)
         """
 
         # convert state, input, and disturbance to arrays
@@ -128,7 +131,14 @@ class VehicleModelInterface(ABC):
         x: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         u: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
         w: Union[cas.SX.sym, np.ndarray[tuple[float], np.dtype[np.float64]]],
-    ) -> cas.SX.sym:
+    ) -> Union[cas.SX.sym, np.ndarray]:
+        """
+        Continuous-time dynamics function of the vehicle model for simulation and symbolic operations using CasADi.
+        :param x: state - CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - CasADi symbolic/ array of dimension (self._nu,)
+        :param w: disturbance - CasADi symbolic/ array of dimension (self._nw,)
+        :return: dynamics function evaluated at (x,u,w) - CasADi symbolic/ array of dimension (self._nx,)
+        """
         pass
 
     def linearize_dt_nom_at(
@@ -137,8 +147,8 @@ class VehicleModelInterface(ABC):
         """
         Linearization of the time-discretized nominal vehicle dynamics at a given state-input-pair, e.g., for solving a
         convex(ified) optimal control problem.
-        :param x: state for linearization - array of dimension (self._nx,)
-        :param u: input for linearization - array of dimension (self._nu,)
+        :param x: state for linearization - StateInterface/ array of dimension (self._nx,)
+        :param u: input for linearization - InputInterface/ array of dimension (self._nu,)
         :return: nominal dynamics at (x,u) and Jacobians at (x,u) w.r.t. x and u
         """
 
@@ -164,8 +174,7 @@ class VehicleModelInterface(ABC):
 
     def _discretize_nominal(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
-        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time
-        interval t in [0, dt].
+        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time interval [0, dt].
         :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 
@@ -196,6 +205,12 @@ class VehicleModelInterface(ABC):
         x: Union[StateInterface, cas.SX.sym, np.array],
         u: Union[InputInterface, cas.SX.sym, np.array],
     ) -> Tuple[Union[float, cas.SX.sym], Union[float, cas.SX.sym]]:
+        """
+        Computes the normalized longitudinal and lateral acceleration (w.r.t. the maximum acceleration).
+        :param x: state - StateInterface/ CasADi symbolic/ array of dimension (self._nx,)
+        :param u: control input - InputInterface/ CasADi symbolic/ array of dimension (self._nu,)
+        :return: normalized longitudinal and lateral acceleration - float/ CasADi symbolic
+        """
         pass
 
     def linearize_acceleration_constraints_at(
@@ -275,27 +290,37 @@ class VehicleModelInterface(ABC):
 
     @abstractmethod
     def _set_input_bounds(self, params: VehicleParameters):
+        """
+        Extract input bounds from vehicle parameters and returns them as instances of the Input class.
+        :param params: CommonRoad-Control vehicle parameters
+        :return: lower and upper bounds - InputInterface
+        """
         pass
 
     def input_bounds(self) -> Tuple[InputInterface, InputInterface]:
+        """
+        Returns the lower and upper bound on the control inputs.
+        :return: lower bound and upper bound - InputInterface
+        """
         return self._u_lb, self._u_ub
 
     @property
     def state_dimension(self):
+        """
+        :return: dimension of the state space
+        """
         return self._nx
 
     @property
     def input_dimension(self):
+        """
+        :return: dimension of the input space
+        """
         return self._nu
 
     @property
     def disturbance_dimension(self):
+        """
+        :return: dimension of the disturbance space
+        """
         return self._nw
-
-    @abstractmethod
-    def position_to_clcs(self, x: StateInterface) -> StateInterface:
-        pass
-
-    @abstractmethod
-    def position_to_cartesian(self, x: StateInterface) -> StateInterface:
-        pass

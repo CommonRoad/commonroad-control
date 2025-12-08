@@ -16,9 +16,13 @@ from commonroad_control.vehicle_parameters.vehicle_parameters import VehiclePara
 @dataclass(frozen=True)
 class BMW3seriesParams(VehicleParameters):
     """
-    Parameters are taken from the package "CommonRoad Vehicle Models and Cost Functions" (vehicle ID: 2)
+    Parameters of a BMW 3series vehicle.
+    Vehicle parameters are taken from: "CommonRoad Vehicle Models and Cost Functions" (vehicle ID: 2)
     " M. Althoff, M. Koschi and S. Manzinger, "CommonRoad: Composable benchmarks for motion planning on roads,"
     IEEE Intelligent Vehicles Symposium, 2017, pp. 719-726"
+
+    Parameters of the Gaussian disturbances and noises are taken from:
+
     """
 
     l_wb: float = 2.578
@@ -29,15 +33,15 @@ class BMW3seriesParams(VehicleParameters):
     C_f: float = 20.89 * 1.048
     C_r: float = 20.89 * 1.048
     h_cog: float = 0.574
-    a_long_max: float = 11.5  # TODO check values
-    a_lat_max: float = 11.5  # TODO check values
+    a_long_max: float = 11.5
+    a_lat_max: float = 11.5
     steering_angle_max: float = 1.066
     steering_angle_velocity_max: float = 0.4
 
     # dynamic bicycle model: parameters of Gaussian disturbance
     disturbance_gaussian_mean: DBDisturbance = DBSIDTFactory.disturbance_from_args()
     disturbance_gaussian_std: DBDisturbance = DBSIDTFactory.disturbance_from_args(
-        velocity_long=0.8, velocity_lat=0.35, yaw_rate=0.035
+        velocity_long=0.5, velocity_lat=0.3, yaw_rate=0.025
     )
 
     # full state feedback for dynamic bicycle model: parameters of Gaussian noise

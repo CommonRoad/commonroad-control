@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Dict, List, Union
 
@@ -26,17 +28,18 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 logger = logging.getLogger(__name__)
 
 
-class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
+class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
     """
-    Kinematic single track model factory for state, input, and trajectory.
+    Factory for creating kinematic bicycle model State, Input, Disturbance, and Trajectory.
     """
 
     state_dimension: int = KBStateIndices.dim
     input_dimension: int = KBInputIndices.dim
     disturbance_dimension: int = KBDisturbanceIndices.dim
 
+    @classmethod
     def state_from_args(
-        self,
+        cls,
         position_x: float,
         position_y: float,
         velocity: float,
@@ -44,11 +47,11 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         steering_angle: float,
     ) -> Union["KBState"]:
         """
-        Create KB state from args
-        :param position_x: position x
-        :param position_y: position y
+        Create State from args
+        :param position_x: position x of center of gravity (Cartesian coordinates)
+        :param position_y: position y of center of gravity (Cartesian coordinates)
         :param velocity: velocity
-        :param heading: heading from vehicle center
+        :param heading: heading
         :param steering_angle: steering angle
         :return: KBState
         """
@@ -60,15 +63,16 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             steering_angle=steering_angle,
         )
 
+    @classmethod
     def input_from_args(
-        self,
+        cls,
         acceleration: float,
         steering_angle_velocity,
     ) -> Union["KBInput"]:
         """
-        Return KB input
-        :param acceleration: input acceleration
-        :param steering_angle_velocity: input steering angle velocity
+        Create Input from args
+        :param acceleration: longitudinal acceleration
+        :param steering_angle_velocity: steering angle velocity
         :return: KBInput
         """
         return KBInput(
@@ -84,13 +88,13 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         steering_angle: float = 0.0,
     ) -> Union["KBDisturbance"]:
         """
-        Create KB disturbance from args
-        :param position_x: position x
-        :param position_y: position y
+        Create Disturbance from args - the default value of all variables is zero.
+        :param position_x: position x of center of gravity
+        :param position_y: position y of center of gravity
         :param velocity: velocity
-        :param heading: heading from vehicle center
+        :param heading: heading
         :param steering_angle: steering angle
-        :return: KBState
+        :return: KBDisturbance
         """
         return KBDisturbance(
             position_x=position_x,
@@ -100,24 +104,24 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             steering_angle=steering_angle,
         )
 
+    @classmethod
     def state_from_numpy_array(
-        self,
+        cls,
         x_np: np.ndarray[tuple[float], np.dtype[np.float64]],
     ) -> Union["KBState"]:
         """
-        Set values of class from a given array.
-        :param x_np: state vector - array of dimension (dim,1)
+        Create State from numpy array
+        :param x_np: state vector - array of dimension (cls.state_dimension,)
+        :return: KBState
         """
-        if int(x_np.shape[0]) != KBStateIndices.dim:
+
+        if x_np.ndim > 1 or x_np.shape[0] != cls.state_dimension:
             logger.error(
-                f"Dimension {x_np.shape[0]} does not match required {KBStateIndices.dim}"
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
             )
             raise ValueError(
-                f"Dimension {x_np.shape[0]} does not match required {KBStateIndices.dim}"
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
             )
-        if x_np.ndim > 1:
-            logger.error(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
-            raise ValueError(f"ndim of np_array should be (dim,1) but is {x_np.ndim}")
 
         return KBState(
             position_x=x_np[KBStateIndices.position_x],
@@ -127,22 +131,22 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             steering_angle=x_np[KBStateIndices.steering_angle],
         )
 
+    @classmethod
     def input_from_numpy_array(
-        self, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+        cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union["KBInput"]:
         """
-        Set values from a given array.
-        :param u_np: control input - array of dimension (self.dim,1)
+        Create Input from numpy array
+        :param u_np: control input - array of dimension (cls.input_dimension,)
+        :return: KBInput
         """
-        if u_np.ndim > 1:
-            logger.error(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
-            raise ValueError(f"ndim of np_array should be (dim,) but is {u_np.ndim}")
-        if u_np.shape[0] != KBInputIndices.dim:
+
+        if u_np.ndim > 1 or u_np.shape[0] != cls.input_dimension:
             logger.error(
-                f"input should be ({KBStateIndices.dim},) but is {u_np.shape[0]}"
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
             )
             raise ValueError(
-                f"input should be ({KBStateIndices.dim},) but is {u_np.shape[0]}"
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
             )
 
         return KBInput(
@@ -155,15 +159,12 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
         cls, w_np: np.ndarray[tuple[float], np.dtype[np.float64]]
     ) -> Union["KBDisturbance"]:
         """
-        Sets values of kinematic bicycle disturbance from a given array.
-        :param w_np: disturbance - array of dimension (KBDisturbanceIndices.dim,)
-        :return: db disturbance
+        Create Disturbance from numpy array
+        :param w_np: disturbance - array of dimension (cls.disturbance_dimension,)
+        :return: KBDisturbance
         """
 
-        if w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(f"Dimension {w_np.shape[0]} does not match")
-            raise ValueError(f"Dimension {w_np.shape[0]} does not match")
-        if w_np.ndim > 1:
+        if w_np.ndim > 1 or w_np.shape[0] != cls.disturbance_dimension:
             logger.error(
                 f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
             )
@@ -179,47 +180,52 @@ class KBSITFactoryDisturbance(StateInputDisturbanceTrajectoryFactoryInterface):
             steering_angle=w_np[KBDisturbanceIndices.steering_angle],
         )
 
-    def trajectory_from_state_or_input(
-        self,
+    @classmethod
+    def trajectory_from_points(
+        cls,
         trajectory_dict: Union[Dict[int, KBState], Dict[int, KBInput]],
         mode: TrajectoryMode,
         t_0: float,
         delta_t: float,
-    ) -> KBTrajectory:
+    ) -> "KBTrajectory":
         """
-        Build trajectory from kb state or input
+        Create State, Input, or Disturbance Trajectory from list of KB points.
         :param trajectory_dict: dict of time steps to kb points
-        :param mode:
-        :param t_0:
-        :param delta_t:
-        :return: KB-Trajectory
+        :param mode: type of points (State, Input, or Disturbance)
+        :param t_0: initial time - float
+        :param delta_t: sampling time - float
+        :return: KBTrajectory
         """
         return KBTrajectory(points=trajectory_dict, mode=mode, t_0=t_0, delta_t=delta_t)
 
+    @classmethod
     def trajectory_from_numpy_array(
-        self,
+        cls,
         traj_np: np.ndarray[tuple[float, float], np.dtype[np.float64]],
         mode: TrajectoryMode,
         time_steps: List[int],
         t_0: float,
         delta_t: float,
-    ) -> KBTrajectory:
+    ) -> "KBTrajectory":
+        """
+        Create State, Input, or Disturbance Trajectory from numpy array.
+        :param traj_np: numpy array storing the values of the point variables
+        :param mode: type of points (State, Input, or Disturbance)
+        :param time_steps: time steps of the points in the columns of traj_np
+        :param t_0: initial time - float
+        :param delta_t: sampling time - float
+        :return: KBTrajectory
         """
 
-        :param traj_np:
-        :param mode:
-        :param time_steps:
-        :param t_0:
-        :param delta_t:
-        :return:
-        """
-        # convert trajectory to State/InputInterface
+        # convert trajectory points to State/Input/DisturbanceInterface
         points_val = []
         for kk in range(len(time_steps)):
             if mode == TrajectoryMode.State:
-                points_val.append(self.state_from_numpy_array(traj_np[:, kk]))
+                points_val.append(cls.state_from_numpy_array(traj_np[:, kk]))
             elif mode == TrajectoryMode.Input:
-                points_val.append(self.input_from_numpy_array(traj_np[:, kk]))
+                points_val.append(cls.input_from_numpy_array(traj_np[:, kk]))
+            elif mode == TrajectoryMode.Disturbance:
+                points_val.append(cls.disturbance_from_numpy_array(traj_np[:, kk]))
 
         return KBTrajectory(
             points=dict(zip(time_steps, points_val)),

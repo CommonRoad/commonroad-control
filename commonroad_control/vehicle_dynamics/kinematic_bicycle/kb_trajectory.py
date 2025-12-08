@@ -8,6 +8,9 @@ from commonroad.prediction.prediction import Trajectory, TrajectoryPrediction
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.state import CustomState, InitialState
 
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance import (
+    KBDisturbance,
+)
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.trajectory_interface import (
@@ -16,8 +19,8 @@ from commonroad_control.vehicle_dynamics.trajectory_interface import (
 )
 
 if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
-        KBSITFactoryDisturbance,
+    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
+        KBSIDTFactory,
     )
 
 logger = logging.getLogger(__name__)
@@ -26,18 +29,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class KBTrajectory(TrajectoryInterface):
     """
-    Kinematic Single Track Trajectory
+    Kinematic bicycle model Trajectory.
     """
 
     def get_point_at_time(
-        self, time: float, factory: "KBSITFactoryDisturbance"
-    ) -> Union["KBState", "KBInput"]:
+        self, time: float, factory: "KBSIDTFactory"
+    ) -> Union["KBState", "KBInput", "KBDisturbance"]:
         """
         Computes a point at a given time by linearly interpolating between the trajectory points at the adjacent
         (discrete) time steps.
         :param time: time at which to interpolate
-        :param factory: sit_factory for instantiating the interpolated point (dataclass object)
-        :return: interpolated point
+        :param factory: sidt_factory for instantiating the interpolated point (dataclass object)
+        :return: interpolated point - KBState/KBInput/KBDisturbance
         """
 
         lower_point, upper_point, lower_idx, upper_idx = (
@@ -50,11 +53,22 @@ class KBTrajectory(TrajectoryInterface):
             new_point_array: np.ndarray = (
                 1 - alpha
             ) * upper_point.convert_to_array() + alpha * lower_point.convert_to_array()
-            new_point: Union[KBState, KBInput] = (
-                (factory.state_from_numpy_array(new_point_array))
-                if self.mode is TrajectoryMode.State
-                else factory.input_from_numpy_array(new_point_array)
-            )
+            if self.mode is TrajectoryMode.State:
+                new_point: KBState = factory.state_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Input:
+                new_point: KBInput = factory.input_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Disturbance:
+                new_point: KBDisturbance = factory.disturbance_from_numpy_array(
+                    new_point_array
+                )
+            else:
+                logger.error(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
+                raise TypeError(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
+
         return new_point
 
     def to_cr_dynamic_obstacle(
@@ -64,16 +78,24 @@ class KBTrajectory(TrajectoryInterface):
         vehicle_id: int,
     ) -> DynamicObstacle:
         """
-        Converts trajectory cr dynamic obstacle for plotting
+        Converts state trajectory to CommonRoad dynamic obstacles for plotting.
         :param vehicle_width: vehicle width
         :param vehicle_length: vehicle length
         :param vehicle_id: vehicle id
-        :return: cr dynamic obstacle
+        :return: CommonRoad dynamic obstacle
         """
 
+        if self.mode is not TrajectoryMode.State:
+            logger.error(
+                f"Conversion to dynamic obstacle for plotting not admissible for trajectory points of type {self.mode}"
+            )
+            raise TypeError(
+                f"Conversion to dynamic obstacle for plotting not admissible for trajectory points of type {self.mode}"
+            )
+
         if not self.points:
-            logger.error(f"Trajectory.points={self.points}  is empty")
-            raise ValueError(f"Trajectory.points={self.points}  is empty")
+            logger.error(f"Trajectory.points={self.points} is empty")
+            raise ValueError(f"Trajectory.points={self.points} is empty")
 
         else:
             # convert to CR obstacle

@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 # typing
-from typing import Any, List, Union
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,9 +18,8 @@ from commonroad.visualization.mp_renderer import MPRenderer
 # third party
 from PIL import Image
 
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import (
-    KBTrajectory,
-)
+# commonroad-control
+from commonroad_control.vehicle_dynamics.trajectory_interface import TrajectoryInterface
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +27,8 @@ logger = logging.getLogger(__name__)
 def visualize_trajectories(
     scenario: Scenario,
     planning_problem: PlanningProblem,
-    planner_trajectory: Union[KBTrajectory, Any],
-    controller_trajectory: Union[KBTrajectory, Any],
+    planner_trajectory: TrajectoryInterface,
+    controller_trajectory: TrajectoryInterface,
     vehicle_width: float = 1.8,
     vehicle_length: float = 4.5,
     size_x: float = 10.0,
@@ -121,6 +120,7 @@ def visualize_trajectories(
 
         # draw scenario and renderer
         renderer.render()
+
         plt.title(f"Time step = {step}")
 
         if save_img:
@@ -134,7 +134,7 @@ def visualize_trajectories(
 
 
 def obtain_plot_limits_from_reference_path(
-    trajectory: Union[KBTrajectory, Any], margin: float = 10.0
+    trajectory: TrajectoryInterface, margin: float = 10.0
 ) -> List[int]:
     """
     Obtrains plot limits from reference idm_path

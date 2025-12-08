@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import List, Tuple
+import contextlib
+import io
 
 import cvxpy as cp
 import numpy as np
@@ -24,20 +26,45 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class SCvxParameters(OCPSolverParameters):
-    penalty_weight: float = 1000.0
-    max_iterations: int = 10
-    soft_tr_penalty_weight: float = 0.001
-    convergence_tolerance: float = 1e-3
-    feasibility_tolerance: float = 1e-4
+    """
+    Parameters for the Successive Convexification algorithm.
+    """
+
+    penalty_weight: float = (
+        1000.0  # weight for the (exact) penalty of non-zero values of slack variables
+    )
+    max_iterations: int = 10  # maximum number of convex programming iterations
+    soft_tr_penalty_weight: float = 0.001  # penalty for soft trust-region terms
+    convergence_tolerance: float = 1e-3  # tolerance for convergence
+    feasibility_tolerance: float = 1e-4  # tolerance for dynamical feasibility
 
     def __post_init__(self):
         super().__init__(penalty_weight=self.penalty_weight)
 
 
 class OptimalControlSCvx(OptimalControlSolver):
-    """ "
-    Successive convexification algorithm for optimal control based on
-     T. P. Reynolds et al. "A Real-Time Algorithm for Non-Convex Powered Descent Guidance", AIAA Scitech Forum, 2020
+    """
+    Successive convexification algorithm for solving non-convex optimal control problems (OCP) based on
+        [1] T. P. Reynolds et al. "A Real-Time Algorithm for Non-Convex Powered Descent Guidance", AIAA Scitech Forum, 2020
+
+    We consider OCPs of the form:
+
+        minimize sum_{k=0}^horizon l_k(x(k),u(k)) + V_f(x(horizon))
+        such that
+                x(0) = x_init
+                for k ={0,...,horizon-1}:   x(k+1) = f(x(k),u(k),0)
+                                            u_lb <= u(k) <= u_ub
+                for k={0,...,horizon}:      x_lb <= x(k) <= x_ub
+                                            a_comb(k) <= 1
+
+    where the stage cost function is
+        l_k(x(k),u(k)) = (x(k) - x_ref(k))^T cost_xx (x(k) - x_ref(k)) + (u(k) - u_ref(k))^T cost_uu (u(k) - u_ref(k))
+    and the terminal cost function is
+        V_f(x(horizon)) = (x(horizon) - x_ref(horizon))^T cost_final (x(horizon) - x_ref(horizon))
+    and a_comb(k) returns the normalized combined acceleration at each time step.
+
+    The algorithm successively convexifies this problem around the solution from the previous time step and solves these
+    convex programming approximations until convergence.
     """
 
     def __init__(
@@ -51,8 +78,17 @@ class OptimalControlSCvx(OptimalControlSolver):
         cost_final: np.ndarray,
         ocp_parameters: SCvxParameters = SCvxParameters,
     ):
-
-        # TODO: import typehinting issue for solver parameters
+        """
+        Initialize OCP solver
+        :param vehicle_model: vehicle model for predicting future states - VehicleModelInterface
+        :param sit_factory: factory for creating States and Inputs from the optimal solution - StateInputDisturbanceTrajectoryFactoryInterface
+        :param horizon: (discrete) prediction horizon/number of time steps - int
+        :param delta_t: sampling time - float
+        :param cost_xx: stage cost weighting matrix for the states, symmetric positive-semidefinite matrix - np.array
+        :param cost_uu: stage cost weighting matrix for the inputs, symmetric positive-semidefinite matrix - np.array
+        :param cost_final: terminal cost weighting matrix, symmetric positive-semidefinite matrix - np.array
+        :param ocp_parameters: algorithm parameters
+        """
 
         # init base class
         super().__init__(
@@ -72,20 +108,27 @@ class OptimalControlSCvx(OptimalControlSolver):
         self._cost_final = cost_final
 
         # optimization variables
+        # ... predicted states and control inputs
         self._x = cp.Variable((self._nx, self._horizon + 1))
         self._u = cp.Variable((self._nu, self._horizon))
+        # ... virtual control inputs (see [1, Eq. (14)])
         self._virtual_control_pos = cp.Variable((self._nx, self._horizon))
         self._virtual_control_neg = cp.Variable((self._nx, self._horizon))
 
         # parameters of the optimal control problem
+        # ... initial state
         self._par_x0 = cp.Parameter((self._nx,))
+        # ... reference trajectories
         self._par_x_ref = cp.Parameter((self._nx, self._horizon + 1))
         self._par_u_ref = cp.Parameter((self._nu, self._horizon))
+        # ... reference point for linearization of the vehicle dynamics
         self._par_x_lin = cp.Parameter((self._nx, self._horizon + 1))
         self._par_u_lin = cp.Parameter((self._nu, self._horizon))
+        # ... linearization of vehicle dynamics (see [1, Eq. (14)])
         self._par_x_next = cp.Parameter((self._nx, self._horizon))
         self._par_A = cp.Parameter((self._nx, self._nx * self._horizon))
         self._par_B = cp.Parameter((self._nx, self._nu * self._horizon))
+        # ... convexification of the (normalized) combined acceleration
         self._par_a_long = cp.Parameter(self._horizon, "a_long")
         self._par_a_lat = cp.Parameter(self._horizon, "a_lat")
         self._par_jac_a_long_x = cp.Parameter((self._horizon, self._nx), "jac_a_long_x")
@@ -100,8 +143,12 @@ class OptimalControlSCvx(OptimalControlSolver):
         self._ocp = self._setup_solver()
 
     def _setup_solver(self):
+        """
+        Creates a parameterized convex programming approximation of the OCP using CVXPY.
+        """
+
         # initialize cost function
-        cost = 0
+        cost = 0.0
 
         # initial state constraint
         constraints = [self._x[:, 0] == self._par_x0]
@@ -179,12 +226,12 @@ class OptimalControlSCvx(OptimalControlSolver):
         constraints += [self._virtual_control_pos >= 0, self._virtual_control_neg >= 0]
 
         # penalize virtual control inputs
-        cost += self._ocp_parameters.penalty_weight * (
+        cost += self.ocp_parameters.penalty_weight * (
             cp.sum(self._virtual_control_neg) + cp.sum(self._virtual_control_pos)
         )
 
         # (quadratic) soft trust-region penalty
-        cost += self._ocp_parameters.soft_tr_penalty_weight * (
+        cost += self.ocp_parameters.soft_tr_penalty_weight * (
             cp.sum_squares(cp.vec(self._x - self._par_x_lin, order="F"))
             + cp.sum_squares(cp.vec(self._u - self._par_u_lin, order="F"))
         )
@@ -204,6 +251,16 @@ class OptimalControlSCvx(OptimalControlSolver):
     ) -> Tuple[
         TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]
     ]:
+        """
+        Solves an instance of the optimal control problem given an initial state, a reference trajectory to be tracked
+        and an initial guess for the state and control inputs.
+        :param x0: initial state of the vehicle - StateInterface
+        :param x_ref: state reference trajectory - TrajectoryInterface
+        :param u_ref: input reference trajectory - TrajectoryInterface
+        :param x_init: (optional) initial guess for the state trajectory -TrajectoryInterface
+        :param u_init: (optional) initial state for the input trajectory - TrajectoryInterface
+        :return: optimal state and input trajectory (TrajectoryInterface) and solution history
+        """
 
         # reset iteration history
         self._iteration_history = []
@@ -226,8 +283,8 @@ class OptimalControlSCvx(OptimalControlSolver):
         x_sol = []
         u_sol = []
 
-        for _ in range(self._ocp_parameters.max_iterations):
-            # linearize the nonlinear vehicle model
+        for _ in range(self.ocp_parameters.max_iterations):
+            # linearize the nonlinear vehicle dynamics
             x_next = []
             A = []
             B = []
@@ -277,15 +334,22 @@ class OptimalControlSCvx(OptimalControlSolver):
             solver_verbosity: bool = (
                 True if logger.getEffectiveLevel() == logging.DEBUG else False
             )
-            self._ocp.solve(solver="CLARABEL", verbose=solver_verbosity)
+            self._ocp.solve(solver="CLARABEL", verbose=False)
+            logger.debug(
+                "Solver: %s | Status: %s | Optimal value: %s | Iterations: %s",
+                self._ocp.solver_stats.solver_name,
+                self._ocp.solution.status,
+                self._ocp.solution.opt_val,
+                self._ocp.solver_stats.num_iters
+            )
 
             # check feasibility
             if "infeasible" in self._ocp.status or "unbounded" in self._ocp.status:
                 logger.error(
-                    f"Solver could not solve dynamics. Status: {self._ocp.status}"
+                    f"SCvx convex programming solver failed. Status: {self._ocp.status}"
                 )
                 raise ValueError(
-                    f"Solver could not solve dynamics. Status: {self._ocp.status}"
+                    f"SCvx convex programming solver failed. Status: {self._ocp.status}"
                 )
 
             # extract (candidate) solution
@@ -295,12 +359,12 @@ class OptimalControlSCvx(OptimalControlSolver):
             # save solution
             self._iteration_history.append((x_sol.copy(), u_sol.copy()))
 
-            # check convergence
+            # check convergence (see [1, Sec. II-E])
+            conv_x = float(np.max(np.abs(x_sol - self._par_x_lin.value)))
+            conv_u = float(np.max(np.abs(u_sol - self._par_u_lin.value)))
             if (
-                float(np.max(np.abs(x_sol - self._par_x_lin.value)))
-                < self._ocp_parameters.convergence_tolerance
-                and float(np.max(np.abs(u_sol - self._par_u_lin.value)))
-                < self._ocp_parameters.convergence_tolerance
+                conv_x < self.ocp_parameters.convergence_tolerance
+                and conv_u < self.ocp_parameters.convergence_tolerance
             ):
                 break
 
@@ -309,10 +373,10 @@ class OptimalControlSCvx(OptimalControlSolver):
             self._par_u_lin.value = u_sol
 
         # check feasibility
-        # ... compute the defect
+        # ... compute the defect (see [1, Alg. 2, l. 12-15] - for efficiency, we only compute the defect once the algorithm terminated)
         defect = self._compute_defect(x_sol, u_sol)
-        if float(np.max(defect)) > self._ocp_parameters.feasibility_tolerance:
-            logger.warning(
+        if float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance:
+            logger.debug(
                 "SCvx algorithm converged to a dynamically infeasible solution!"
             )
 
@@ -337,9 +401,9 @@ class OptimalControlSCvx(OptimalControlSolver):
     def _compute_defect(self, x: np.ndarray, u: np.ndarray) -> np.ndarray:
         """
         Computes the defect, which is the error in the predicted state trajectory, at each time step.
-        :param x: predicted state trajectory
-        :param u: candidate control input trajectory
-        :return: array storing the defect at each time step
+        :param x: predicted state trajectory - np.ndarray
+        :param u: candidate control input trajectory - np.ndarray
+        :return: array storing the defect at each time step - np.ndarray
         """
         err = x[:, 1 : self._horizon + 1] - np.column_stack(
             [
@@ -348,3 +412,7 @@ class OptimalControlSCvx(OptimalControlSolver):
             ]
         )
         return np.linalg.norm(err, axis=0)
+
+    @property
+    def ocp_parameters(self) -> SCvxParameters:
+        return self._ocp_parameters

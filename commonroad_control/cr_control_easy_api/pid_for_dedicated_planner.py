@@ -1,6 +1,7 @@
 import copy
 import logging
 import time
+from math import ceil
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
@@ -57,8 +58,8 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import 
     DynamicBicycle,
 )
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sit_factory import (
-    KBSITFactoryDisturbance,
+from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
+    KBSIDTFactory,
 )
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
     StateInputDisturbanceTrajectoryFactoryInterface,
@@ -86,8 +87,7 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     ki_steer_offset: float = 0.0,
     kd_steer_offset: float = 0.1,
     dt_controller: float = 0.1,
-    look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
+    t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
     planner_converter: Optional[
         PlanningConverterInterface
@@ -126,8 +126,7 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     :param ki_steer_offset: integral gain lateral offset
     :param kd_steer_offset: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
-    :param look_ahead_s: lookahead in seconds
-    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param t_look_ahead: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
     :param planner_converter: planner converter
     :param sit_factory_sim: StateInputTrajectory factory for a given dynamics model
@@ -154,8 +153,7 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
         ki_steer_offset=ki_steer_offset,
         kd_steer_offset=kd_steer_offset,
         dt_controller=dt_controller,
-        look_ahead_s=look_ahead_s,
-        extended_horizon_steps=extended_horizon_steps,
+        look_ahead_s=t_look_ahead,
         vehicle_params=vehicle_params,
         planner_converter=planner_converter,
         disturbance_model_typename=NoUncertainty,
@@ -186,7 +184,6 @@ def pid_with_lookahead_for_reactive_planner(
     kd_steer_offset: float = 0.1,
     dt_controller: float = 0.1,
     look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
     vehicle_params=BMW3seriesParams(),
     planner_converter: Union[
         PlanningConverterInterface, ReactivePlannerConverter
@@ -226,8 +223,7 @@ def pid_with_lookahead_for_reactive_planner(
     :param ki_steer_offset: integral gain lateral offset
     :param kd_steer_offset: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
-    :param look_ahead_s: lookahead in seconds
-    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param look_ahead_s: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
     :param planner_converter: planner converter
     :param disturbance_model_typename: typename (=class) of the disturbance
@@ -256,8 +252,7 @@ def pid_with_lookahead_for_reactive_planner(
         ki_steer_offset=ki_steer_offset,
         kd_steer_offset=kd_steer_offset,
         dt_controller=dt_controller,
-        look_ahead_s=look_ahead_s,
-        extended_horizon_steps=extended_horizon_steps,
+        t_look_ahead=look_ahead_s,
         vehicle_params=vehicle_params,
         planner_converter=planner_converter,
         disturbance_model_typename=disturbance_model_typename,
@@ -288,8 +283,7 @@ def pid_with_lookahead_for_planner(
     ki_steer_offset: float = 0.0,
     kd_steer_offset: float = 0.1,
     dt_controller: float = 0.1,
-    look_ahead_s: float = 0.5,
-    extended_horizon_steps: int = 10,
+    t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
     disturbance_model_typename: Type[
         Union[UncertaintyModelInterface, GaussianDistribution]
@@ -330,8 +324,7 @@ def pid_with_lookahead_for_planner(
     :param ki_steer_offset: integral gain lateral offset
     :param kd_steer_offset: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
-    :param look_ahead_s: lookahead in seconds
-    :param extended_horizon_steps: extends original planning horizon by number of steps
+    :param t_look_ahead: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
     :param planner_converter: planner converter
     :param disturbance_model_typename: typename (=class) of the disturbance
@@ -413,18 +406,19 @@ def pid_with_lookahead_for_planner(
     eta: float = 0.0
 
     # extend reference trajectory
+    horizon_look_ahead = ceil(t_look_ahead / dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
         x_ref=copy.copy(x_ref),
         u_ref=copy.copy(u_ref),
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=extended_horizon_steps,
+        horizon=horizon_look_ahead,
     )
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
-        sit_factory=KBSITFactoryDisturbance(),
-        horizon=extended_horizon_steps,
+        sidt_factory=KBSIDTFactory(),
+        t_look_ahead=t_look_ahead,
     )
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext, input_ref=u_ref_ext, t_0=0
@@ -445,10 +439,10 @@ def pid_with_lookahead_for_planner(
     traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
 
-    for kk_sim in range(len(x_ref.steps)):
+    for kk_sim in range(len(u_ref.steps)):
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller + look_ahead_s
+            t=kk_sim * dt_controller
         )
 
         u_look_ahead_sim = sit_factory_sim.input_from_args(
@@ -460,7 +454,7 @@ def pid_with_lookahead_for_planner(
         _, _, x_look_ahead = look_ahead_sim.simulate(
             x0=traj_dict_no_noise[kk_sim],
             u=u_look_ahead_sim,
-            t_final=look_ahead_s,
+            t_final=t_look_ahead,
             ivp_method=ivp_method,
         )
         t_0 = time.perf_counter()
@@ -499,8 +493,8 @@ def pid_with_lookahead_for_planner(
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
-    logger.info(f"Control took: {eta * 1000} millisec.")
-    simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
+    logger.debug(f"Control took: {eta * 1000} millisec.")
+    simulated_traj = sit_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,

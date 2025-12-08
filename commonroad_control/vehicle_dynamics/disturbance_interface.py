@@ -12,7 +12,7 @@ from commonroad_control.simulation.uncertainty_model.uncertainty_interface impor
 @dataclass(frozen=True)
 class DisturbanceInterfaceIndex(UncertaintyInterfaceIndex):
     """
-    Indices of the disturbances.
+    Indices of the disturbance variables.
     """
 
     dim: int
@@ -21,13 +21,20 @@ class DisturbanceInterfaceIndex(UncertaintyInterfaceIndex):
 @dataclass
 class DisturbanceInterface(UncertaintyInterface):
     """
-    Baseclass for disturbance interfaces.
+    Interface for dataclass objects storing disturbances of the vehicle models.
     """
+
+    @property
+    def dim(self) -> int:
+        """
+        :return: disturbance dimension
+        """
+        return DisturbanceInterfaceIndex.dim
 
     @abstractmethod
     def convert_to_array(self) -> np.ndarray:
         """
         Converts instance of class to numpy array.
-        :return: (dim, 1) np.ndarray
+        :return: np.ndarray of dimension (self.dim,)
         """
         pass
