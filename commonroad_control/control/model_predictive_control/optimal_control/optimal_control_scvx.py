@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
 from typing import List, Tuple
-import contextlib
-import io
 
 import cvxpy as cp
 import numpy as np
@@ -331,16 +329,13 @@ class OptimalControlSCvx(OptimalControlSolver):
             self._par_jac_a_lat_u.value = np.vstack(jac_a_lat_u)
 
             # solve the optimal control problem
-            solver_verbosity: bool = (
-                True if logger.getEffectiveLevel() == logging.DEBUG else False
-            )
             self._ocp.solve(solver="CLARABEL", verbose=False)
             logger.debug(
                 "Solver: %s | Status: %s | Optimal value: %s | Iterations: %s",
                 self._ocp.solver_stats.solver_name,
                 self._ocp.solution.status,
                 self._ocp.solution.opt_val,
-                self._ocp.solver_stats.num_iters
+                self._ocp.solver_stats.num_iters,
             )
 
             # check feasibility

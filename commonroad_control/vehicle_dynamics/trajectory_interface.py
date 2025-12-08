@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
