@@ -88,6 +88,21 @@ black:
   script:
     - black --check --verbose --diff --color commonroad_control/
 
+mdformat:
+  stage: style
+  needs: []
+  allow_failure: true
+  image: python:3.10
+  before_script: []
+  cache: []
+  only:
+    - develop
+    - master
+    - release
+  script:
+    - pip install "mdformat[black]"
+    - mdformat --check docs/
+
 
 ################# Deploy ##########
 # Deploy the package to the internal package registry
