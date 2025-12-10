@@ -21,7 +21,7 @@ markdown_extensions:
 nav:
   - Introduction:
     - "Introduction": index.md
-    - "Concept": index.md
+    - "Concept": introduction/concept.md
     - "Architecture": introduction/classdiagram.md
 
   - Examples:
@@ -30,7 +30,7 @@ nav:
       - "Visualization": examples/visualization_example.md
 
   - Integrating your own work:
-    - "Planner integration": index.md
+    - "Planner integration": integrate_your_own_work/planner_integration.md
     - "Controller integration": index.md
     - "Dynamics integration": index.md
 
@@ -45,6 +45,36 @@ nav:
       - "MPC": easy_api/easy_mpc.md
 
   - Core API:
-      - "Aasdf": index.md
+      - "Control":
+          - "Controller Interface": core_api/control/controller_interface.md
+          - "Model Predictive Control": core_api/control/mpc.md
+          - "PID": core_api/control/pid.md
+          - "Reference Trajectory": core_api/control/ref_traj.md
+
+      - "Simulation":
+          - "Simulation": core_api/simulation/simulation.md
+          - "Sensor Models": core_api/simulation/sensor_models.md
+          - "Uncertainty Models": core_api/simulation/uncertainty_models.md
+
+      - "Vehicle Dynamics":
+          - "Interfaces": core_api/vehicle_dynamics/interfaces.md
+          - "Kinematic Bicycle": core_api/vehicle_dynamics/kst.md
+          - "Dynamic Bicycle": core_api/vehicle_dynamics/dst.md
+
+      - "Vehicle Parameters":
+          - "Interface": core_api/vehicle_parameters/interfaces.md
+          - "BMW 3": core_api/vehicle_parameters/bmw3.md
+
+      - "Planning Converter":
+          - "Interface": core_api/planning_converter/interfaces.md
+          - "Reactive Planner Converter": core_api/planning_converter/reactive_planner_converter.md
+
+      - "utils":
+          - "visualization": core_api/util/visualization.md
+          - "other utils": core_api/util/other_util.md
+
+
+
+
 
 
