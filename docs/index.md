@@ -9,6 +9,10 @@ and our overall architecture allows for the modular design of custom motion plan
 
 
 ## :hammer_and_wrench: Installation
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)  
+We support Ubuntu>=20.4 and Python>=3.10.
 
 ```bash
 pip install commonroad-control
@@ -36,7 +40,7 @@ Our [CommonRoad control github page]() contains a mirror of our gitlab source co
 
 
 
-## Contributors
+## Contributers
 Lukas Schäfer: lukas.schaefer[at]tum.de  
 Tobias Mascetta: tobias.mascetta[at]tum.de  
 Sven Pflaumbaum: sven.pflaumbaum[at]tum.de  

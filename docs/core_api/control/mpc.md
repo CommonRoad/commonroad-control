@@ -1,0 +1,3 @@
+:::commonroad_control.control.model_predictive_control.model_predictive_control
+:::commonroad_control.control.model_predictive_control.optimal_control.optimal_control
+:::commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx

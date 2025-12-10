@@ -1,0 +1,10 @@
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_noise
+:::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory
+
+
+
