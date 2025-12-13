@@ -32,7 +32,7 @@ class TrajectoryInterface(ABC):
 
     points: Dict[int, Any]  # dict of points
     delta_t: float  # sampling time
-    mode: TrajectoryMode  # state/input trajectory
+    mode: TrajectoryMode  # state/input/disturbance trajectory
     t_0: float = 0.0  # initial time
     steps: List[int] = None  # time steps of the trajectory points
     t_final: Optional[float] = None  # final time
