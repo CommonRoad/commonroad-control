@@ -58,8 +58,8 @@ nav:
 
       - "Vehicle Dynamics":
           - "Interfaces": core_api/vehicle_dynamics/interfaces.md
-          - "Kinematic Bicycle": core_api/vehicle_dynamics/kst.md
-          - "Dynamic Bicycle": core_api/vehicle_dynamics/dst.md
+          - "Kinematic Bicycle": core_api/vehicle_dynamics/kb.md
+          - "Dynamic Bicycle": core_api/vehicle_dynamics/db.md
 
       - "Vehicle Parameters":
           - "Interface": core_api/vehicle_parameters/interfaces.md
