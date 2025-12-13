@@ -1,9 +1,10 @@
 # Long examples
-We present some longer code examples for users that want to integrate their own planner or controller or customize states, 
+
+We present some longer code examples for users that want to integrate their own planner or controller or customize states,
 inputs etc.
 
-
 ## PID with Reactive Planner
+
 This is a step-by-step code for integrating a Long-Lat separated PID controller with the reactive planner
 
 ```Python3
@@ -277,8 +278,8 @@ if __name__ == "__main__":
     )
 ```
 
-
 ## MPC with Reactive planner
+
 This examples shows a step-by-step integration of a combined MPC with the CommonRoad reactive planner
 
 ```Python3
