@@ -1,9 +1,11 @@
 # Minimal examples
-Here are some minimal examples for running different controllers with a planner. Please refer to the Easy API of 
+
+Here are some minimal examples for running different controllers with a planner. Please refer to the Easy API of
 CommonRoad Control for further documentation.
 
 ## PID with reactive planner
-You can run the Long-Lat separated PID controller with the CommonRoad Reactive Planner using: 
+
+You can run the Long-Lat separated PID controller with the CommonRoad Reactive Planner using:
 
 ```Python3
 from pathlib import Path
@@ -45,9 +47,9 @@ noisy_traj, disturbed_traj, input_traj = pid_with_lookahead_for_reactive_planner
 If you want to have no noise and disturbances, you can use `pid_with_lookahead_for_reactive_planner_no_uncertainty(...)` instead
 of `pid_with_lookahead_for_reactive_planner(...)` using the same arguments.
 
-
 ## MPC with reactive planner
-You can run the combined MPC controller with the CommonRoad Reactive Planner using: 
+
+You can run the combined MPC controller with the CommonRoad Reactive Planner using:
 
 ```Python3
 from pathlib import Path
@@ -87,5 +89,6 @@ noisy_traj, disturbed_traj, input_traj = mpc_for_reactive_planner(
     img_saving_path=None
 )
 ```
+
 If you want to have no noise and disturbances, you can use `mpc_for_reactive_planner_no_uncertainty(...)` instead
 of `mpc_for_reactive_planner(...)` using the same arguments.

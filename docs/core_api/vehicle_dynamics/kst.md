@@ -5,6 +5,3 @@
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_noise
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory
-
-
-

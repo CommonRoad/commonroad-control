@@ -5,4 +5,3 @@
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.db_disturbance
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.db_noise
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory
-
