@@ -1,10 +1,15 @@
 import unittest
 import numpy as np
 from numpy.ma.testutils import assert_equal
+import logging
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
 # example for uncertainty interface
 from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbance
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestGaussianDistribution(unittest.TestCase):

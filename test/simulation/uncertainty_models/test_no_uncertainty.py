@@ -1,7 +1,12 @@
 import unittest
 import numpy as np
+import logging
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.simulation.uncertainty_model.no_uncertainty import NoUncertainty
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestNoUncertainty(unittest.TestCase):

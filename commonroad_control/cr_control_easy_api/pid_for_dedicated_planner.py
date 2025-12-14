@@ -376,19 +376,19 @@ def pid_with_lookahead_for_planner(
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
         random_noise=True,
-        delta_t_sim=dt_controller,
+        delta_t_w=dt_controller,
     )
 
     # Lookahead
     # ... simulation
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
     )
 
     pid_controller: PIDLongLat = PIDLongLat(
@@ -431,7 +431,8 @@ def pid_with_lookahead_for_planner(
     )
 
     x_measured = func_convert_planner2controller_state(
-        kb_state=x_ref.initial_point, vehicle_params=vehicle_params
+        kb_state=x_ref.initial_point,
+        vehicle_params=vehicle_params
     )
 
     x_disturbed = copy.copy(x_measured)

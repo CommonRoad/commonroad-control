@@ -418,7 +418,7 @@ def mpc_for_planner(
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -458,7 +458,8 @@ def mpc_for_planner(
 
     # simulation results
     x_measured = func_convert_planner2controller_state(
-        kb_state=x_ref.initial_point, vehicle_params=vehicle_params
+        kb_state=x_ref.initial_point,
+        vehicle_params=vehicle_params
     )
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}

@@ -1,13 +1,16 @@
 import unittest
 import numpy as np
+import logging
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
 from commonroad_control.simulation.uncertainty_model.uniform_distribution import UniformDistribution
 
 # double integrator state and input for testing
-from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
-from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
 from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import  DISIDTFactory
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestFullStateFeedback(unittest.TestCase):

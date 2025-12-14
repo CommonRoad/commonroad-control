@@ -1,9 +1,14 @@
 import unittest
 import numpy as np
+import logging
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.simulation.uncertainty_model.uniform_distribution import UniformDistribution
 # example for uncertainty interface
 from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbance
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestUniformDistribution(unittest.TestCase):

@@ -8,12 +8,6 @@ See also the [vehicle model interface documentation](/docs/vehicle_dynamics/inte
 
 ---
 
-## Overview
-
-The double integrator model captures:
-- 
----
-
 ## State Vector
 
 The state vector is defined as:

@@ -1,7 +1,10 @@
 import unittest
+import logging
 
 import numpy as np
 import scipy as sp
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
@@ -17,6 +20,8 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle imp
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState, KBStateIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import KBSIDTFactory
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestOptimalControlSCvx(unittest.TestCase):

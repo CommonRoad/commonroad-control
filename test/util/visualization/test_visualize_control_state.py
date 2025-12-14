@@ -4,6 +4,9 @@ import warnings
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")  # prevent GUI windows
+import logging
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 # function under test
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
@@ -18,6 +21,9 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
+
 
 class TestVisualizeControlState(unittest.TestCase):
     """

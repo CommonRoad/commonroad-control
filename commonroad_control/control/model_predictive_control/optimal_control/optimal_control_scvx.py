@@ -281,7 +281,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         x_sol = []
         u_sol = []
 
-        for _ in range(self.ocp_parameters.max_iterations):
+        for num_iter in range(self.ocp_parameters.max_iterations):
             # linearize the nonlinear vehicle dynamics
             x_next = []
             A = []
@@ -331,11 +331,11 @@ class OptimalControlSCvx(OptimalControlSolver):
             # solve the optimal control problem
             self._ocp.solve(solver="CLARABEL", verbose=False)
             logger.debug(
-                "Solver: %s | Status: %s | Optimal value: %s | Iterations: %s",
+                "Solver: %s | Iteration: %s | Status: %s | Optimal value: %s",
                 self._ocp.solver_stats.solver_name,
+                num_iter + 1,
                 self._ocp.solution.status,
                 self._ocp.solution.opt_val,
-                self._ocp.solver_stats.num_iters,
             )
 
             # check feasibility
@@ -370,7 +370,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         # check feasibility
         # ... compute the defect (see [1, Alg. 2, l. 12-15] - for efficiency, we only compute the defect once the algorithm terminated)
         defect = self._compute_defect(x_sol, u_sol)
-        if float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance:
+        if (float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance) and (self.ocp_parameters.max_iterations > 1):
             logger.debug(
                 "SCvx algorithm converged to a dynamically infeasible solution!"
             )
