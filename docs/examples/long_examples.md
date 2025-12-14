@@ -43,6 +43,7 @@ from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 logger_global = configure_toolbox_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def main(
         scenario_file: Path,
         scenario_name: str,
@@ -119,7 +120,7 @@ def main(
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -131,7 +132,7 @@ def main(
     # ... simulation
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
     )
 
     pid_controller: PIDLongLat = PIDLongLat(
@@ -176,7 +177,6 @@ def main(
     traj_dict_measured = {0: x_measured}
     traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
-
 
     for kk_sim in range(len(x_ref.steps)):
         # extract reference trajectory
@@ -225,8 +225,6 @@ def main(
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
-
-
     logger.info(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
         trajectory_dict=traj_dict_measured,
@@ -234,7 +232,6 @@ def main(
         t_0=0,
         delta_t=dt_controller
     )
-
 
     if create_scenario:
         visualize_trajectories(
@@ -261,12 +258,12 @@ def main(
         save_path=img_save_path
     )
 
+
 if __name__ == "__main__":
     scenario_name = "MyScenario"
     scenario_file = "PATH/TO/SCENARIO.xml"
     planner_config_path = "PATH/TO/REACTIVE/PLANNER/CONFIG.yaml"
     img_save_path = "PATH/TO/OUTPUT/FOLDER"
-
 
     main(
         scenario_file=scenario_file,
@@ -316,13 +313,15 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
 
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
-from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
+from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx,
+    SCvxParameters
 
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def main(
         scenario_file: Path,
@@ -381,7 +380,7 @@ def main(
     cost_xx = np.eye(KBStateIndices.dim)
     cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
     cost_uu = 0.1 * np.eye(KBInputIndices.dim)
-    cost_final = cost_xx  #np.eye(KBStateIndices.dim)
+    cost_final = cost_xx  # np.eye(KBStateIndices.dim)
     # ... solver parameters for initial step-> iterate until convergence
     solver_parameters_init = SCvxParameters(max_iterations=20)
     # ... solver parameters for real time iteration -> only one iteration per time step
@@ -427,7 +426,7 @@ def main(
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -448,7 +447,7 @@ def main(
         horizon=mpc.horizon,
     )
     # ... dummy reference trajectory: all inputs set to zero
-    u_np = np.zeros((u_ref_ext.dim,len(u_ref_ext.steps)))
+    u_np = np.zeros((u_ref_ext.dim, len(u_ref_ext.steps)))
     u_ref_0 = sit_factory_ctrl.trajectory_from_numpy_array(
         traj_np=u_np,
         mode=TrajectoryMode.Input,
@@ -477,7 +476,7 @@ def main(
 
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim*dt_controller
+            t=kk_sim * dt_controller
         )
 
         # convert initial state to kb
@@ -505,7 +504,7 @@ def main(
             u=u_now,
             t_final=dt_controller
         )
-        traj_dict_measured[kk_sim+1] = x_measured
+        traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
     simulated_traj = sit_factory_sim.trajectory_from_state_or_input(
@@ -514,7 +513,6 @@ def main(
         t_0=0,
         delta_t=dt_controller
     )
-
 
     if create_scenario:
         visualize_trajectories(

@@ -141,7 +141,7 @@ def main(
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        state_input_factory=sit_factory_sim,
+        sidt_factory=sit_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,

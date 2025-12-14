@@ -1,6 +1,9 @@
 import unittest
+import logging
 
 import numpy as np
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.vehicle_dynamics.double_integrator.double_integrator import DoubleIntegrator
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
@@ -13,6 +16,8 @@ from commonroad_control.control.model_predictive_control.model_predictive_contro
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
 
 from commonroad_control.simulation.simulation.simulation import Simulation
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestModelPredictivecontrol(unittest.TestCase):
@@ -63,7 +68,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         # setup simulator for closed-loop simulation
         simulator =  Simulation(
             vehicle_model=vehicle_model,
-            state_input_factory=sit_factory)
+            sidt_factory=sit_factory)
 
         # reference trajectory for tracking
         x_ref = np.zeros((DIStateIndices.dim,horizon_sim + horizon_ocp + 1))

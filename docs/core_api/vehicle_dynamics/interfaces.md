@@ -14,8 +14,7 @@ Any concrete vehicle model must implement this interface.
 ## Dataclass Objects
 
 In addition to the vehicle model itself, we provide dataclass objects for storing vehicle-specific state vectors, inputs, disturbance, and noise vectors as well as trajectories.
-The `StateInputDisturbanceTrajectoryFactoryInterface` (short `sidt_factory`) implements the functionality for instantiating these dataclass objects from both `numpy` arrays and by providing the respective attributes as individual arguments.
-For instantiating these dataclass objects from, `numpy` arrays,
+The `StateInputDisturbanceTrajectoryFactoryInterface` (short `sidt_factory`) implements the functionality for instantiating these dataclass objects from `numpy` arrays or by providing the respective attributes as individual arguments.
 
 The state, input, disturbance, and noise dataclass objects can be converted to `numpy` arrays using their `convert_to_array()` method for, e.g., numerical simulation.
 
@@ -30,7 +29,7 @@ $$
 
 ---
 
-### Control Input
+### Control Input Vector
 
 Each model defines a control input vector:
 

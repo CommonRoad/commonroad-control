@@ -7,6 +7,7 @@ from scipy.integrate import OdeSolver, solve_ivp
 from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import (
     FullStateFeedback,
 )
+from commonroad_control.simulation.sensor_models.output_interface import OutputInterface
 from commonroad_control.simulation.sensor_models.sensor_model_interface import (
     SensorModelInterface,
 )
@@ -36,33 +37,33 @@ class Simulation:
     def __init__(
         self,
         vehicle_model: VehicleModelInterface,
-        state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface,
         disturbance_model: Optional[UncertaintyModelInterface] = None,
         random_disturbance: Optional[bool] = False,
         sensor_model: Optional[SensorModelInterface] = None,
         random_noise: Optional[bool] = False,
-        delta_t_sim: Optional[float] = 0.1,
+        delta_t_w: Optional[float] = 0.1,
     ) -> None:
         """
         Simulates a dynamical system given an initial state and a (constant) control input for a given time horizon with
-        optional disturbances. By using the vehicle_model_interface and state_input_factory, the simulation can
-        automatically deduce the state and input types as well as the system of differential equations modelling the
+        optional disturbances. By using the vehicle_model_interface and sidt_factory, the simulation can
+        automatically deduce the state and input types as well as the system of differential equations modeling the
         system dynamics.
-        Output functions and measurement noise can be considered via an optional sensor model
+        Output functions and measurement noise can be considered via an optional sensor model.
         :param vehicle_model: vehicle model interface for simulation, e.g. kinematic bicycle model
-        :param state_input_factory: object that can generate/convert states and inputs for a given vehicle model
+        :param sidt_factory: object that can generate/convert states and inputs for a given vehicle model
         :param disturbance_model: optional uncertainty model for generating (random) disturbance values
         :param random_disturbance: true if random values shall be sampled from the disturbance model
         :param sensor_model: optional sensor model for computing (noisy) outputs
         :param random_noise: true if random noise shall be applied
-        :param delta_t_sim: (max.) simulation time step, also used for sampling the disturbance
+        :param delta_t_w: time step size for sampling the disturbances
         """
 
         self._vehicle_model: VehicleModelInterface = vehicle_model
-        self._state_input_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
-            state_input_factory
+        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
+            sidt_factory
         )
-        self._delta_t_sim: Optional[float] = delta_t_sim
+        self._delta_t_w: Optional[float] = delta_t_w
 
         # set disturbance model
         self._random_disturbance: bool = (
@@ -81,9 +82,9 @@ class Simulation:
         if sensor_model is None:
             sensor_model: SensorModelInterface = FullStateFeedback(
                 noise_model=NoUncertainty(dim=self._vehicle_model.state_dimension),
-                state_output_factory=self._state_input_factory,
-                state_dimension=state_input_factory.state_dimension,
-                input_dimension=state_input_factory.input_dimension,
+                state_output_factory=self._sidt_factory,
+                state_dimension=sidt_factory.state_dimension,
+                input_dimension=sidt_factory.input_dimension,
             )
         self._sensor_model: Optional[SensorModelInterface] = sensor_model
 
@@ -99,7 +100,7 @@ class Simulation:
         """
         :return: state input factory
         """
-        return self._state_input_factory
+        return self._sidt_factory
 
     @property
     def disturbance_model(self) -> Optional[UncertaintyModelInterface]:
@@ -136,12 +137,12 @@ class Simulation:
         u: InputInterface,
         t_final: float,
         ivp_method: Union[str, OdeSolver, None] = "RK45",
-    ) -> Tuple[StateInterface, TrajectoryInterface, TrajectoryInterface]:
+    ) -> Tuple[Union[StateInterface, OutputInterface], TrajectoryInterface, TrajectoryInterface]:
         """
         Simulates the dynamical system starting from the initial state x0 until time t_final. The control input is kept
         constant for t in [0, t_final]. The default method for solving the initial value problem is RK45.
         The value of the (optional) disturbance is piece-wise constant and re-sampled (the latest) every
-        self._delta_t_sim seconds.
+        self._delta_t_w seconds.
         :param x0: initial state
         :param u: control input
         :param t_final: final time for simulation (assuming initial time is 0)
@@ -156,8 +157,8 @@ class Simulation:
         x_sim_nom: dict = {0: x0_np}
         x_sim_w: dict = {0: x0_np}
 
-        # compute time step size (< self._delta_t_sim) - trajectory interface only allows evenly spaced time horizons
-        num_step_sim = math.ceil(t_final / self._delta_t_sim)
+        # compute time step size (< self._delta_t_w) - trajectory interface only allows evenly spaced time horizons
+        num_step_sim = math.ceil(t_final / self._delta_t_w)
         delta_t_sim = t_final / num_step_sim
 
         for kk in range(num_step_sim):
@@ -192,7 +193,7 @@ class Simulation:
 
         # compute output and apply noise
         # ... for causality, we pass the control input applied during simulation
-        x_final = self._state_input_factory.state_from_numpy_array(
+        x_final = self._sidt_factory.state_from_numpy_array(
             x_sim_w[num_step_sim]
         )
         y_sim_noise: StateInterface = self._sensor_model.measure(
@@ -201,7 +202,7 @@ class Simulation:
 
         # output arguments
         x_sim_nom: TrajectoryInterface = (
-            self._state_input_factory.trajectory_from_numpy_array(
+            self._sidt_factory.trajectory_from_numpy_array(
                 traj_np=np.column_stack(list(x_sim_nom.values())),
                 mode=TrajectoryMode.State,
                 time_steps=list(x_sim_nom.keys()),
@@ -210,7 +211,7 @@ class Simulation:
             )
         )
         x_sim_w: TrajectoryInterface = (
-            self._state_input_factory.trajectory_from_numpy_array(
+            self._sidt_factory.trajectory_from_numpy_array(
                 traj_np=np.column_stack(list(x_sim_w.values())),
                 mode=TrajectoryMode.State,
                 time_steps=list(x_sim_w.keys()),

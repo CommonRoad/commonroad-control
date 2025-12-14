@@ -1,18 +1,9 @@
 # Dynamic Bicycle Model
 
-This page describes the **dynamic bicycle** model with a linear tyre model.  
+This page describes the **dynamic bicycle** model with a **linear tyre model** and **longitudinal load transfer**.  
 The reference point for the vehicle dynamics is the **center of gravity (CoG)**.
 
 See also the [vehicle model interface documentation](/docs/vehicle_dynamics/interfaces.md) for additional information.
-
----
-
-## Overview
-
-The dynamic bicycle model captures:
-- Longitudinal and lateral vehicle dynamics
-- Yaw dynamics
-- Load transfer–dependent linear tyre forces
 
 ---
 

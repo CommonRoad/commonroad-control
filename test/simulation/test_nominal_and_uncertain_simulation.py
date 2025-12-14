@@ -1,8 +1,10 @@
 import unittest
-
+import logging
 import numpy as np
 from typing import Tuple
 import math
+
+from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
 from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
@@ -17,6 +19,8 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
 from commonroad_control.simulation.simulation.simulation import Simulation
 from commonroad_control.simulation.uncertainty_model.uniform_distribution import UniformDistribution
+
+logger_global = configure_toolbox_logging(level=logging.DEBUG)
 
 
 class TestNominalAndUncertainSimulation(unittest.TestCase):
@@ -112,8 +116,8 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
         # setup simulation
         sim_nom: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
-            delta_t_sim=vehicle_sim._delta_t
+            sidt_factory=sit_factory_sim,
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # function under test
@@ -128,7 +132,7 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim/sim_nom._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_nom._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
@@ -169,10 +173,10 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
         # ... simulation
         sim_perturbed: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
+            sidt_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
-            delta_t_sim=vehicle_sim._delta_t
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # function under test
@@ -187,7 +191,7 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim/sim_perturbed._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_perturbed._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
@@ -243,12 +247,12 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
         # ... simulation
         sim_noisy: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
+            sidt_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
             sensor_model=sensor_model,
             random_noise=True,
-            delta_t_sim=vehicle_sim._delta_t
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # function under test
@@ -263,7 +267,7 @@ class TestNominalAndUncertainSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim/sim_noisy._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,

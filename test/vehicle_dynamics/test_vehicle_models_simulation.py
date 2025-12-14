@@ -117,12 +117,12 @@ class TestVehicleModelsSimulation(unittest.TestCase):
         # ... simulation
         sim_noisy: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
+            sidt_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
             sensor_model=sensor_model,
             random_noise=True,
-            delta_t_sim=vehicle_sim._delta_t
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # problem statement - constant acceleration in long. and lat. direction
@@ -151,7 +151,7 @@ class TestVehicleModelsSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
@@ -215,12 +215,12 @@ class TestVehicleModelsSimulation(unittest.TestCase):
         # ... simulation
         sim_noisy: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
+            sidt_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
             sensor_model=sensor_model,
             random_noise=True,
-            delta_t_sim=vehicle_sim._delta_t
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # problem statement - constant acceleration with steering angle ramp
@@ -250,7 +250,7 @@ class TestVehicleModelsSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
@@ -314,12 +314,12 @@ class TestVehicleModelsSimulation(unittest.TestCase):
         # ... simulation
         sim_noisy: Simulation = Simulation(
             vehicle_model=vehicle_sim,
-            state_input_factory=sit_factory_sim,
+            sidt_factory=sit_factory_sim,
             disturbance_model=disturbance_model,
             random_disturbance=True,
             sensor_model=sensor_model,
             random_noise=True,
-            delta_t_sim=vehicle_sim._delta_t
+            delta_t_w=vehicle_sim._delta_t
         )
 
         # problem statement - constant acceleration with steering angle ramp
@@ -351,7 +351,7 @@ class TestVehicleModelsSimulation(unittest.TestCase):
 
         # check output args
         # ... standard tests
-        num_steps_expected = math.ceil(t_final_sim/sim_noisy._delta_t_sim)
+        num_steps_expected = math.ceil(t_final_sim / sim_noisy._delta_t_w)
         self.standard_checks(
             perturbed_trajectory=x_sim_w,
             nominal_trajectory=x_sim_nom,
