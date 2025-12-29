@@ -2,12 +2,8 @@
 
 This page describes the **VehicleModelInterface**, which defines a **common abstraction layer**
 for all vehicle dynamics models used in CommonRoad-Control.
-
-The interface follows a **factory method design pattern** and enables seamless interchangeability
-of different vehicle dynamics models (e.g., kinematic bicycle, dynamic bicycle)
-for simulation and control.
-
-Any concrete vehicle model must implement this interface.
+The interface enables seamless interchangeability of different vehicle dynamics models (e.g., kinematic bicycle, 
+dynamic bicycle) for simulation and control.
 
 ---
 
@@ -160,6 +156,11 @@ derived from the vehicle parameters.
 
 ---
 
+---
+
+## Implementation
+
+The following API documentation is auto-generated from the Python source code.
 
 :::commonroad_control.vehicle_dynamics.vehicle_model_interface
 :::commonroad_control.vehicle_dynamics.state_interface
