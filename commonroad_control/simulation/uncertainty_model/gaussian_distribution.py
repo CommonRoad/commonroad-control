@@ -36,7 +36,12 @@ class GaussianDistribution(UncertaintyModelInterface):
         :param std_deviation: standard deviations (component-wise) -  array/ list of floats/ instance of class UncertaintyInterface
         :param nominal_value: if not None: user-defined nominal value of the uncertainty - array/ list of floats/ instance of class UncertaintyInterface
         """
-        super().__init__(dim=dim)
+
+        # if nominal_value is None, set default value
+        if nominal_value is None:
+            nominal_value = mean
+
+        super().__init__(dim=dim, nominal_value=nominal_value)
 
         if isinstance(mean, UncertaintyInterface):
             mean_np = mean.convert_to_array()
@@ -49,16 +54,6 @@ class GaussianDistribution(UncertaintyModelInterface):
         else:
             std_deviation_np = np.array(std_deviation)
         self._std_deviation: np.ndarray = std_deviation_np
-
-        # set nominal value
-        if nominal_value is not None:
-            if isinstance(nominal_value, UncertaintyInterface):
-                nominal_value_np = nominal_value.convert_to_array()
-            else:
-                nominal_value_np: np.ndarray = np.array(nominal_value)
-            self._nominal_value = nominal_value_np
-        else:
-            self._nominal_value = self._mean
 
         self._sanity_check()
 
@@ -106,4 +101,4 @@ class GaussianDistribution(UncertaintyModelInterface):
         Generates a random sample from the Gaussian distribution.
         :return: np.ndarray of dimension (self.dim,)
         """
-        return np.random.normal(self._mean, self._std_deviation, size=self._dim)
+        return np.random.normal(loc=self._mean, scale=self._std_deviation, size=self._dim)

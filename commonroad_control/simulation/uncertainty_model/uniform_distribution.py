@@ -35,29 +35,24 @@ class UniformDistribution(UncertaintyModelInterface):
         :param nominal_value: if not None: user-defined nominal value of the uncertainty - array/ list of floats/ instance of class UncertaintyInterface
         """
 
-        super().__init__(dim=dim)
-
+        # if nominal_value is None, set default value (requires bounds to be represented as arrays)
         if isinstance(lower_bound, UncertaintyInterface):
             lower_bound_np = lower_bound.convert_to_array()
         else:
             lower_bound_np: np.ndarray = np.array(lower_bound)
-        self._lower_bound: np.ndarray = lower_bound_np
 
         if isinstance(upper_bound, UncertaintyInterface):
             upper_bound_np = upper_bound.convert_to_array()
         else:
             upper_bound_np: np.ndarray = np.array(upper_bound)
-        self._upper_bound: np.ndarray = upper_bound_np
+        if nominal_value is None:
+            nominal_value = 0.5*(lower_bound_np + upper_bound_np)
 
-        # set nominal value
-        if nominal_value is not None:
-            if isinstance(nominal_value, UncertaintyInterface):
-                nominal_value_np = nominal_value.convert_to_array()
-            else:
-                nominal_value_np: np.ndarray = np.array(nominal_value)
-            self._nominal_value: np.ndarray = nominal_value_np
-        else:
-            self._nominal_value = 0.5 * (self._upper_bound + self._lower_bound)
+        super().__init__(dim=dim, nominal_value=nominal_value)
+
+        # set bounds
+        self._lower_bound: np.ndarray = lower_bound_np
+        self._upper_bound: np.ndarray = upper_bound_np
 
         self._sanity_check()
 

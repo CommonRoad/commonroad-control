@@ -116,7 +116,7 @@ class FullStateFeedback(SensorModelInterface):
             raise ValueError(f"Dimension of input {u.dim} does not match.")
 
         # evaluate nominal output
-        y_nom_np = self._nominal_output(x, u)
+        y_nom_np = self.nominal_output(x, u)
 
         # sample and apply noise
         if rand_noise:

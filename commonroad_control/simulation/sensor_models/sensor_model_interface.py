@@ -92,7 +92,7 @@ class SensorModelInterface(ABC):
         """
         pass
 
-    def _nominal_output(
+    def nominal_output(
         self, x: Union[StateInterface, np.array], u: Union[StateInterface, np.array]
     ) -> np.ndarray:
         """
