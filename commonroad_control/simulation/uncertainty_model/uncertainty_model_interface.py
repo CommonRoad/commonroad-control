@@ -1,20 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Union, List
+from typing import List, Union
+
 import numpy as np
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_interface import (
     UncertaintyInterface,
 )
 
+
 class UncertaintyModelInterface(ABC):
     """
     Interface for uncertainty models for modeling disturbances or sensor noise. Examples include the gaussian or uniform distribution.
     """
 
-    def __init__(self,
-                 dim: int,
-                 nominal_value: Union[np.ndarray, List[float], UncertaintyInterface]
-                 ) -> None:
+    def __init__(
+        self,
+        dim: int,
+        nominal_value: Union[np.ndarray, List[float], UncertaintyInterface],
+    ) -> None:
         """
         Initialize uncertainty model.
         :param dim: dimension of the uncertainty - int

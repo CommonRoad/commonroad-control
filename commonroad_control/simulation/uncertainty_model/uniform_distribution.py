@@ -46,7 +46,7 @@ class UniformDistribution(UncertaintyModelInterface):
         else:
             upper_bound_np: np.ndarray = np.array(upper_bound)
         if nominal_value is None:
-            nominal_value = 0.5*(lower_bound_np + upper_bound_np)
+            nominal_value = 0.5 * (lower_bound_np + upper_bound_np)
 
         super().__init__(dim=dim, nominal_value=nominal_value)
 

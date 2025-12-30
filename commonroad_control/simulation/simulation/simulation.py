@@ -137,7 +137,9 @@ class Simulation:
         u: InputInterface,
         t_final: float,
         ivp_method: Union[str, OdeSolver, None] = "RK45",
-    ) -> Tuple[Union[StateInterface, OutputInterface], TrajectoryInterface, TrajectoryInterface]:
+    ) -> Tuple[
+        Union[StateInterface, OutputInterface], TrajectoryInterface, TrajectoryInterface
+    ]:
         """
         Simulates the dynamical system starting from the initial state x0 until time t_final. The control input is kept
         constant for t in [0, t_final]. The default method for solving the initial value problem is RK45.
@@ -193,31 +195,25 @@ class Simulation:
 
         # compute output and apply noise
         # ... for causality, we pass the control input applied during simulation
-        x_final = self._sidt_factory.state_from_numpy_array(
-            x_sim_w[num_step_sim]
-        )
+        x_final = self._sidt_factory.state_from_numpy_array(x_sim_w[num_step_sim])
         y_sim_noise: StateInterface = self._sensor_model.measure(
             x_final, u, rand_noise=self._random_noise
         )
 
         # output arguments
-        x_sim_nom: TrajectoryInterface = (
-            self._sidt_factory.trajectory_from_numpy_array(
-                traj_np=np.column_stack(list(x_sim_nom.values())),
-                mode=TrajectoryMode.State,
-                time_steps=list(x_sim_nom.keys()),
-                t_0=0.0,
-                delta_t=delta_t_sim,
-            )
+        x_sim_nom: TrajectoryInterface = self._sidt_factory.trajectory_from_numpy_array(
+            traj_np=np.column_stack(list(x_sim_nom.values())),
+            mode=TrajectoryMode.State,
+            time_steps=list(x_sim_nom.keys()),
+            t_0=0.0,
+            delta_t=delta_t_sim,
         )
-        x_sim_w: TrajectoryInterface = (
-            self._sidt_factory.trajectory_from_numpy_array(
-                traj_np=np.column_stack(list(x_sim_w.values())),
-                mode=TrajectoryMode.State,
-                time_steps=list(x_sim_w.keys()),
-                t_0=0.0,
-                delta_t=delta_t_sim,
-            )
+        x_sim_w: TrajectoryInterface = self._sidt_factory.trajectory_from_numpy_array(
+            traj_np=np.column_stack(list(x_sim_w.values())),
+            mode=TrajectoryMode.State,
+            time_steps=list(x_sim_w.keys()),
+            t_0=0.0,
+            delta_t=delta_t_sim,
         )
 
         return y_sim_noise, x_sim_w, x_sim_nom

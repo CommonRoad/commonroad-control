@@ -370,7 +370,9 @@ class OptimalControlSCvx(OptimalControlSolver):
         # check feasibility
         # ... compute the defect (see [1, Alg. 2, l. 12-15] - for efficiency, we only compute the defect once the algorithm terminated)
         defect = self._compute_defect(x_sol, u_sol)
-        if (float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance) and (self.ocp_parameters.max_iterations > 1):
+        if (float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance) and (
+            self.ocp_parameters.max_iterations > 1
+        ):
             logger.debug(
                 "SCvx algorithm converged to a dynamically infeasible solution!"
             )

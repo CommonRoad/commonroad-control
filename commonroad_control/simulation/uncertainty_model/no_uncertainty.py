@@ -1,5 +1,6 @@
-import numpy as np
 from typing import List, Union
+
+import numpy as np
 
 from commonroad_control.simulation.uncertainty_model.uncertainty_interface import (
     UncertaintyInterface,
@@ -15,13 +16,14 @@ class NoUncertainty(UncertaintyModelInterface):
     """
 
     def __init__(
-            self,
-            dim: int,
-            *args,
-            nominal_value: Union[
-                np.ndarray, List[float], UncertaintyInterface, None
-            ] = None,
-            **kwargs):
+        self,
+        dim: int,
+        *args,
+        nominal_value: Union[
+            np.ndarray, List[float], UncertaintyInterface, None
+        ] = None,
+        **kwargs
+    ):
         """
         Initialize no-uncertainty model. If no user-defined nominal value is provided, the nominal value is set to zero.
         :param dim: dimension of the uncertainty - int
