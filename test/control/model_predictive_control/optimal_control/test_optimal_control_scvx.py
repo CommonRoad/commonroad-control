@@ -99,7 +99,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         # instantiate model predictive control
         solver = OptimalControlSCvx(vehicle_model=vehicle_model,
-                                    sit_factory=sit_factory,
+                                    sidt_factory=sit_factory,
                                     horizon=horizon,
                                     delta_t=delta_t,
                                     cost_xx=cost_xx,
@@ -213,7 +213,7 @@ class TestOptimalControlSCvx(unittest.TestCase):
 
         # instantiate model predictive control
         solver = OptimalControlSCvx(vehicle_model=vehicle_model,
-                                    sit_factory=sit_factory,
+                                    sidt_factory=sit_factory,
                                     horizon=horizon,
                                     delta_t=delta_t,
                                     cost_xx=cost_xx,

@@ -103,7 +103,7 @@ def main(
     # ... ocp solver (initial parameters)
     scvx_solver = OptimalControlSCvx(
         vehicle_model=vehicle_model_ctrl,
-        sit_factory=sit_factory_ctrl,
+        sidt_factory=sit_factory_ctrl,
         horizon=horizon_ocp,
         delta_t=dt_controller,
         cost_xx=cost_xx,

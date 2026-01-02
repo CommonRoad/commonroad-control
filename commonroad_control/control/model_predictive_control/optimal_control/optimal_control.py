@@ -23,7 +23,7 @@ class OCPSolverParameters(ABC):
     penalty_weight: float = 1000.0
 
 
-class OptimalControlSolver(ABC):
+class OptimalControlSolverInterface(ABC):
     """
     Base cass for solving optimal control problems (OCPs). We consider OCPs of the form:
 
@@ -45,7 +45,7 @@ class OptimalControlSolver(ABC):
     def __init__(
         self,
         vehicle_model: VehicleModelInterface,
-        sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface,
         horizon: int,
         delta_t: float,
         ocp_parameters: OCPSolverParameters,
@@ -53,14 +53,14 @@ class OptimalControlSolver(ABC):
         """
         Initialize OCP solver
         :param vehicle_model: vehicle model for predicting future states - VehicleModelInterface
-        :param sit_factory: factory for creating States and Inputs from the optimal solution - StateInputDisturbanceTrajectoryFactoryInterface
+        :param sidt_factory: factory for creating States and Inputs from the optimal solution - StateInputDisturbanceTrajectoryFactoryInterface
         :param horizon: (discrete) prediction horizon/number of time steps - int
         :param delta_t: sampling time - float
         :param ocp_parameters: algorithm parameters
         """
 
         self.vehicle_model: VehicleModelInterface = vehicle_model
-        self.sit_factory: StateInputDisturbanceTrajectoryFactoryInterface = sit_factory
+        self.sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = sidt_factory
         self._ocp_parameters: OCPSolverParameters = ocp_parameters
         self.delta_t = delta_t
 

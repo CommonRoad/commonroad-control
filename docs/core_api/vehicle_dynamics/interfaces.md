@@ -134,7 +134,7 @@ These Jacobians are computed symbolically using CasADi.
 
 ______________________________________________________________________
 
-## Normalized Accelerations
+## Normalized Acceleration
 
 All models provide the functionality for computing the normalized longitudinal and lateral accelerations.
 The vehicle does not exceed the combined acceleration limits if the following constraint is satisfied:

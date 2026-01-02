@@ -3,19 +3,19 @@ from commonroad_control.control.control import ControllerInterface
 
 class PIDControl(ControllerInterface):
 
-    def __init__(self, kp: float, ki: float, kd: float, dt: float) -> None:
+    def __init__(self, kp: float, ki: float, kd: float, delta_t: float) -> None:
         """
         PID controller
         :param kp: proportional gain
         :param ki: integral gain
         :param kd: derivative gain
-        :param dt: controller step size in seconds
+        :param delta_t: controller sampling time in seconds
         """
         super().__init__()
         self._kp: float = kp
         self._ki: float = ki
         self._kd: float = kd
-        self._dt: float = dt
+        self._delta_t: float = delta_t
 
         self._integrated_error: float = 0.0
         self._previous_error: float = 0.0
@@ -42,28 +42,28 @@ class PIDControl(ControllerInterface):
         return self._kd
 
     @property
-    def dt(self) -> float:
+    def delta_t(self) -> float:
         """
-        :return: controller step size in seconds
+        :return: controller sampling time in seconds
         """
-        return self._dt
+        return self._delta_t
 
     def compute_control_input(
         self,
-        measured_state: float,
-        desired_state: float,
+        measured_output: float,
+        reference_output: float,
     ) -> float:
         """
         Computes control output for float input
-        :param measured_state: measured single state
-        :param desired_state: desired single state
+        :param measured_output: measured single output
+        :param reference_output: reference single output
         :return: control input
         """
-        error: float = desired_state - measured_state
+        error: float = reference_output - measured_output
         d_error: float = (
             error - self._previous_error
-        ) / self._dt  # TODO: check if division is reasonable
-        self._integrated_error += error * self._dt
+        ) / self._delta_t
+        self._integrated_error += error * self._delta_t
         self._previous_error = error
 
         return self._kp * error + self._ki * self._integrated_error + self._kd * d_error

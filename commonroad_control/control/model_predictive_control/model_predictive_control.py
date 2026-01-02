@@ -5,7 +5,7 @@ import scipy as sp
 
 from commonroad_control.control.control import ControllerInterface
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import (
-    OptimalControlSolver,
+    OptimalControlSolverInterface,
 )
 from commonroad_control.vehicle_dynamics.input_interface import InputInterface
 from commonroad_control.vehicle_dynamics.state_interface import StateInterface
@@ -15,10 +15,12 @@ from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 class ModelPredictiveControl(ControllerInterface):
     """
-    Model predictive controller (MPC). This class mostly serves as a wrapper for a given optimal control problem (OCP) solver and provides methods for computign an initial guess, e.g., by shifting the solution from the previous time step or linear interpolation between the initial state and a desired final state.
+    Model predictive controller (MPC). This class mostly serves as a wrapper for a given optimal control problem (OCP)
+    solver and provides methods for computing an initial guess, e.g., by shifting the solution from the previous time
+    step or linear interpolation between the initial state and a desired final state.
     """
 
-    def __init__(self, ocp_solver: OptimalControlSolver):
+    def __init__(self, ocp_solver: OptimalControlSolverInterface):
         """
         Initialize controller.
         :param ocp_solver: OCP solver - OptimalControlSolver
@@ -106,7 +108,7 @@ class ModelPredictiveControl(ControllerInterface):
         time_state = [kk for kk in range(self.ocp_solver.horizon + 1)]
         for kk in range(self.ocp_solver.horizon + 1):
             x_init_np[:, kk] = x_init_interp_fun(kk / self.ocp_solver.horizon)
-        x_init = self.ocp_solver.sit_factory.trajectory_from_numpy_array(
+        x_init = self.ocp_solver.sidt_factory.trajectory_from_numpy_array(
             traj_np=x_init_np,
             mode=TrajectoryMode.State,
             time_steps=time_state,
@@ -119,7 +121,7 @@ class ModelPredictiveControl(ControllerInterface):
         )
         time_input = time_state
         time_input.pop()
-        u_init = self.ocp_solver.sit_factory.trajectory_from_numpy_array(
+        u_init = self.ocp_solver.sidt_factory.trajectory_from_numpy_array(
             traj_np=u_init_np,
             mode=TrajectoryMode.Input,
             time_steps=time_input,
@@ -155,7 +157,7 @@ class ModelPredictiveControl(ControllerInterface):
         u_init_points.append(u_ref.final_point)
         # ... simulate
         x_init_points.append(
-            self.ocp_solver.sit_factory.state_from_numpy_array(
+            self.ocp_solver.sidt_factory.state_from_numpy_array(
                 self.ocp_solver.vehicle_model.simulate_dt_nom(
                     x_init_points[-1], u_init_points[-1]
                 )
@@ -165,7 +167,7 @@ class ModelPredictiveControl(ControllerInterface):
         # convert to trajectory interface
         # ... state trajectory
         time_steps = [kk for kk in range(0, self.ocp_solver.horizon + 1)]
-        x_init = self.ocp_solver.sit_factory.trajectory_from_points(
+        x_init = self.ocp_solver.sidt_factory.trajectory_from_points(
             trajectory_dict=dict(zip(time_steps, x_init_points)),
             mode=TrajectoryMode.State,
             t_0=u_ref.t_0,
@@ -173,7 +175,7 @@ class ModelPredictiveControl(ControllerInterface):
         )
         # ... input trajectory
         time_steps = [kk for kk in range(0, self.ocp_solver.horizon)]
-        u_init = self.ocp_solver.sit_factory.trajectory_from_points(
+        u_init = self.ocp_solver.sidt_factory.trajectory_from_points(
             trajectory_dict=dict(zip(time_steps, u_init_points)),
             mode=TrajectoryMode.Input,
             t_0=u_ref.t_0,

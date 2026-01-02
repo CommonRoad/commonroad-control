@@ -381,7 +381,7 @@ def mpc_for_planner(
     # ... ocp solver (initial parameters)
     scvx_solver = OptimalControlSCvx(
         vehicle_model=vehicle_model_ctrl,
-        sit_factory=sit_factory_control,
+        sidt_factory=sit_factory_control,
         horizon=horizon_ocp,
         delta_t=dt_controller,
         cost_xx=cost_xx,
