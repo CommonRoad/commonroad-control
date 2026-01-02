@@ -32,6 +32,7 @@ def run_reactive_planner(
     logging_level: str = "ERROR",
     show_planner_debug_plots: bool = False,
     maximum_iterations: int = 200,
+    evaluate_planner: bool = False,
 ) -> Tuple[List[ReactivePlannerState], List[InputState]]:
     """
     Util wrapper to easily run the reactive planner
@@ -43,6 +44,7 @@ def run_reactive_planner(
     :param logging_level: logging level as string (see reactive planner documentation)
     :param show_planner_debug_plots: if true shows debug plots
     :param maximum_iterations: maximum planner iterations to solve a problem before raising an exception
+    :param evaluate_planner: if true planner output is evaluated and plotted
     :return: Tuple[list of reactive planner states, list of reactive planner inputs]
     """
 
@@ -129,8 +131,7 @@ def run_reactive_planner(
         )
 
     # Evaluate results
-    evaluate = True
-    if evaluate:
+    if evaluate_planner:
         _, _ = run_evaluation(
             planner.config, planner.record_state_list, planner.record_input_list
         )
@@ -140,5 +141,8 @@ def run_reactive_planner(
     input_list: List[InputState] = planner.record_input_list[1:]
     for el in input_list:
         el.time_step = el.time_step - 1
+
+    if planner.goal_reached():
+        logger.debug("Reactive planner reached goal")
 
     return planner.record_state_list, input_list
