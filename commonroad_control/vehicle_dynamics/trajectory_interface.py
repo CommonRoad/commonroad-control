@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from commonroad.planning.planning_problem import PlanningProblem
+from commonroad.scenario.lanelet import LaneletNetwork
+from commonroad.scenario.state import CustomState
 
+from commonroad_control.util.replanning import check_position_in_goal_region
 from commonroad_control.vehicle_dynamics.disturbance_interface import (
     DisturbanceInterface,
 )
@@ -154,6 +158,38 @@ class TrajectoryInterface(ABC):
                 f"Expected point of type {type(self.final_point)}, "
                 f"got {type(next_point)}instead"
             )
+
+    def check_goal_reached(
+        self, planning_problem: PlanningProblem, lanelet_network: LaneletNetwork
+    ) -> bool:
+        """
+        Returns true if one of the states is within the goal state.
+        Always returns False for input trajectories.
+        :param planning_problem: CommonRoad planning problem
+        :return: True, if at least one state is within goal region of planning problem
+        """
+        is_reached_goal: bool = False
+        if self.mode == TrajectoryMode.State:
+            for step, state in self.points.items():
+                custom_state = CustomState(
+                    position=np.asarray([state.position_x, state.position_y]),
+                    orientation=state.heading,
+                    velocity=state.velocity,
+                    time_step=step,
+                )
+                is_reached_goal: bool = planning_problem.goal.is_reached(custom_state)
+
+                if not is_reached_goal:
+                    is_reached_goal = check_position_in_goal_region(
+                        goal_region=planning_problem.goal,
+                        lanelet_network=lanelet_network,
+                        position_x=state.position_x,
+                        position_y=state.position_y,
+                    )
+
+                if is_reached_goal:
+                    break
+        return is_reached_goal
 
     @abstractmethod
     def get_point_at_time(

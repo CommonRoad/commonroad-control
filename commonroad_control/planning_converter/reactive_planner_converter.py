@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Any, Dict, List, Union
 
@@ -321,3 +322,20 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 time_step=time_step,
             )
         return retval
+
+    @staticmethod
+    def time_shift_state_input_list(
+        si_list: Union[List[ReactivePlannerState], List[InputState]], t_0: int
+    ) -> Union[List[ReactivePlannerState], List[InputState]]:
+        """
+        Time-shift list of reactive planner states or inputs to initial state.
+        Updates each entries .time_step attribute
+        :param si_list: state or input list
+        :param t_0: new initial time step
+        :return: new instance of reactive planenr state or input list
+        """
+        time_shifted_si_list = copy.copy(si_list)
+        for idx in range(len(si_list)):
+            time_shifted_si_list[idx].time_step = idx + t_0
+
+        return time_shifted_si_list

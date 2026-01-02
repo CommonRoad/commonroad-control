@@ -15,10 +15,11 @@ plugins:
   - search
 
 markdown_extensions:
-  - pymdownx.arithmatex:
-      generic: true
   - pymdownx.emoji:
       emoji_generator: !!python/name:pymdownx.emoji.to_svg
+
+  - pymdownx.arithmatex:
+      generic: true
 
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
@@ -33,17 +34,25 @@ nav:
       - "Minimal examples": examples/minimal_examples.md
       - "Long examples": examples/long_examples.md
       - "Visualization": examples/visualization_example.md
+      - "Closing the Planning+Control Loop": examples/closing_pc_loop.md
+
+  - Explanations:
+      - "Introduction": explanations/expl_introduction.md
+      - "Simulation":
+          - "Simulation": explanations/simulation/simulation.md
+          - "Sensor Models": explanations/simulation/sensor_models.md
+          - "Uncertainty Models": explanations/simulation/uncertainty_models.md
+
+      - "Vehicle Dynamics":
+          - "Interfaces": explanations/vehicle_dynamics/interfaces.md
+          - "Kinematic Bicycle": explanations/vehicle_dynamics/kb.md
+          - "Dynamic Bicycle": explanations/vehicle_dynamics/db.md
+
 
   - Integrating your own work:
     - "Planner integration": integrate_your_own_work/planner_integration.md
     - "Controller integration": index.md
     - "Dynamics integration": index.md
-
-  - Models and Simulation:
-      - "Vehicle Dynamics": index.md
-      - "Noise": index.md
-      - "Disturbance": index.md
-      - "Sensors": index.md
 
   - Easy API:
       - "PID": easy_api/easy_pid.md
