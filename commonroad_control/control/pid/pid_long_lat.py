@@ -6,8 +6,9 @@ from commonroad_control.control.pid.pid_control import PIDControl
 
 class PIDLongLat(ControllerInterface):
     """
-    PID-based controller that combines a PID for longitudinal acceleration based on longitudinal velocity error
-    and two PID-based parts for lateral control, one controlling the heading error and one the lateral offset
+    PID-based controller that combines two PID controllers for longitudinal and lateral control. The longitudinal controller
+    tracks a given velocity profile (by adapting the long. acceleration) and the lateral controller reduces the
+    lateral offset from the reference trajectory (by adapting the steering angle velocity).
     """
 
     def __init__(
@@ -15,31 +16,30 @@ class PIDLongLat(ControllerInterface):
         kp_long: float,
         ki_long: float,
         kd_long: float,
-        kp_steer_offset: float,
-        ki_steer_offset: float,
-        kd_steer_offset: float,
-        dt: float,
+        kp_lat: float,
+        ki_lat: float,
+        kd_lat: float,
+        delta_t: float,
     ) -> None:
         """
-        PID-based controller that combines a PID for longitudinal acceleration based on longitudinal velocity error
-        and two PID-based parts for steering control, one controlling the heading error and one the lateral offset
+        Initialize controller.
         :param kp_long: proportional gain longitudinal velocity
         :param ki_long: integral gain longitudinal velocity
         :param kd_long: derivative gain longitudinal velocity
-        :param kp_steer_offset: proportional gain lateral offset
-        :param ki_steer_offset: integral gain lateral offset
-        :param kd_steer_offset: derivative gain lateral offset
-        :param dt: controller step size in seconds
+        :param kp_lat: proportional gain lateral offset
+        :param ki_lat: integral gain lateral offset
+        :param kd_lat: derivative gain lateral offset
+        :param delta_t: controller sampling time in seconds
         """
         super().__init__()
         self._v_long_pid: PIDControl = PIDControl(
-            kp=kp_long, ki=ki_long, kd=kd_long, dt=dt
+            kp=kp_long, ki=ki_long, kd=kd_long, delta_t=delta_t
         )
 
         self._steer_pid_offset: PIDControl = PIDControl(
-            kp=kp_steer_offset, ki=ki_steer_offset, kd=kd_steer_offset, dt=dt
+            kp=kp_lat, ki=ki_lat, kd=kd_lat, delta_t=delta_t
         )
-        self._dt: float = dt
+        self._delta_t: float = delta_t
 
     @property
     def longitudinal_pid(self) -> PIDControl:
@@ -56,11 +56,11 @@ class PIDLongLat(ControllerInterface):
         return self._steer_pid_offset
 
     @property
-    def dt(self) -> float:
+    def delta_t(self) -> float:
         """
-        :return: controller step size in seconds used for both PID controllers
+        :return: controller sampling time in seconds used for both PID controllers
         """
-        return self._dt
+        return self._delta_t
 
     def compute_control_input(
         self,
@@ -75,13 +75,13 @@ class PIDLongLat(ControllerInterface):
         :param desired_v_long: desired longitudinal velocity
         :param measured_lat_offset: measured lateral offset
         :param desired_lat_offset: desired lateral offset, default 0
-        :return: controller input for acceleration, controller input for steering angle velocity
+        :return: control input for acceleration, control input for steering angle velocity
         """
         u_acc: float = self._v_long_pid.compute_control_input(
-            measured_state=measured_v_long, desired_state=desired_v_long
+            measured_output=measured_v_long, reference_output=desired_v_long
         )
         u_steer_lat_offset: float = self._steer_pid_offset.compute_control_input(
-            measured_state=measured_lat_offset, desired_state=desired_lat_offset
+            measured_output=measured_lat_offset, reference_output=desired_lat_offset
         )
 
         return u_acc, u_steer_lat_offset

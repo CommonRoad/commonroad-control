@@ -31,7 +31,7 @@ def rk4_integrator(
     :param w: disturbance - CasADi symbolic/ array
     :param ode: ordinary differential equation describing the flow of a dynamical system
     :param t_final: time horizon for integration - float
-    :return: system state at time t=dt
+    :return: system state at time t=delta_t
     """
 
     if t_final < 0:

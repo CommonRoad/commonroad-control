@@ -145,7 +145,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param kb_traj: KB trajectory
         :param mode: state or input mode
         :param t_0: starting time of trajectory
-        :param dt: time step size
+        :param delta_t: time step size
         :return: Reactive planner state or input trajectory
         """
         ordered_points_by_step = dict(sorted(kb_traj.points.items()))

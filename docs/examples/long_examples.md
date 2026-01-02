@@ -139,10 +139,10 @@ def main(
         kp_long=1.0,
         ki_long=0.0,
         kd_long=0.0,
-        kp_steer_offset=0.05,
-        ki_steer_offset=0.0,
+        kp_lat=0.05,
+        ki_lat=0.0,
         kd_steer_offset=0.1,
-        dt=dt_controller,
+        delta_t=dt_controller,
     )
     logger.info("run controller")
 
@@ -314,7 +314,8 @@ from commonroad_control.util.visualization.visualize_trajectories import visuali
 
 from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx,
-    SCvxParameters
+
+SCvxParameters
 
 from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
@@ -388,7 +389,7 @@ def main(
     # ... ocp solver (initial parameters)
     scvx_solver = OptimalControlSCvx(
         vehicle_model=vehicle_model_ctrl,
-        sit_factory=sit_factory_ctrl,
+        sidt_factory=sit_factory_ctrl,
         horizon=horizon_ocp,
         delta_t=dt_controller,
         cost_xx=cost_xx,

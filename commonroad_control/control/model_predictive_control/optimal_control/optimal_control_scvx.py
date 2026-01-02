@@ -7,7 +7,7 @@ import numpy as np
 
 from commonroad_control.control.model_predictive_control.optimal_control.optimal_control import (
     OCPSolverParameters,
-    OptimalControlSolver,
+    OptimalControlSolverInterface,
 )
 from commonroad_control.vehicle_dynamics.sidt_factory_interface import (
     StateInputDisturbanceTrajectoryFactoryInterface,
@@ -40,7 +40,7 @@ class SCvxParameters(OCPSolverParameters):
         super().__init__(penalty_weight=self.penalty_weight)
 
 
-class OptimalControlSCvx(OptimalControlSolver):
+class OptimalControlSCvx(OptimalControlSolverInterface):
     """
     Successive convexification algorithm for solving non-convex optimal control problems (OCP) based on
         [1] T. P. Reynolds et al. "A Real-Time Algorithm for Non-Convex Powered Descent Guidance", AIAA Scitech Forum, 2020
@@ -68,7 +68,7 @@ class OptimalControlSCvx(OptimalControlSolver):
     def __init__(
         self,
         vehicle_model: VehicleModelInterface,
-        sit_factory: StateInputDisturbanceTrajectoryFactoryInterface,
+        sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface,
         horizon: int,
         delta_t: float,
         cost_xx: np.ndarray,
@@ -79,7 +79,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         """
         Initialize OCP solver
         :param vehicle_model: vehicle model for predicting future states - VehicleModelInterface
-        :param sit_factory: factory for creating States and Inputs from the optimal solution - StateInputDisturbanceTrajectoryFactoryInterface
+        :param sidt_factory: factory for creating States and Inputs from the optimal solution - StateInputDisturbanceTrajectoryFactoryInterface
         :param horizon: (discrete) prediction horizon/number of time steps - int
         :param delta_t: sampling time - float
         :param cost_xx: stage cost weighting matrix for the states, symmetric positive-semidefinite matrix - np.array
@@ -91,7 +91,7 @@ class OptimalControlSCvx(OptimalControlSolver):
         # init base class
         super().__init__(
             vehicle_model=vehicle_model,
-            sit_factory=sit_factory,
+            sidt_factory=sidt_factory,
             ocp_parameters=ocp_parameters,
             horizon=horizon,
             delta_t=delta_t,
@@ -377,7 +377,7 @@ class OptimalControlSCvx(OptimalControlSolver):
                 "SCvx algorithm converged to a dynamically infeasible solution!"
             )
 
-        x_sol = self.sit_factory.trajectory_from_numpy_array(
+        x_sol = self.sidt_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
             mode=TrajectoryMode.State,
             time_steps=[kk for kk in range(self._horizon + 1)],
@@ -385,7 +385,7 @@ class OptimalControlSCvx(OptimalControlSolver):
             delta_t=self.delta_t,
         )
 
-        u_sol = self.sit_factory.trajectory_from_numpy_array(
+        u_sol = self.sidt_factory.trajectory_from_numpy_array(
             traj_np=u_sol,
             mode=TrajectoryMode.Input,
             time_steps=[kk for kk in range(self._horizon)],

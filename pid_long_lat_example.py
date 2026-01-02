@@ -128,10 +128,10 @@ def main(
         kp_long=1.0,
         ki_long=0.0,
         kd_long=0.0,
-        kp_steer_offset=0.05,
-        ki_steer_offset=0.0,
-        kd_steer_offset=0.1,
-        dt=dt_controller,
+        kp_lat=0.05,
+        ki_lat=0.0,
+        kd_lat=0.1,
+        delta_t=dt_controller,
     )
     logger.info("run controller")
 

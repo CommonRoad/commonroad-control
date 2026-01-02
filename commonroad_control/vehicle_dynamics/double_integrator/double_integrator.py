@@ -135,7 +135,7 @@ class DoubleIntegrator(VehicleModelInterface):
 
     def _discretize_nominal(self) -> Tuple[cas.Function, cas.Function, cas.Function]:
         """
-        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time interval [0, dt].
+        Time-discretization of the nominal dynamics model assuming a constant control input throughout the time interval [0, delta_t].
         :return: time-discretized dynamical system (CasADi function) and its Jacobians (CasADi function)
         """
 

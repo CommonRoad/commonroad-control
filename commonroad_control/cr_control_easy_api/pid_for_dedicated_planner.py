@@ -395,10 +395,10 @@ def pid_with_lookahead_for_planner(
         kp_long=kp_long,
         ki_long=ki_long,
         kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
-        dt=dt_controller,
+        kp_lat=kp_steer_offset,
+        ki_lat=ki_steer_offset,
+        kd_lat=kd_steer_offset,
+        delta_t=dt_controller,
     )
 
     logger.debug("run controller")

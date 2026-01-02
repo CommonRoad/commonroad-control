@@ -51,7 +51,7 @@ class TestModelPredictivecontrol(unittest.TestCase):
         solver_parameters = SCvxParameters(max_iterations=1)
         scvx_solver = OptimalControlSCvx(
             vehicle_model=vehicle_model,
-            sit_factory=sit_factory,
+            sidt_factory=sit_factory,
             horizon=horizon_ocp,
             delta_t=delta_t,
             cost_xx = cost_xx,
