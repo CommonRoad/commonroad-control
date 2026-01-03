@@ -1,9 +1,9 @@
 # Kinematic Bicycle Model
 
-This page describes the **kinematic bicycle** model.\
+This page describes the **kinematic bicycle** model.
 The reference point for the vehicle dynamics is the **center of gravity (CoG)**.
 
-See also the [vehicle model interface documentation](/docs/vehicle_dynamics/interfaces.md) for additional information.
+See also the [vehicle model interface documentation](interfaces.md) for additional information.
 
 ______________________________________________________________________
 
@@ -12,14 +12,14 @@ ______________________________________________________________________
 The state vector is defined as:
 
 $$
-\\mathbf{x} =
-\\begin{bmatrix}
+\mathbf{x} =
+\begin{bmatrix}
 x \\
 y \\
 v \\
-\\psi \\
-\\delta
-\\end{bmatrix}
+\psi \\
+\delta
+\end{bmatrix}
 $$
 
 where:
@@ -28,8 +28,8 @@ where:
 |------|------------------------------------|
 | $x, y$ | Global position of the vehicle CoG |
 | $v$ | (Total) Velocity |
-| $\\psi$ | Heading angle |
-| $\\delta$ | Steering angle |
+| $\psi$ | Heading angle |
+| $\delta$ | Steering angle |
 
 ______________________________________________________________________
 
@@ -38,11 +38,11 @@ ______________________________________________________________________
 The control input vector is given by:
 
 $$
-\\mathbf{u} =
-\\begin{bmatrix}
+\mathbf{u} =
+\begin{bmatrix}
 a \\
-\\dot{\\delta}
-\\end{bmatrix}
+\dot{\delta}
+\end{bmatrix}
 $$
 
 where:
@@ -50,7 +50,7 @@ where:
 | Symbol | Description |
 |------|---------------------------|
 | $a$ | Longitudinal acceleration |
-| $\\dot{\\delta}$ | Steering angle velocity |
+| $\dot{\delta}$ | Steering angle velocity |
 
 Input bounds are derived from the vehicle parameters `a_long_max`, `steering_angle_velocity_max`.
 
@@ -64,7 +64,7 @@ The model uses the following parameters:
 |--------|-------------|
 | $l_f$ | Distance from CoG to front axle |
 | $l_r$ | Distance from CoG to rear axle |
-| $l\_{\\mathrm{wb}}$ | Wheelbase ($l_f + l_r$) |
+| $l\_{\mathrm{wb}}$ | Wheelbase ($l_f + l_r$) |
 
 ______________________________________________________________________
 
@@ -75,33 +75,33 @@ The continuous-time dynamics of the kinematic bicycle are:
 ### Slip Angle
 
 $$
-\\beta = \\arctan\\left(\\tan(\\delta) \\frac{l_r}{l\_\\mathrm{wb}}\\right)
+\beta = \arctan\left(\tan(\delta) \frac{l_r}{l\_\mathrm{wb}}\right)
 $$
 
 ### Position Dynamics
 
 $$
-\\dot{x} = v \\cos(\\psi + \\beta)
+\dot{x} = v \cos(\psi + \beta)
 $$
 
 $$
-\\dot{y} = v \\sin(\\psi + \\beta)
+\dot{y} = v \sin(\psi + \beta)
 $$
 
 ### Longitudinal and Heading Dynamics
 
 $$
-\\dot{v} = u_1
+\dot{v} = u_1
 $$
 
 $$
-\\dot{\\psi} = \\frac{v \\sin(\\beta)}{l_r}
+\dot{\psi} = \frac{v \sin(\beta)}{l_r}
 $$
 
 ### Steering Dynamics
 
 $$
-\\dot{\\delta} = u_2
+\dot{\delta} = u_2
 $$
 
 ______________________________________________________________________
@@ -111,15 +111,15 @@ ______________________________________________________________________
 The model provides the normalized longitudinal acceleration
 
 $$
-a\_{\\mathrm{long,norm}} = \\frac{u_1}{a\_{\\mathrm{long,max}}}
+a\_{\mathrm{long,norm}} = \frac{u_1}{a\_{\mathrm{long,max}}}
 $$
 
 and the normalized lateral acceleration:
 $$
-a\_{\\mathrm{lat}} = v \\cdot \\dot{\\psi}$$
+a\_{\mathrm{lat}} = v \cdot \dot{\psi}$$
 $$
-a\_{\\mathrm{lat,norm}} =
-\\frac{a\_{\\mathrm{lat}}}{a\_{\\mathrm{lat,max}}}
+a\_{\mathrm{lat,norm}} =
+\frac{a\_{\mathrm{lat}}}{a\_{\mathrm{lat,max}}}
 $$
 
 ______________________________________________________________________

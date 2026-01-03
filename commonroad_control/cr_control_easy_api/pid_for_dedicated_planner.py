@@ -83,9 +83,9 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     kp_long: float = 1.0,
     ki_long: float = 0.0,
     kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
+    kp_lat: float = 0.05,
+    ki_lat: float = 0.0,
+    kd_lat: float = 0.1,
     dt_controller: float = 0.1,
     t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
@@ -112,7 +112,7 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
     """
-    Separate long-lat PID controller with look-ahead for the CommonRoad reactive planner using no noises or disturbances.
+    Decoupled longitudinal-lateral PID controller with look-ahead for the CommonRoad reactive planner using no noises or disturbances.
     Longitudinal velocity and lateral offset are calculated with respect to the lookahead time given a reactive planner
     trajectory. Wrapper around pid_with_lookahead_for_planner().
     :param scenario: CommonRoad scenario
@@ -122,9 +122,9 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     :param kp_long: proportional gain longitudinal velocity
     :param ki_long: integral gain longitudinal velocity
     :param kd_long: derivative gain longitudinal velocity
-    :param kp_steer_offset: proportional gain lateral offset
-    :param ki_steer_offset: integral gain lateral offset
-    :param kd_steer_offset: derivative gain lateral offset
+    :param kp_lat: proportional gain lateral offset
+    :param ki_lat: integral gain lateral offset
+    :param kd_lat: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
     :param t_look_ahead: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
@@ -149,9 +149,9 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
         kp_long=kp_long,
         ki_long=ki_long,
         kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
+        kp_lat=kp_lat,
+        ki_lat=ki_lat,
+        kd_lat=kd_lat,
         dt_controller=dt_controller,
         look_ahead_s=t_look_ahead,
         vehicle_params=vehicle_params,
@@ -179,9 +179,9 @@ def pid_with_lookahead_for_reactive_planner(
     kp_long: float = 1.0,
     ki_long: float = 0.0,
     kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
+    kp_lat: float = 0.05,
+    ki_lat: float = 0.0,
+    kd_lat: float = 0.1,
     dt_controller: float = 0.1,
     look_ahead_s: float = 0.5,
     vehicle_params=BMW3seriesParams(),
@@ -210,7 +210,7 @@ def pid_with_lookahead_for_reactive_planner(
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
     """
-    Separate long-lat PID controller with look-ahead for the CommonRoad reactive planner. Longitudinal velocity and lateral offset are
+    Decoupled longitudinal-lateral PID controller with look-ahead for the CommonRoad reactive planner. Longitudinal velocity and lateral offset are
     calculated with respect to the lookahead time given a reactive planner trajectory. Wrapper around pid_with_lookahead_for_planner().
     :param scenario: CommonRoad scenario
     :param planning_problem: CommonRoad planning problem
@@ -219,9 +219,9 @@ def pid_with_lookahead_for_reactive_planner(
     :param kp_long: proportional gain longitudinal velocity
     :param ki_long: integral gain longitudinal velocity
     :param kd_long: derivative gain longitudinal velocity
-    :param kp_steer_offset: proportional gain lateral offset
-    :param ki_steer_offset: integral gain lateral offset
-    :param kd_steer_offset: derivative gain lateral offset
+    :param kp_lat: proportional gain lateral offset
+    :param ki_lat: integral gain lateral offset
+    :param kd_lat: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
     :param look_ahead_s: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
@@ -248,9 +248,9 @@ def pid_with_lookahead_for_reactive_planner(
         kp_long=kp_long,
         ki_long=ki_long,
         kd_long=kd_long,
-        kp_steer_offset=kp_steer_offset,
-        ki_steer_offset=ki_steer_offset,
-        kd_steer_offset=kd_steer_offset,
+        kp_lat=kp_lat,
+        ki_lat=ki_lat,
+        kd_lat=kd_lat,
         dt_controller=dt_controller,
         t_look_ahead=look_ahead_s,
         vehicle_params=vehicle_params,
@@ -279,9 +279,9 @@ def pid_with_lookahead_for_planner(
     kp_long: float = 1.0,
     ki_long: float = 0.0,
     kd_long: float = 0.0,
-    kp_steer_offset: float = 0.05,
-    ki_steer_offset: float = 0.0,
-    kd_steer_offset: float = 0.1,
+    kp_lat: float = 0.05,
+    ki_lat: float = 0.0,
+    kd_lat: float = 0.1,
     dt_controller: float = 0.1,
     t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
@@ -311,7 +311,7 @@ def pid_with_lookahead_for_planner(
     Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
 ]:
     """
-    Separate long-lat PID controller with look-ahead for a planner. Longitudinal velocity and lateral offset are
+    Decoupled longitudinal-lateral PID controller with look-ahead for a planner. Longitudinal velocity and lateral offset are
     calculated with respect to the lookahead time given a planner trajectory.
     :param scenario: CommonRoad scenario
     :param planning_problem: CommonRoad planning problem
@@ -320,9 +320,9 @@ def pid_with_lookahead_for_planner(
     :param kp_long: proportional gain longitudinal velocity
     :param ki_long: integral gain longitudinal velocity
     :param kd_long: derivative gain longitudinal velocity
-    :param kp_steer_offset: proportional gain lateral offset
-    :param ki_steer_offset: integral gain lateral offset
-    :param kd_steer_offset: derivative gain lateral offset
+    :param kp_lat: proportional gain lateral offset
+    :param ki_lat: integral gain lateral offset
+    :param kd_lat: derivative gain lateral offset
     :param dt_controller: controller time step size in seconds
     :param t_look_ahead: look-ahead in seconds
     :param vehicle_params: vehicle parameters object
@@ -395,9 +395,9 @@ def pid_with_lookahead_for_planner(
         kp_long=kp_long,
         ki_long=ki_long,
         kd_long=kd_long,
-        kp_lat=kp_steer_offset,
-        ki_lat=ki_steer_offset,
-        kd_lat=kd_steer_offset,
+        kp_lat=kp_lat,
+        ki_lat=ki_lat,
+        kd_lat=kd_lat,
         delta_t=dt_controller,
     )
 
@@ -467,9 +467,9 @@ def pid_with_lookahead_for_planner(
 
         u_vel, u_steer = pid_controller.compute_control_input(
             measured_v_long=x0_kb.velocity,
-            desired_v_long=tmp_x_ref.points[0].velocity,
+            reference_v_long=tmp_x_ref.points[0].velocity,
             measured_lat_offset=lateral_offset_lookahead,
-            desired_lat_offset=0.0,
+            reference_lat_offset=0.0,
         )
 
         u_now = sit_factory_sim.input_from_args(

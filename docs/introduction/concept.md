@@ -25,29 +25,14 @@ in a modular fashion. Our toolbox offers modules for all major parts of the cont
 
 - model-free and model-based controllers;
 - the dynamics simulation;
-- kinematic and dynamic models;
-- uncertainties (noise and disturbances);
-- sensor models (state feedback); and
+- kinematic and dynamic vehicle dynamics models;
+- uncertainties (sensor noise and disturbances);
+- sensor models (e.g., full state feedback); and
 - the planner integration.
 
 Through the use of interfaces (= base classes), we give users the ability to integrate their own modules fairly easily.
 
-### Modularity of kinematic and dynamic models
-
-Our architecture is specifically made to easily switch between different kinematic and dynamic models for planning, control and simulation.\
-The constituting parts of each model are:
-
-- the state;
-- the input;
-- the trajectory of state of input;
-- the disturbances;
-- the noise; and
-- the factory that creates states, inputs, disturbances and trajectories (sidt-factory) for the model.
-
-Each constituting part has an interface (base class), which enforces an implementation compliant with the rest of the toolbox.
-All constituting parts inherite from their respective interface. Respecting these interfaces allows users to easily incorporate their own work.
-
 ## Integration of your own work
 
-We offer detailes tutorials on how the integrate your own motion planner, controller or vehicle model in these [tutorials](../integrate_your_own_work/planner_integration.md).
-You can also follow our [long examples](../examples/long_examples.md) and replace our modules with your own work.
+We offer detailes tutorials on how the integrate your own [motion planner](../integrate_your_own_work/planner_integration.md), [controller](../integrate_your_own_work/controller_integration.md) or [vehicle model](../integrate_your_own_work/dynamics_integration.md) in these tutorials.
+You can also follow our long examples for the [PID controller](../examples/long_example_pid.md) and the [MPC](../examples/long_example_mpc.md) and replace our modules with your own work.

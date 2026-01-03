@@ -13,7 +13,7 @@ ______________________________________________________________________
 
 Measured outputs are stored as instances of the corresponding `OutputInterface` dataclass.
 For full state feedback, the measured state can also be stored as an instanceof the corresponding
-[`StateInterface`](/docs/core_api/vehicle_dynamics/interfaces.md) dataclass.
+[`StateInterface`](../../core_api/vehicle_dynamics/interfaces.md) dataclass.
 
 The output objects can be converted to `numpy` arrays using their `convert_to_array()` method.
 
@@ -21,17 +21,17 @@ ______________________________________________________________________
 
 ## Overview and Interface Concept
 
-All sensor models implement the same abstract interface, `SensorModelInterface`.
+All sensor models implement the same abstract interface, [`SensorModelInterface`](../../core_api/simulation/sensor_models.md).
 
 Every vehicle model must implement the output function:
 $$
-y= h(x,u,\\nu) = h\_{\\mathrm{nominal}}(x,u) + {\\nu}
+y= h(x,u,\nu) = h_{\mathrm{nominal}}(x,u) + {\nu}
 $$
-where the nominal output function $h\_{\\mathrm{nominal}}(\\mathbf{x}, \\mathbf{u})$ computes the nominal measurement
-from the curretn state $x$ and control input $u$.
-The (random) sensor noise is denoted by ${\\nu} \\in \\mathbb{R}^{\\nu}$.
+where the nominal output function $h_{\mathrm{nominal}}({x}, {u})$ computes the nominal measurement
+from the current state $x$ and control input $u$.
+The (random) sensor noise is denoted by ${\nu} \in \mathbb{R}^{\nu}$.
 
-The nominal output function $h\_{\\mathrm{nominal}}(\\mathbf{x}, \\mathbf{u})$ must be implemented via the method:
+The nominal output function $h_{\mathrm{nominal}}({x}, {u})$ must be implemented via the method:
 
 ```python
 def _output_function_cas(x, u)
@@ -43,17 +43,17 @@ For public access, the following method is implemented:
 def nominal_output(x, u,)
 ```
 
-This function serves as a wrapper for $h\_{\\mathrm{nominal}}(\\mathbf{x}, \\mathbf{u})$ and accepts states and
+This function serves as a wrapper for $h_{\mathrm{nominal}}({x}, {u})$ and accepts states and
 control inputs that are represented as instances of the respective dataclass.
 
-The noisy output function $h(x,u,\\nu)$ can be evaluated via the method
+The noisy output function $h(x,u,\nu)$ can be evaluated via the method
 
 ```python
 def measure(x, u, rand_noise)
 ```
 
 where the default value of the optional input argument `rand_noise` is `True`. If `rand_noise=False`, the output
-of `measure` is the output of the nominal output function $h\_{\\mathrm{nominal}}(\\mathbf{x}, \\mathbf{u})$.
+of `measure` is the output of the nominal output function $h_{\mathrm{nominal}}({x}, {u})$.
 
 ### Constructor
 
@@ -69,13 +69,13 @@ SensorModelInterface(
 
 with the parameters:
 
-| Parameters | Variable type | Description |
-|-----------|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| noise_model | [`UncertaintyModelInterface`](/docs/core_api/simulation/uncertainty_models.md) | Uncertainty model for generating (random) sensor noise. |
-| state_output_factory | [`StateInputDisturbanceTrajectoryFactoryInterface`](/docs/core_api/vehicle_dynamics/interfaces.md) | Create output/state from numpy array (output of output function). |
-| dim | `int` | Dimension of the output vector. |
-| state_dimension | `int` | Dimension of the state vector. |
-| input_dimension | `int` | Dimension of the control input vector. |
+| Parameters | Variable type                                                                                      | Description |
+|-----------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| noise_model | [`UncertaintyModelInterface`](../../core_api/simulation/uncertainty_models.md)                     | Uncertainty model for generating (random) sensor noise. |
+| state_output_factory | [`StateInputDisturbanceTrajectoryFactoryInterface`](../../core_api/vehicle_dynamics/interfaces.md) | Create output/state from numpy array (output of output function). |
+| dim | `int`                                                                                              | Dimension of the output vector. |
+| state_dimension | `int`                                                                                              | Dimension of the state vector. |
+| input_dimension | `int`                                                                                              | Dimension of the control input vector. |
 
 ______________________________________________________________________
 
@@ -87,10 +87,8 @@ ______________________________________________________________________
 
 Nominal output function:
 $$
-h\_{\\mathrm{nominal}}(x,u) = x
+h_{\mathrm{nominal}}(x,u) = x
 $$
 
 Please note that each vehicle model requires a model-specific output dataclass, which are located alongside the
 respective vehicle model implementation.
-
-______________________________________________________________________

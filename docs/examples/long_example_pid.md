@@ -1,38 +1,39 @@
-import copy
-from pathlib import Path
-import logging
+# Long example: PID with Reactive Planner
 
-import numpy as np
+This is a step-by-step code for combining the decoupled longitudinal-lateral PID controller with the CommonRoad reactive planner
+
+```Python3
+import copy
+import logging
+from pathlib import Path
+from math import ceil
+
 from commonroad.common.file_reader import CommonRoadFileReader
+from shapely.geometry import LineString, Point
+
+from commonroad_control.control.pid.pid_long_lat import PIDLongLat
+from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
+from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
+from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
+from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import DBSIDTFactory
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle import DynamicBicycle
-
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle import KinematicBicycle
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import KBSIDTFactory
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBStateIndices
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInputIndices
+
+from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 
 from commonroad_control.simulation.simulation.simulation import Simulation
-from commonroad_control.simulation.uncertainty_model.uncertainty_model_interface import UncertaintyModelInterface
 from commonroad_control.simulation.uncertainty_model.gaussian_distribution import GaussianDistribution
-from commonroad_control.simulation.sensor_models.sensor_model_interface import SensorModelInterface
 from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback import FullStateFeedback
 
+from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
-from commonroad_control.planning_converter.reactive_planner_converter import ReactivePlannerConverter
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
-
-from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
-
-from commonroad_control.control.model_predictive_control.model_predictive_control import ModelPredictiveControl
-from commonroad_control.control.model_predictive_control.optimal_control.optimal_control_scvx import OptimalControlSCvx, SCvxParameters
-from commonroad_control.control.reference_trajectory_factory import ReferenceTrajectoryFactory
-
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
@@ -47,7 +48,7 @@ def main(
         create_scenario: bool = True
 ) -> None:
     """
-    Example function for combining an MPC with the CommonRoad reactive planner.
+    Example function for building a decoupled longitudinal-lateral PID controller for the CommonRoad reactive planner.
     :param scenario_file: Path to scenario file
     :param scenario_name: Scenario name
     :param img_save_path: Path to save images to
@@ -57,8 +58,13 @@ def main(
     """
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+```
 
-    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
+First, we solve the scenario using the reactive planner.
+The output of the reactive planner serves as the reference trajectory for the controller.
+
+```Python3
+    logger.info(f"solving scenario {str(scenario.scenario_id)}")
 
     # run planner
     logger.info("run planner")
@@ -78,20 +84,29 @@ def main(
         planner_traj=rp_inputs,
         mode=TrajectoryMode.Input
     )
+```
 
-    logger.info("run controller")
+Next, we setup the simulation:
+We abstract the dynamics of a BMW 3series using a dynamic bicycle model with a linear tyre model.
+To obtain more realistic results, we include disturbances to account for unmodeled dynamics and sensor noise.
+Both uncertainties are assumed to follow a Gaussian distribution.
+
+```Python3
+    logger.info("initialize params")
+    # controller
+    dt_controller = 0.1
+    t_look_ahead = 0.5
+
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
 
-    # controller parameters
-    dt_controller = 0.1
-
     # simulation
-    # ... disturbance model
+    # ... vehicle model
     sit_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
+    # ... disturbances
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
-        dim=vehicle_model_sim.state_dimension,
+        dim=vehicle_model_sim.disturbance_dimension,
         mean=vehicle_params.disturbance_gaussian_mean,
         std_deviation=vehicle_params.disturbance_gaussian_std
     )
@@ -115,69 +130,71 @@ def main(
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
-        random_noise=True
+        random_noise=True,
+        delta_t_w=dt_controller
     )
+```
 
-    # optimal control solver
-    horizon_ocp = 25
-    # ... vehicle model for prediction
-    vehicle_model_ctrl = KinematicBicycle(
-        params=vehicle_params,
-        delta_t=dt_controller)
-    sit_factory_ctrl = KBSIDTFactory()
-    # ... initialize optimal control solver
-    cost_xx = np.eye(KBStateIndices.dim)
-    cost_xx[KBStateIndices.steering_angle, KBStateIndices.steering_angle] = 0.0
-    cost_uu = 0.1 * np.eye(KBInputIndices.dim)
-    cost_final = cost_xx
-    # ... solver parameters for initial step-> iterate until convergence
-    solver_parameters_init = SCvxParameters(max_iterations=20)
-    # ... solver parameters for real time iteration -> only one iteration per time step
-    solver_parameters_rti = SCvxParameters(max_iterations=1)
-    # ... ocp solver (initial parameters)
-    scvx_solver = OptimalControlSCvx(
-        vehicle_model=vehicle_model_ctrl,
-        sidt_factory=sit_factory_ctrl,
-        horizon=horizon_ocp,
-        delta_t=dt_controller,
-        cost_xx=cost_xx,
-        cost_uu=cost_uu,
-        cost_final=cost_final,
-        ocp_parameters=solver_parameters_init
-    )
-    # instantiate model predictive controller
-    mpc = ModelPredictiveControl(
-        ocp_solver=scvx_solver
-    )
+When using a simple controller like the PID controller, it can be beneficial to include a look-ahead `t_look_ahead`: instead of
+tracking the output at time t, the controller uses the reference state and the predicted state at t+`t_look_ahead`.
+Thus, we need a second simulation module (herein called look-ahead simulation module) for predicting the state at t+`t_look_ahead`.
 
+```Python3
+    # Lookahead
+    # ... simulation
+    look_ahead_sim: Simulation = Simulation(
+        vehicle_model=vehicle_model_sim,
+        sidt_factory=sit_factory_sim,
+    )
+```
+
+Due to the look-ahead, we have to extend the reference trajectory (otherwise, the reference state at t+`t_look_ahead` might not exist).
+Therefore, we extend the reference trajectory along the centerline of the lane that is closest to the final state of the planned trajectory.
+
+```Python3
     # extend reference trajectory
+    extended_horizon_steps = ceil(t_look_ahead/dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
         x_ref=copy.copy(x_ref),
         u_ref=copy.copy(u_ref),
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=mpc.horizon)
+        horizon=extended_horizon_steps)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sidt_factory=KBSIDTFactory(),
-        mpc_horizon=mpc.horizon,
-    )
-    # ... dummy reference trajectory: all inputs set to zero
-    u_np = np.zeros((u_ref_ext.dim,len(u_ref_ext.steps)))
-    u_ref_0 = sit_factory_ctrl.trajectory_from_numpy_array(
-        traj_np=u_np,
-        mode=TrajectoryMode.Input,
-        time_steps=u_ref_ext.steps,
-        t_0=u_ref_ext.t_0,
-        delta_t=u_ref_ext.delta_t
+        t_look_ahead=t_look_ahead
     )
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
-        input_ref=u_ref_0,
+        input_ref=u_ref_ext,
         t_0=0
     )
+    ref_path: LineString = LineString(
+        [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
+    )
+```
 
+As the last step before actually simulating the controller and the vehicle model, we setup the decoupled longitudinal-lateral PID controller.
+
+```Python3
+    # Controller
+    pid_controller: PIDLongLat = PIDLongLat(
+        kp_long=1.0,
+        ki_long=0.0,
+        kd_long=0.0,
+        kp_lat=0.05,
+        ki_lat=0.0,
+        kd_lat=0.1,
+        delta_t=dt_controller,
+    )
+    logger.info("run controller")
+```
+
+For simulation, the initial state of the planned trajectory (kinematic bicycle model) is converted to a state of the dynamic bicycle model (which abstracts the dynamics of the original vehicle in our example).
+
+```Python3
     # simulation results
     x_measured = convert_state_kb2db(
         kb_state=x_ref.initial_point,
@@ -187,41 +204,89 @@ def main(
     traj_dict_measured = {0: x_measured}
     traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
+```
 
+Now we are ready for closed-loop simulation. 
+Subsequently, we present the steps executed at each time step.
+
+```Python3
     for kk_sim in range(len(u_ref.steps)):
+```
 
+Extract the reference state at time t=`kk_sim`*`dt_controller`+`t_look_ahead`. 
+Remember that the reference trajectory factory accounts for the look-ahead.
+
+```Python3
         # extract reference trajectory
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim*dt_controller
+            t=kk_sim * dt_controller
+        )
+```
+
+Due to the look-ahead, we require a future state of the vehicle to evaluate the control law. 
+Therefore, we simulate the look-ahead simulation module to predict the vehicle state. 
+We use the reference control inputs at time `kk_sim`*`dt_controller` for prediction.
+
+```Python3
+
+        u_look_ahead_sim = sit_factory_sim.input_from_args(
+            acceleration=u_ref.points[kk_sim].acceleration,
+            steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
+        )
+        _, _, x_look_ahead = look_ahead_sim.simulate(
+            x0=traj_dict_measured[kk_sim],
+            u=u_look_ahead_sim,
+            t_final=t_look_ahead
+        )
+```
+
+Evaluation of the control law.
+
+```Python3
+
+        # convert simulated forward step state back to KB for control
+        x0_kb = convert_state_db2kb(x_look_ahead.final_point)
+        lateral_offset_lookahead = signed_distance_point_to_linestring(
+            point=Point(x0_kb.position_x, x0_kb.position_y),
+            linestring=ref_path
         )
 
-        # convert initial state to kb
-        x0_kb = convert_state_db2kb(traj_dict_measured[kk_sim])
-
-        # compute control input
-        u_now = mpc.compute_control_input(
-            x0=x0_kb,
-            x_ref=tmp_x_ref,
-            u_ref=tmp_u_ref
+        u_vel, u_steer = pid_controller.compute_control_input(
+            measured_v_long=x0_kb.velocity,
+            reference_v_long=tmp_x_ref.points[0].velocity,
+            measured_lat_offset=lateral_offset_lookahead,
+            reference_lat_offset=0.0
         )
-        if kk_sim == 0:
-            # at the initial step: iterate until convergence
-            # afterwards: real-time iteration
-            mpc.ocp_solver.reset_ocp_parameters(
-                new_ocp_parameters=solver_parameters_rti
-            )
+```
 
-        input_dict[kk_sim] = u_now
+Since the controller only returns the control input offset to compensate for the error between the reference trajectory and the measured trajectory, the controller output is added to the reference control input.
+
+```Python3
+        u_now = sit_factory_sim.input_from_args(
+            acceleration=u_vel + u_ref.points[kk_sim].acceleration,
+            steering_angle_velocity=u_steer + u_ref.points[kk_sim].steering_angle_velocity
+        )
+```
+
+Simulation of the dynamic bicycle model for one time step (duration `dt_controller`) and store the simulation results.
+
+```Python3
         # simulate
         x_measured, x_disturbed, x_nominal = simulation.simulate(
             x0=traj_dict_no_noise[kk_sim],
             u=u_now,
             t_final=dt_controller
         )
-        traj_dict_measured[kk_sim+1] = x_measured
+
+        # update dicts
+        input_dict[kk_sim] = u_now
+        traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
+```
 
+After the time horizon of the reference trajectory has expired, the simulation results are visualized.
 
+```Python3
     logger.info(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
@@ -230,6 +295,7 @@ def main(
         delta_t=dt_controller
     )
 
+
     if create_scenario:
         visualize_trajectories(
             scenario=scenario,
@@ -237,7 +303,7 @@ def main(
             planner_trajectory=x_ref,
             controller_trajectory=simulated_traj,
             save_path=img_save_path,
-            save_img=save_imgs,
+            save_img=save_imgs
         )
 
         if save_imgs:
@@ -248,21 +314,20 @@ def main(
             )
 
     visualize_reference_vs_actual_states(
-        reference_trajectory=x_ref_ext,
+        reference_trajectory=x_ref,
         actual_trajectory=simulated_traj,
         time_steps=list(simulated_traj.points.keys()),
         save_img=save_imgs,
         save_path=img_save_path
     )
 
-
 if __name__ == "__main__":
-    scenario_name = "ITA_Foggia-6_1_T-1"
-    # scenario_name = "DEU_AachenFrankenburg-1_2621353_T-21698"
-    # scenario_name = "C-DEU_B471-2_1"
+    scenario_name = "C-DEU_B471-2_1"
     scenario_file = Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
-    planner_config_path = Path(__file__).parents[0]/ "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
+    planner_config_path = Path(__file__).parents[0] / "scenarios" / "reactive_planner_configs" / str(scenario_name + ".yaml")
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name
+
+
     main(
         scenario_file=scenario_file,
         scenario_name=scenario_name,
@@ -271,3 +336,5 @@ if __name__ == "__main__":
         save_imgs=True,
         create_scenario=True
     )
+
+```

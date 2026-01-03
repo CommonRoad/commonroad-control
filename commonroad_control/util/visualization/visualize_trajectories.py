@@ -137,8 +137,8 @@ def obtain_plot_limits_from_reference_path(
     trajectory: TrajectoryInterface, margin: float = 10.0
 ) -> List[int]:
     """
-    Obtrains plot limits from reference idm_path
-    :param reference_path: reference idm_path (2,) np.ndarray
+    Obtains plot limits from a given trajectory
+    :param trajectory: trajectory for extracting plot limits
     :return: list [xmin, xmax, ymin, xmax] of plot limits
     """
     arr = np.asarray(

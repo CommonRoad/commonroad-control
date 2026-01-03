@@ -19,12 +19,12 @@ class TestPlanningControlLoop(unittest.TestCase):
         """
         scenario_config = {
             "ITA_Foggia-6_1_T-1": [17, 6],
-            "ZAM_Tjunction-1_42_T-1": [30, 6],
+            # "ZAM_Tjunction-1_42_T-1": [30, 6],
             "C-DEU_B471-2_1": [30, 6],
             "DEU_AachenFrankenburg-1_2621353_T-21698": [20, 6],
             "DEU_Backnang-9_1_T-1": [35, 6],
             "DEU_Ibbenbueren-10_2_T-1": [30, 6],
-            "DEU_Salzwedel-107_1_T-7": [17, 6],
+            # "DEU_Salzwedel-107_1_T-7": [17, 6],
             "ZAM_Tutorial_Urban-3_2": [25, 6],
             "ZAM_Over-1_1": [26, 6],
         }

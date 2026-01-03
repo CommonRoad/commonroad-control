@@ -1,7 +1,3 @@
-# Double Integrator Model
-
-The following API documentation is **auto-generated** from the Python source code.
-
 :::commonroad_control.vehicle_dynamics.double_integrator.double_integrator
 :::commonroad_control.vehicle_dynamics.double_integrator.di_state
 :::commonroad_control.vehicle_dynamics.double_integrator.di_input

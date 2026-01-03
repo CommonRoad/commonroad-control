@@ -1,7 +1,3 @@
-# Dynamic Bicycle Model
-
-The following API documentation is **auto-generated** from the Python source code.
-
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.dynamic_bicycle
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state
 :::commonroad_control.vehicle_dynamics.dynamic_bicycle.db_input

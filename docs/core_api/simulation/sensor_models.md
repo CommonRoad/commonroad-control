@@ -1,7 +1,3 @@
-# Sensor Models
-
-The following API documentation is auto-generated from the Python source code.
-
 :::commonroad_control.simulation.sensor_models.sensor_model_interface
 :::commonroad_control.simulation.sensor_models.full_state_feedback.full_state_feedback
 :::commonroad_control.vehicle_dynamics.full_state_noise_interface

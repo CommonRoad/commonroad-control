@@ -4,8 +4,8 @@ This page documents the **simulation module**, which provides a generic framewor
 For more realistic simulation results, **disturbances** and \[sensor models with **measurement noise** can be included.
 
 The simulation module is **model-agnostic** and supports **any vehicle model implementing the
-[`VehicleModelInterface`](/docs/core_api/vehicle_dynamics/interfaces.md)**, such as the [kinematic bicycle model](/docs/core_api/vehicle_dynamics/kb.md)
-or the [dynamic bicycle model](/docs/core_api/vehicle_dynamics/db.md) .
+[`VehicleModelInterface`](../../core_api/vehicle_dynamics/interfaces.md)**, such as the [kinematic bicycle model](../../core_api/vehicle_dynamics/kb.md)
+or the [dynamic bicycle model](../../core_api/vehicle_dynamics/db.md) .
 
 ______________________________________________________________________
 
@@ -13,24 +13,24 @@ ______________________________________________________________________
 
 The simulator considers initial value problems of the form
 $$
-\\dot{x}(t)=f(x(t),u_0,w(t)), \\quad x(0) = x_0
+\dot{x}(t)=f(x(t),u_0,w(t)), \quad x(0) = x_0
 $$
 
-with constant control input $u_0$, a (random) disturbance signal $w(t)$, and a time horizon $t_f \\geq 0$.
-The disturbance signal $w(t)$ is assumed to be piece-wise constant and (randomly) sampled at a rate of ${1}/{\\Delta t_w}$ where $0 < \\Delta t_w \\leq t_f$.
+with constant control input $u_0$, a (random) disturbance signal $w(t)$, and a time horizon $t_f \geq 0$.
+The disturbance signal $w(t)$ is assumed to be piece-wise constant and (randomly) sampled at a rate of ${1}/{\Delta t_w}$ where $0 < \Delta t_w \leq t_f$.
 
-At the end of the time horizon, the output function $h(x,u_0,\\nu)$ of the sensor model is evaluated for the simulated state $x(t_f)$, the constant control input $u_0$, and the sensor noise $\\nu$.
+At the end of the time horizon, the output function $h(x,u_0,\nu)$ of the sensor model is evaluated for the simulated state $x(t_f)$, the constant control input $u_0$, and the sensor noise $\nu$.
 
 ## Architecture
 
 The simulation module requires of the following components:
 
-| Component | Interface | Description |
-|-------------------|--------------------------------------------------------------------------------|-------------------------------------------------------|
-| Vehicle model | [`VehicleModelInterface`](/docs/core_api/vehicle_dynamics/interfaces.md) | Provides the continuous-time dynamics function. |
-| SIDT factory | [`StateInputDisturbanceTrajectoryFactoryInterface`](/docs/core_api/vehicle_dynamics/interfaces.md) | State, input, and trajectory conversion. |
-| Disturbance model | [`UncertaintyModelInterface`](/docs/core_api/simulation/uncertainty_models.md) | Uncertainty model for (random) disturbance generation |
-| Sensor model | [`SensorModelInterface`](/docs/core_api/simulation/sensor_models.md) | Output function and sensor noise modeling. |
+| Component | Interface                                                                                          | Description |
+|-------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| Vehicle model | [`VehicleModelInterface`](../../core_api/vehicle_dynamics/interfaces.md)                           | Provides the continuous-time dynamics function. |
+| SIDT factory | [`StateInputDisturbanceTrajectoryFactoryInterface`](../../core_api/vehicle_dynamics/interfaces.md) | State, input, and trajectory conversion. |
+| Disturbance model | [`UncertaintyModelInterface`](../../core_api/simulation/uncertainty_models.md)                     | Uncertainty model for (random) disturbance generation |
+| Sensor model | [`SensorModelInterface`](../../core_api/simulation/sensor_models.md)                               | Output function and sensor noise modeling. |
 
 ______________________________________________________________________
 
@@ -73,8 +73,8 @@ with the output arguments:
 | Output | Interface | Description |
 |--------------|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | y | `StateInterface`/`OutputInterface` | (Noisy) measurement - value of the output function |
-| traj_w | `TrajectoryInteface` | Perturbed trajectory, stores the simulated states sampled at every $\\Delta t_w$ seconds |
-| traj_nom | `TrajectoryInteface` | Nominal trajectory, stores the simulated states of the unperturbed dynamics ($w(t)=0$) sampled at every $\\Delta t_w$ seconds |
+| traj_w | `TrajectoryInteface` | Perturbed trajectory, stores the simulated states sampled at every $\Delta t_w$ seconds |
+| traj_nom | `TrajectoryInteface` | Nominal trajectory, stores the simulated states of the unperturbed dynamics ($w(t)=0$) sampled at every $\Delta t_w$ seconds |
 
 By default, the fourth-order Runge-Kutta method with adaptive step size `RK45` is used for integration.
 Other methods implemented in `scipy.integrate.solve_ivp` can be selected via the optional input argument `ivp_method`.
@@ -91,17 +91,17 @@ Two trajectories are propagated in parallel:
   Uses randomly sampled disturbances to account for, e.g., external forces or unmodeled dynamics.
 
 If no uncertainty model for the disturbances is available, the `NoUncertainty` model allows purely nominal simulation
-(see [`UncertaintyModelInterface`](/docs/core_api/simulation/uncertainty_models.md)).
+(see [`UncertaintyModelInterface`](../../core_api/simulation/uncertainty_models.md)).
 By default, `NoUncertainty` is employed for disturbance generation, if none is provided to the constructor.
 
 ______________________________________________________________________
 
 ### Output Functions and Sensor Noise
 
-Please see the [sensor model documentation](/docs/core_api/simulation/sensor_models.md).
+Please see the [sensor model documentation](../../core_api/simulation/sensor_models.md).
 
 By default, `FullStateFeedback` is employed as the sensor model with `NoUncertainty` as the noise model
-(see also [`UncertaintyModelInterface`](/docs/core_api/simulation/uncertainty_models.md)), if no
+(see also [`UncertaintyModelInterface`](../../core_api/simulation/uncertainty_models.md)), if no
 sensor model is provided to the constructor.
 
 ______________________________________________________________________

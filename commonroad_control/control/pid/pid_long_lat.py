@@ -6,7 +6,7 @@ from commonroad_control.control.pid.pid_control import PIDControl
 
 class PIDLongLat(ControllerInterface):
     """
-    PID-based controller that combines two PID controllers for longitudinal and lateral control. The longitudinal controller
+    PID-based controller that combines two PID controllers for decoupled longitudinal and lateral control. The longitudinal controller
     tracks a given velocity profile (by adapting the long. acceleration) and the lateral controller reduces the
     lateral offset from the reference trajectory (by adapting the steering angle velocity).
     """
@@ -65,23 +65,23 @@ class PIDLongLat(ControllerInterface):
     def compute_control_input(
         self,
         measured_v_long: float,
-        desired_v_long: float,
+        reference_v_long: float,
         measured_lat_offset: float,
-        desired_lat_offset: float = 0,
+        reference_lat_offset: float = 0,
     ) -> Tuple[float, float]:
         """
-        Computes input from controller given desired states and measured states
+        Computes input from controller given the measured and the reference outputs
         :param measured_v_long: measured longitudinal velocity
-        :param desired_v_long: desired longitudinal velocity
+        :param reference_v_long: reference longitudinal velocity
         :param measured_lat_offset: measured lateral offset
-        :param desired_lat_offset: desired lateral offset, default 0
+        :param reference_lat_offset: reference lateral offset, default 0
         :return: control input for acceleration, control input for steering angle velocity
         """
         u_acc: float = self._v_long_pid.compute_control_input(
-            measured_output=measured_v_long, reference_output=desired_v_long
+            measured_output=measured_v_long, reference_output=reference_v_long
         )
         u_steer_lat_offset: float = self._steer_pid_offset.compute_control_input(
-            measured_output=measured_lat_offset, reference_output=desired_lat_offset
+            measured_output=measured_lat_offset, reference_output=reference_lat_offset
         )
 
         return u_acc, u_steer_lat_offset

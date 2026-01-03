@@ -43,7 +43,7 @@ def main(
         create_scenario: bool = True
 ) -> None:
     """
-    Example function for building a Long-Lat separated PID controller for the CommonRoad reactive planner.
+    Example function for building a decoupled longitudinal-lateral PID controller for the CommonRoad reactive planner.
     :param scenario_file: Path to scenario file
     :param scenario_name: Scenario name
     :param img_save_path: Path to save images to
@@ -124,17 +124,6 @@ def main(
         sidt_factory=sit_factory_sim,
     )
 
-    pid_controller: PIDLongLat = PIDLongLat(
-        kp_long=1.0,
-        ki_long=0.0,
-        kd_long=0.0,
-        kp_lat=0.05,
-        ki_lat=0.0,
-        kd_lat=0.1,
-        delta_t=dt_controller,
-    )
-    logger.info("run controller")
-
     # extend reference trajectory
     extended_horizon_steps = ceil(t_look_ahead/dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
@@ -158,6 +147,18 @@ def main(
         [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
     )
 
+    # Controller
+    pid_controller: PIDLongLat = PIDLongLat(
+        kp_long=1.0,
+        ki_long=0.0,
+        kd_long=0.0,
+        kp_lat=0.05,
+        ki_lat=0.0,
+        kd_lat=0.1,
+        delta_t=dt_controller,
+    )
+    logger.info("run controller")
+
     # simulation results
     x_measured = convert_state_kb2db(
         kb_state=x_ref.initial_point,
@@ -171,8 +172,6 @@ def main(
 
     for kk_sim in range(len(u_ref.steps)):
         # extract reference trajectory
-        if kk_sim *dt_controller > 10.0:
-            logger.info('debug')
         tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
             t=kk_sim * dt_controller
         )
@@ -196,9 +195,9 @@ def main(
 
         u_vel, u_steer = pid_controller.compute_control_input(
             measured_v_long=x0_kb.velocity,
-            desired_v_long=tmp_x_ref.points[0].velocity,
+            reference_v_long=tmp_x_ref.points[0].velocity,
             measured_lat_offset=lateral_offset_lookahead,
-            desired_lat_offset=0.0
+            reference_lat_offset=0.0
         )
 
         u_now = sit_factory_sim.input_from_args(
@@ -217,8 +216,6 @@ def main(
         input_dict[kk_sim] = u_now
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
-
-
 
     logger.info(f"visualization")
     simulated_traj = sit_factory_sim.trajectory_from_points(
