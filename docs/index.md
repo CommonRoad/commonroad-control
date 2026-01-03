@@ -1,9 +1,9 @@
 # CommonRoad Control
 
 ![example.gif](./assets/example.gif)
-**CommonRoad Control** is an open-source toolbox for motion control and dynamic simulation in autonomous driving.
+**CommonRoad Control** is an open-source toolbox for motion control and closed-loop simulation in autonomous driving.
 Our toolbox offers various model-based and model-free controllers that are compatible with multiple motion planners
-as well as a dynamic simulation with different vehicle dynamics models.
+as well as a simulation module with different vehicle dynamics models.
 
 Our toolbox has easy API calls for fast integration in control and motion planning projects
 and our overall architecture allows for the modular design of custom motion planning and control pairs.

@@ -54,7 +54,7 @@ class PIDControl(ControllerInterface):
         reference_output: float,
     ) -> float:
         """
-        Computes control output for float input
+        Computes control output given the measured and the reference output.
         :param measured_output: measured single output
         :param reference_output: reference single output
         :return: control input

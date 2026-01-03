@@ -145,8 +145,6 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         Convert kinematic bicycle state or input trajectory to reactive planner state or input trajectory
         :param kb_traj: KB trajectory
         :param mode: state or input mode
-        :param t_0: starting time of trajectory
-        :param delta_t: time step size
         :return: Reactive planner state or input trajectory
         """
         ordered_points_by_step = dict(sorted(kb_traj.points.items()))
@@ -159,7 +157,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         self, kb_state: Union[KBState, KBInput], mode: TrajectoryMode, time_step: int
     ) -> Union[ReactivePlannerState, InputState]:
         """
-        Convert kinematic bycicle state or input to reactive planner state or input at time step.
+        Convert kinematic bicycle state or input to reactive planner state or input at time step.
         :param kb_state: KB state or input
         :param mode: state or input mode
         :param time_step: time step
@@ -215,7 +213,7 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         :param mode: state or input mode
         :param t_0: starting time of trajectory
         :param dt: time step size
-        :return: Dynamic bycicle state or input trajectory
+        :return: Dynamic bicycle state or input trajectory
         """
         db_dict: Dict[int, Union[DBState, DBInput]] = dict()
         for db_point in planner_traj:

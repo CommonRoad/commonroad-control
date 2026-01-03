@@ -1,7 +1,3 @@
-# Kinematic Bicycle Model
-
-The following API documentation is **auto-generated** from the Python source code.
-
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kinematic_bicycle
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state
 :::commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input

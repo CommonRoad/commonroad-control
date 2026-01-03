@@ -191,7 +191,6 @@ class TrajectoryInterface(ABC):
                     break
         return is_reached_goal
 
-    @abstractmethod
     def get_point_at_time(
         self, time: float, factory: "StateInputDisturbanceTrajectoryFactoryInterface"
     ) -> Union[StateInterface, InputInterface, DisturbanceInterface]:
@@ -202,4 +201,31 @@ class TrajectoryInterface(ABC):
         :param factory: sidt_factory for instantiating the interpolated point (dataclass object)
         :return: StateInterface/InputInterface/DisturbanceInterface
         """
-        pass
+
+        lower_point, upper_point, lower_idx, upper_idx = (
+            self.get_point_before_and_after_time(time=time)
+        )
+        if lower_idx == upper_idx:
+            new_point = lower_point
+        else:
+            alpha = (upper_idx * self.delta_t - time) / self.delta_t
+            new_point_array: np.ndarray = (
+                1 - alpha
+            ) * upper_point.convert_to_array() + alpha * lower_point.convert_to_array()
+            if self.mode is TrajectoryMode.State:
+                new_point: StateInterface = factory.state_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Input:
+                new_point: InputInterface = factory.input_from_numpy_array(new_point_array)
+            elif self.mode is TrajectoryMode.Disturbance:
+                new_point: DisturbanceInterface = factory.disturbance_from_numpy_array(
+                    new_point_array
+                )
+            else:
+                logger.error(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
+                raise TypeError(
+                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
+                )
+
+        return new_point

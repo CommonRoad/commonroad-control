@@ -4,7 +4,7 @@ This page describes the **double integrator** vehicle model, which abstracts the
 
 **Currently, we do not support state conversion from the double integrator model to the kinematic/dynamic bicycle model or vice versa!**
 
-See also the [vehicle model interface documentation](/docs/vehicle_dynamics/interfaces.md) for additional information.
+See also the [vehicle model interface documentation](interfaces.md) for additional information.
 
 ______________________________________________________________________
 
@@ -13,13 +13,13 @@ ______________________________________________________________________
 The state vector is defined as:
 
 $$
-\\mathbf{x} =
-\\begin{bmatrix}
+\mathbf{x} =
+\begin{bmatrix}
 s \\
 d \\
 v_s \\
 v_d
-\\end{bmatrix}
+\end{bmatrix}
 $$
 
 where:
@@ -37,11 +37,11 @@ ______________________________________________________________________
 The control input vector is:
 
 $$
-\\mathbf{u} =
-\\begin{bmatrix}
+\mathbf{u} =
+\begin{bmatrix}
 a_s \\
 a_d
-\\end{bmatrix}
+\end{bmatrix}
 $$
 
 where:
@@ -64,7 +64,7 @@ ______________________________________________________________________
 ### Longitudinal Motion
 
 $$
-\\dot{v_s} = u_1
+\dot{v_s} = u_1
 $$
 
 ______________________________________________________________________
@@ -72,7 +72,7 @@ ______________________________________________________________________
 ### Lateral Motion
 
 $$
-\\dot{v_d} = u_2
+\dot{v_d} = u_2
 $$
 
 ______________________________________________________________________
@@ -82,14 +82,14 @@ ______________________________________________________________________
 The velocity bounds are enforced as:
 
 $$
-v\_{x,\\min} \\le v_x \\le v\_{x,\\max}, \\quad
-v\_{y,\\min} \\le v_y \\le v\_{y,\\max}
+v\_{x,\min} \le v_x \le v\_{x,\max}, \quad
+v\_{y,\min} \le v_y \le v\_{y,\max}
 $$
 
 with typical values:
 
-- $v_x \\in [0, 10]$ m/s
-- $v_y \\in [-2, 2]$ m/s
+- $v_x \in [0, 10]$ m/s
+- $v_y \in [-2, 2]$ m/s
 
 ______________________________________________________________________
 
@@ -98,11 +98,11 @@ ______________________________________________________________________
 Normalized longitudinal and lateral accelerations are computed as:
 
 $$
-a\_{\\mathrm{long,norm}} = \\frac{a_x}{a\_{\\mathrm{long,max}}}
+a\_{\mathrm{long,norm}} = \frac{a_x}{a\_{\mathrm{long,max}}}
 $$
 
 $$
-a\_{\\mathrm{lat,norm}} = \\frac{a_y}{a\_{\\mathrm{lat,max}}}
+a\_{\mathrm{lat,norm}} = \frac{a_y}{a\_{\mathrm{lat,max}}}
 $$
 
 ______________________________________________________________________
