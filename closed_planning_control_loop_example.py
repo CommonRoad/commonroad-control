@@ -1,13 +1,17 @@
 import copy
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import (
     pid_with_lookahead_for_reactive_planner,
 )
+from commonroad_control.cr_control_easy_api.mpc_for_dedicated_planner import (
+    mpc_for_reactive_planner
+)
+
 from commonroad_control.planning_converter.reactive_planner_converter import (
     ReactivePlannerConverter,
 )
@@ -40,6 +44,7 @@ def main(
     planner_config_yaml: Union[str, Path],
     planning_cycle_steps: int,
     max_replanning_iterations: int,
+    planner_func: Callable,
     img_save_path: Optional[Path] = None,
     save_imgs: bool = False,
     create_scenario: bool = True,
@@ -103,7 +108,7 @@ def main(
         # solve parts of the planning problem in each iteration
         logger.debug("run controller")
         noisy_traj, disturbed_traj, input_traj = (
-            pid_with_lookahead_for_reactive_planner(
+            planner_func(
                 scenario=scenario,
                 planning_problem=planning_problem,
                 reactive_planner_state_trajectory=time_shifted_rp_states[
@@ -197,7 +202,7 @@ def main(
 
 
 if __name__ == "__main__":
-    scenario_name = "ZAM_Tutorial_Urban-3_2"
+    scenario_name = "ITA_Foggia-6_1_T-1"
     scenario_file = (
         Path(__file__).parents[0] / "scenarios" / str(scenario_name + ".xml")
     )
@@ -209,15 +214,22 @@ if __name__ == "__main__":
     )
     img_save_path = Path(__file__).parents[0] / "output" / scenario_name
 
-    planning_cycle_steps: int = 20
+    planning_cycle_steps: int = 17
     max_replanning_iterations: int = 6
+
+    # You can hand over other planner functions or write your own
+    pid_planner_func = pid_with_lookahead_for_reactive_planner
+    mpc_planner_func = mpc_for_reactive_planner
 
     main(
         scenario_xml=scenario_file,
         planner_config_yaml=planner_config_path,
+        planner_func=pid_planner_func,
         planning_cycle_steps=planning_cycle_steps,
         max_replanning_iterations=max_replanning_iterations,
         img_save_path=img_save_path,
         create_scenario=True,
         save_imgs=True,
     )
+
+

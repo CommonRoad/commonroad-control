@@ -20,7 +20,7 @@ from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 from commonroad_control.simulation.simulation.simulation import Simulation
 from commonroad_control.simulation.uncertainty_model.uniform_distribution import UniformDistribution
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestNominalAndUncertainSimulation(unittest.TestCase):

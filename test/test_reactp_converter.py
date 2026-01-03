@@ -22,7 +22,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 class TestReactivePlannerConverter(unittest.TestCase):
 

@@ -58,8 +58,25 @@ of a fixed time horizon, although this is easily integratable.
 As many Frenet-based planners, the Reactive planner is very sensitive to its state with respect to
 the reference path. Thus, the (experimentally found) choice of the replanning cycle step for each scenario is important for a stable loop.
 
-## Overall Example
+## Swapping PID and MPC
+The example below uses our Long-Lat PID controller. You can swap 
+```Python3
+...
+pid_with_lookahead_for_reactive_planner( ... )
+...
+```
 
+with 
+
+```Python3
+...
+mpc_for_reactive_planner( ... )
+...
+```
+to use our MPC
+
+
+## Overall Example
 ```Python3
 import copy
 import logging

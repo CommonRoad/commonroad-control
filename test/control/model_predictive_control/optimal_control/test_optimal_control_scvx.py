@@ -21,7 +21,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBSta
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput, KBInputIndices
 from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import KBSIDTFactory
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestOptimalControlSCvx(unittest.TestCase):

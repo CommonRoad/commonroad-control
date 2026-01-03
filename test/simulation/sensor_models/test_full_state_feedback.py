@@ -10,7 +10,7 @@ from commonroad_control.simulation.uncertainty_model.uniform_distribution import
 # double integrator state and input for testing
 from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import  DISIDTFactory
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestFullStateFeedback(unittest.TestCase):

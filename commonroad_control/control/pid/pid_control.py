@@ -60,9 +60,7 @@ class PIDControl(ControllerInterface):
         :return: control input
         """
         error: float = reference_output - measured_output
-        d_error: float = (
-            error - self._previous_error
-        ) / self._delta_t
+        d_error: float = (error - self._previous_error) / self._delta_t
         self._integrated_error += error * self._delta_t
         self._previous_error = error
 

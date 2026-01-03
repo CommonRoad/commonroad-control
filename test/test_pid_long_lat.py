@@ -6,7 +6,7 @@ import logging
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 from pid_long_lat_example import main
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestPIDLongLatExample(unittest.TestCase):
