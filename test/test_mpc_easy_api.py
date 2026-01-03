@@ -9,7 +9,7 @@ from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestCREasyAPI(unittest.TestCase):

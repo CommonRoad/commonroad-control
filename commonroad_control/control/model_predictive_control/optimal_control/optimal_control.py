@@ -60,7 +60,9 @@ class OptimalControlSolverInterface(ABC):
         """
 
         self.vehicle_model: VehicleModelInterface = vehicle_model
-        self.sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = sidt_factory
+        self.sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
+            sidt_factory
+        )
         self._ocp_parameters: OCPSolverParameters = ocp_parameters
         self.delta_t = delta_t
 

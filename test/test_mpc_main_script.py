@@ -7,7 +7,7 @@ from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 from mpc_example import main as mpc_main
 
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 class TestMPCExample(unittest.TestCase):
 

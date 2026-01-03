@@ -8,7 +8,7 @@ from commonroad_control.simulation.uncertainty_model.uniform_distribution import
 # example for uncertainty interface
 from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import DIDisturbance
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestUniformDistribution(unittest.TestCase):

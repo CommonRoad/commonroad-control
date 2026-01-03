@@ -247,13 +247,13 @@ def main(
                 num_imgs=len(x_ref.points.values())
             )
 
-    visualize_reference_vs_actual_states(
-        reference_trajectory=x_ref_ext,
-        actual_trajectory=simulated_traj,
-        time_steps=list(simulated_traj.points.keys()),
-        save_img=save_imgs,
-        save_path=img_save_path
-    )
+        visualize_reference_vs_actual_states(
+            reference_trajectory=x_ref_ext,
+            actual_trajectory=simulated_traj,
+            time_steps=list(simulated_traj.points.keys()),
+            save_img=save_imgs,
+            save_path=img_save_path
+        )
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_trajectory import 
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_state import DBState
 from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_trajectory import DBTrajectory
 
-logger_global = configure_toolbox_logging(level=logging.DEBUG)
+logger_global = configure_toolbox_logging(level=logging.INFO)
 
 
 class TestVisualizeControlState(unittest.TestCase):
