@@ -124,6 +124,7 @@ pages:
   when: manual
   publish: site
   only:
+    - develop
     - master
   script:
     - mkdocs build
