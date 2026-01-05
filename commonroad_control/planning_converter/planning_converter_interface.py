@@ -64,9 +64,7 @@ class PlanningConverterInterface(ABC):
         return self._vehicle_params
 
     @abstractmethod
-    def trajectory_p2c_kb(
-        self, planner_traj: Any, mode: TrajectoryMode, t_0: float, dt: float
-    ) -> KBTrajectory:
+    def trajectory_p2c_kb(self, planner_traj: Any, mode: TrajectoryMode, t_0: float, dt: float) -> KBTrajectory:
         """
         Generate Kinematic bicycle state or input trajectory from planner
         :param planner_traj: planner trajectory
@@ -103,9 +101,7 @@ class PlanningConverterInterface(ABC):
         pass
 
     @abstractmethod
-    def sample_c2p_kb(
-        self, kb_state: KBState, mode: TrajectoryMode, time_step: int
-    ) -> Any:
+    def sample_c2p_kb(self, kb_state: KBState, mode: TrajectoryMode, time_step: int) -> Any:
         """
         Converts kinematic bicycle state or input to planner state or input time step
         :param kb_state: kinematic bicycle state
@@ -117,9 +113,7 @@ class PlanningConverterInterface(ABC):
 
     # db
     @abstractmethod
-    def trajectory_p2c_db(
-        self, planner_traj: Any, mode: TrajectoryMode
-    ) -> DBTrajectory:
+    def trajectory_p2c_db(self, planner_traj: Any, mode: TrajectoryMode) -> DBTrajectory:
         """
         Generate dynamic bicycle trajectory from planner trajectory
         :param planner_traj: planner trajectory
@@ -139,9 +133,7 @@ class PlanningConverterInterface(ABC):
         pass
 
     @abstractmethod
-    def sample_p2c_db(
-        self, planner_state: Any, mode: TrajectoryMode
-    ) -> Union[DBState, DBInput]:
+    def sample_p2c_db(self, planner_state: Any, mode: TrajectoryMode) -> Union[DBState, DBInput]:
         """
         Convert planner state or input to dynamic bicycle state or input
         :param planner_state: planner state or input

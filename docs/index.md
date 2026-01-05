@@ -41,7 +41,7 @@ or follow the step-by-step examples to use our modular parts for your own contro
 
 Our [CommonRoad control github page](<>) contains a mirror of our gitlab source code.
 
-## Contributers
+## Contributors
 
 Lukas Schäfer: lukas.schaefer[at]tum.de  
 Tobias Mascetta: tobias.mascetta[at]tum.de  

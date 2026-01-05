@@ -35,20 +35,11 @@ def visualize_reference_vs_actual_states(
         state_names = vars(reference_trajectory.initial_point).keys()
 
     # check which items of state_names are defined for the reference trajectory and the actual trajectory
-    present_ref_state_names = [
-        a for a in state_names if hasattr(reference_trajectory.initial_point, a)
-    ]
-    present_actual_state_names = [
-        a for a in state_names if hasattr(actual_trajectory.initial_point, a)
-    ]
-    plot_state_names = list(
-        set(present_ref_state_names) & set(present_actual_state_names)
-    )
+    present_ref_state_names = [a for a in state_names if hasattr(reference_trajectory.initial_point, a)]
+    present_actual_state_names = [a for a in state_names if hasattr(actual_trajectory.initial_point, a)]
+    plot_state_names = list(set(present_ref_state_names) & set(present_actual_state_names))
     if not plot_state_names:
-        logger.warning(
-            "No matching state names for the reference and actual trajectory "
-            "- nothing to be plotted."
-        )
+        logger.warning("No matching state names for the reference and actual trajectory " "- nothing to be plotted.")
         return
     elif len(plot_state_names) < len(state_names):
         removed_names = list(set(state_names) - set(plot_state_names))
@@ -63,14 +54,10 @@ def visualize_reference_vs_actual_states(
 
     for ii in range(len(plot_state_names)):
         reference_state_val: List[float] = [
-            getattr(
-                reference_trajectory.get_point_at_time_step(kk), plot_state_names[ii]
-            )
-            for kk in time_steps
+            getattr(reference_trajectory.get_point_at_time_step(kk), plot_state_names[ii]) for kk in time_steps
         ]
         actual_state_val: List[float] = [
-            getattr(actual_trajectory.get_point_at_time_step(kk), plot_state_names[ii])
-            for kk in time_steps
+            getattr(actual_trajectory.get_point_at_time_step(kk), plot_state_names[ii]) for kk in time_steps
         ]
 
         axes[ii].plot(time_steps, reference_state_val, label="reference", color="blue")
@@ -89,26 +76,17 @@ def visualize_reference_vs_actual_states(
         plt.show()
 
     # plot deviation
-    fig_err, axes_err = plt.subplots(
-        nrows=len(plot_state_names), ncols=1, figsize=(16, 12)
-    )
+    fig_err, axes_err = plt.subplots(nrows=len(plot_state_names), ncols=1, figsize=(16, 12))
     plt.title("Error")
 
     for ii in range(len(plot_state_names)):
         reference_state_val: List[float] = [
-            getattr(
-                reference_trajectory.get_point_at_time_step(kk), plot_state_names[ii]
-            )
-            for kk in time_steps
+            getattr(reference_trajectory.get_point_at_time_step(kk), plot_state_names[ii]) for kk in time_steps
         ]
         actual_state_val: List[float] = [
-            getattr(actual_trajectory.get_point_at_time_step(kk), plot_state_names[ii])
-            for kk in time_steps
+            getattr(actual_trajectory.get_point_at_time_step(kk), plot_state_names[ii]) for kk in time_steps
         ]
-        error: List[float] = [
-            actual_state_val[kk] - reference_state_val[kk]
-            for kk in range(len(reference_state_val))
-        ]
+        error: List[float] = [actual_state_val[kk] - reference_state_val[kk] for kk in range(len(reference_state_val))]
 
         axes_err[ii].plot(time_steps, error, label="error", color="red")
         axes_err[ii].title.set_text(plot_state_names[ii])

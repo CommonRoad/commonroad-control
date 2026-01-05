@@ -56,9 +56,7 @@ def compute_velocity_components_from_steering_angle_in_cog(
         steering_angle=steering_angle, velocity=velocity_cog, l_wb=l_wb, l_r=l_r
     )
 
-    return compute_velocity_components_from_slip_angle_and_velocity_in_cog(
-        slip_angle=slip_angle, velocity=velocity_cog
-    )
+    return compute_velocity_components_from_slip_angle_and_velocity_in_cog(slip_angle=slip_angle, velocity=velocity_cog)
 
 
 def compute_velocity_from_components(v_long: float, v_lat: float) -> float:
@@ -71,9 +69,7 @@ def compute_velocity_from_components(v_long: float, v_lat: float) -> float:
     return np.sign(v_long) * math.sqrt(v_long**2 + v_lat**2)
 
 
-def map_velocity_from_ra_to_cog(
-    l_wb: float, l_r: float, velocity_ra: float, steering_angle: float
-) -> float:
+def map_velocity_from_ra_to_cog(l_wb: float, l_r: float, velocity_ra: float, steering_angle: float) -> float:
     """
     Given the velocity at the center of the rear axle, this function computes the velocity at the vehicle's center of
     gravity using kinematic relations.
@@ -95,9 +91,7 @@ def map_velocity_from_ra_to_cog(
     return v_cog
 
 
-def map_velocity_from_cog_to_ra(
-    l_wb: float, l_r: float, velocity_cog: float, steering_angle: float
-) -> float:
+def map_velocity_from_cog_to_ra(l_wb: float, l_r: float, velocity_cog: float, steering_angle: float) -> float:
     """
     Given the velocity at the center of gravity, this function computes the velocity at the vehicle's rear axle.
     :param l_wb: wheelbase

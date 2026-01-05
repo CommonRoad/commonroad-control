@@ -225,8 +225,7 @@ class KBNoise(FullStateNoiseInterface):
 ### 3. Setup the trajectory dataclass:
 
 Most of the functionality of the trajectory data class—such as conversion to an array or querying a trajectory point at a discrete time step—is already implemented in the [`TrajectoryInterface`](../core_api/vehicle_dynamics/interfaces.md).
-
-# TODO: what about the conversion to CR obstacles? 
+For plotting, it is recommended to write a conversion to the CommonRoad Obstacle object (see e.g. KB Trajectory).
 
 ### 4. Setup the SIDT factory
 
