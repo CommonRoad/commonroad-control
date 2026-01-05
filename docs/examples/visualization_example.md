@@ -21,7 +21,7 @@ visualize_trajectories(
     planner_trajectory=<PLANNERTRAJECTORY>,
     controller_trajectory=<CONTROLLERTRAJECTORY>,
     save_path="PATH/TO/FOLDER",
-    save_img=true
+    save_img=True
 )
 
 make_gif(

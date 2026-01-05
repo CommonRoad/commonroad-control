@@ -33,13 +33,13 @@ poetry install --with planner
 
 ## :book: Documentation and examples
 
-The [CommonRoad Control Documentation](<>) offers examples and API documentation.
-For easy integration in your project, we recommend using either the [CommonRoad easy API](<>)
+The [CommonRoad Control Documentation](https://optimal-control-ad-personal-repos-bb7de67c51e7f51ec3bda98b62f32.pages.gitlab.lrz.de/) offers examples and API documentation.
+For easy integration in your project, we recommend using either the [CommonRoad easy API](https://optimal-control-ad-personal-repos-bb7de67c51e7f51ec3bda98b62f32.pages.gitlab.lrz.de/examples/minimal_examples/)
 or follow the step-by-step examples to use our modular parts for your own controller and planner.
 
 ## :computer: Source code
 
-Our [CommonRoad control github page](<>) contains a mirror of our gitlab source code.
+Our [CommonRoad Control github page](https://github.com/CommonRoad/commonroad-control) contains a mirror of our gitlab source code.
 
 ## Contributors
 

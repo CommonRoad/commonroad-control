@@ -32,7 +32,15 @@ from commonroad_control.util.visualization.visualize_trajectories import visuali
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
+
+# outside logger
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(name)s: %(message)s")
+handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 def main(
         scenario_file: Path,

@@ -36,7 +36,15 @@ from commonroad_control.vehicle_dynamics.dynamic_bicycle.db_sidt_factory import 
 from commonroad_control.vehicle_dynamics.utils import TrajectoryMode
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
+
+# outside logger
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(name)s: %(message)s")
+handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def main(
