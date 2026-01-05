@@ -20,7 +20,7 @@ class NoUncertainty(UncertaintyModelInterface):
         dim: int,
         *args,
         nominal_value: Union[np.ndarray, List[float], UncertaintyInterface, None] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize no-uncertainty model. If no user-defined nominal value is provided, the nominal value is set to zero.
