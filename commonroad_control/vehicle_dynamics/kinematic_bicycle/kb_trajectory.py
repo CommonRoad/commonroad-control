@@ -1,27 +1,16 @@
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Union
+from typing import List
 
-import numpy as np
 from commonroad.geometry.shape import Rectangle
 from commonroad.prediction.prediction import Trajectory, TrajectoryPrediction
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.state import CustomState, InitialState
 
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_disturbance import (
-    KBDisturbance,
-)
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_input import KBInput
-from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBState
 from commonroad_control.vehicle_dynamics.trajectory_interface import (
     TrajectoryInterface,
     TrajectoryMode,
 )
-
-if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_sidt_factory import (
-        KBSIDTFactory,
-    )
 
 logger = logging.getLogger(__name__)
 
@@ -60,20 +49,15 @@ class KBTrajectory(TrajectoryInterface):
 
         else:
             # convert to CR obstacle
-            initial_state: InitialState = self.initial_point.to_cr_initial_state(
-                time_step=min(self.points.keys())
-            )
+            initial_state: InitialState = self.initial_point.to_cr_initial_state(time_step=min(self.points.keys()))
             state_list: List[CustomState] = [
-                state.to_cr_custom_state(time_step=step)
-                for step, state in self.points.items()
+                state.to_cr_custom_state(time_step=step) for step, state in self.points.items()
             ]
 
             cr_trajectory = Trajectory(state_list[0].time_step, state_list)
             shape = Rectangle(width=vehicle_width, length=vehicle_length)
 
-            trajectory_prediction = TrajectoryPrediction(
-                trajectory=cr_trajectory, shape=shape
-            )
+            trajectory_prediction = TrajectoryPrediction(trajectory=cr_trajectory, shape=shape)
             # obstacle generation
             return DynamicObstacle(
                 obstacle_id=vehicle_id,

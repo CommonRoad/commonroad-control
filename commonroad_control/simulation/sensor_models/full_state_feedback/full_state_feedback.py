@@ -69,16 +69,10 @@ class FullStateFeedback(SensorModelInterface):
 
         # dimension of noise model must match dimension of the output
         if self._noise_model.dim != self._dim != self.state_dimension:
-            logger.error(
-                "Dimensions of noise, output, and state do not match but must be identical."
-            )
-            raise ValueError(
-                "Dimensions of noise, output, and state do not match but must be identical."
-            )
+            logger.error("Dimensions of noise, output, and state do not match but must be identical.")
+            raise ValueError("Dimensions of noise, output, and state do not match but must be identical.")
         # state_output_factory is of correct type
-        if not isinstance(
-            self._state_output_factory, StateInputDisturbanceTrajectoryFactoryInterface
-        ):
+        if not isinstance(self._state_output_factory, StateInputDisturbanceTrajectoryFactoryInterface):
             logger.error(
                 f"x must be of type {StateInputDisturbanceTrajectoryFactoryInterface.__name__}, "
                 f"not {type(self._state_output_factory).__name__}"
@@ -89,16 +83,10 @@ class FullStateFeedback(SensorModelInterface):
             )
         # state dimension of state_output_factory must match state dimension
         if self._dim != self._state_output_factory.state_dimension:
-            logger.error(
-                "Dimension of output does not match the dimension of the state/output factory."
-            )
-            raise ValueError(
-                "Dimension of output does not match the dimension of the state/output factory."
-            )
+            logger.error("Dimension of output does not match the dimension of the state/output factory.")
+            raise ValueError("Dimension of output does not match the dimension of the state/output factory.")
 
-    def measure(
-        self, x: StateInterface, u: InputInterface, rand_noise: bool = True
-    ) -> StateInterface:
+    def measure(self, x: StateInterface, u: InputInterface, rand_noise: bool = True) -> StateInterface:
         """
         Evaluates the output function and applies (random) noise to the output.
         :param x: state

@@ -1,23 +1,9 @@
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union
 
-import numpy as np
-
-from commonroad_control.vehicle_dynamics.double_integrator.di_disturbance import (
-    DIDisturbance,
-)
-from commonroad_control.vehicle_dynamics.double_integrator.di_input import DIInput
-from commonroad_control.vehicle_dynamics.double_integrator.di_state import DIState
 from commonroad_control.vehicle_dynamics.trajectory_interface import (
     TrajectoryInterface,
-    TrajectoryMode,
 )
-
-if TYPE_CHECKING:
-    from commonroad_control.vehicle_dynamics.double_integrator.di_sidt_factory import (
-        DISIDTFactory,
-    )
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +27,4 @@ class DITrajectory(TrajectoryInterface):
         :param vehicle_id: vehicle id
         :return: CommonRoad dynamic obstacle
         """
-        raise NotImplementedError(
-            "to_cr_dynamic_obstacle() has not been implemented yet."
-        )
+        raise NotImplementedError("to_cr_dynamic_obstacle() has not been implemented yet.")

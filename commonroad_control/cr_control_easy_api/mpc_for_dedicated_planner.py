@@ -95,9 +95,7 @@ def mpc_for_reactive_planner_no_uncertainty(
     planning_problem: PlanningProblem,
     reactive_planner_state_trajectory: List[ReactivePlannerState],
     reactive_planner_input_trajectory: List[InputState],
-    planner_converter: Optional[
-        PlanningConverterInterface
-    ] = ReactivePlannerConverter(),
+    planner_converter: Optional[PlanningConverterInterface] = ReactivePlannerConverter(),
     dt_controller: float = 0.1,
     horizon_ocp: int = 25,
     vehicle_params=BMW3seriesParams(),
@@ -106,28 +104,20 @@ def mpc_for_reactive_planner_no_uncertainty(
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
     ] = KinematicBicycle,
-    vehicle_model_sim_typename: Type[
-        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
-    ] = DynamicBicycle,
+    vehicle_model_sim_typename: Type[Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]] = DynamicBicycle,
     state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
     input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
-    func_convert_controller2planner_state: Callable[
-        [StateInterface], StateInterface
-    ] = convert_state_db2kb,
+    func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
     ivp_method: Union[str, OdeSolver, None] = "RK45",
     visualize_scenario: bool = False,
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Combined MPC controller for the CommonRoad reactive planner without noise and disturbances.
     Wrapper around mpc_for_planner().
@@ -188,45 +178,31 @@ def mpc_for_reactive_planner(
     planning_problem: PlanningProblem,
     reactive_planner_state_trajectory: List[ReactivePlannerState],
     reactive_planner_input_trajectory: List[InputState],
-    planner_converter: Optional[
-        PlanningConverterInterface
-    ] = ReactivePlannerConverter(),
+    planner_converter: Optional[PlanningConverterInterface] = ReactivePlannerConverter(),
     dt_controller: float = 0.1,
     horizon_ocp: int = 20,
     vehicle_params=BMW3seriesParams(),
-    disturbance_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
-    noise_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
+    disturbance_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
+    noise_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
     sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSIDTFactory(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
     ] = KinematicBicycle,
-    vehicle_model_sim_typename: Type[
-        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
-    ] = DynamicBicycle,
+    vehicle_model_sim_typename: Type[Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]] = DynamicBicycle,
     state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
     input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
-    func_convert_controller2planner_state: Callable[
-        [StateInterface], StateInterface
-    ] = convert_state_db2kb,
+    func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
     ivp_method: Union[str, OdeSolver, None] = "RK45",
     visualize_scenario: bool = False,
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Combined MPC controller for the CommonRoad reactive planner. Wrapper around mpc_for_planner().
     :param scenario: CommonRoad scenario
@@ -292,39 +268,27 @@ def mpc_for_planner(
     dt_controller: float = 0.1,
     horizon_ocp: int = 20,
     vehicle_params=BMW3seriesParams(),
-    disturbance_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
-    noise_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
+    disturbance_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
+    noise_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
     sit_factory_control: StateInputDisturbanceTrajectoryFactoryInterface = KBSIDTFactory(),
     sit_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_control_typename: Type[
         Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
     ] = KinematicBicycle,
-    vehicle_model_sim_typename: Type[
-        Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]
-    ] = DynamicBicycle,
+    vehicle_model_sim_typename: Type[Union[KinematicBicycle, DynamicBicycle, VehicleModelInterface]] = DynamicBicycle,
     state_idxs_typename: Union[KBStateIndices, DBStateIndices] = KBStateIndices,
     input_idxs_typename: Union[KBInputIndices, DBInputIndices] = KBInputIndices,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
-    func_convert_controller2planner_state: Callable[
-        [StateInterface], StateInterface
-    ] = convert_state_db2kb,
+    func_convert_controller2planner_state: Callable[[StateInterface], StateInterface] = convert_state_db2kb,
     ivp_method: Union[str, OdeSolver, None] = "RK45",
     visualize_scenario: bool = False,
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Combined MPC controller for a planner.
     :param scenario: CommonRoad scenario
@@ -355,23 +319,15 @@ def mpc_for_planner(
     """
     # TODO: there are some hardcoded params still
     logger.info(f"solving scenario {str(scenario.scenario_id)}")
-    x_ref = planner_converter.trajectory_p2c_kb(
-        planner_traj=state_trajectory, mode=TrajectoryMode.State
-    )
-    u_ref = planner_converter.trajectory_p2c_kb(
-        planner_traj=input_trajectory, mode=TrajectoryMode.Input
-    )
+    x_ref = planner_converter.trajectory_p2c_kb(planner_traj=state_trajectory, mode=TrajectoryMode.State)
+    u_ref = planner_converter.trajectory_p2c_kb(planner_traj=input_trajectory, mode=TrajectoryMode.Input)
 
     logger.debug("initialize simulation")
     # ... vehicle model for prediction
-    vehicle_model_ctrl = vehicle_model_control_typename(
-        params=vehicle_params, delta_t=dt_controller
-    )
+    vehicle_model_ctrl = vehicle_model_control_typename(params=vehicle_params, delta_t=dt_controller)
     # ... initialize optimal control solver
     cost_xx = np.eye(state_idxs_typename.dim)
-    cost_xx[state_idxs_typename.steering_angle, state_idxs_typename.steering_angle] = (
-        0.0
-    )
+    cost_xx[state_idxs_typename.steering_angle, state_idxs_typename.steering_angle] = 0.0
     cost_uu = 0.1 * np.eye(input_idxs_typename.dim)
     cost_final = cost_xx  # np.eye(KBStateIndices.dim)
     # ... solver parameters for initial step-> iterate until convergence
@@ -394,9 +350,7 @@ def mpc_for_planner(
 
     # simulation
     # ... disturbance model
-    vehicle_model_sim = vehicle_model_sim_typename(
-        params=vehicle_params, delta_t=dt_controller
-    )
+    vehicle_model_sim = vehicle_model_sim_typename(params=vehicle_params, delta_t=dt_controller)
     sim_disturbance_model: UncertaintyModelInterface = disturbance_model_typename(
         dim=vehicle_model_sim.state_dimension,
         mean=vehicle_params.disturbance_gaussian_mean,
@@ -452,14 +406,10 @@ def mpc_for_planner(
         t_0=u_ref_ext.t_0,
         delta_t=u_ref_ext.delta_t,
     )
-    reference_trajectory.set_reference_trajectory(
-        state_ref=x_ref_ext, input_ref=u_ref_0, t_0=0
-    )
+    reference_trajectory.set_reference_trajectory(state_ref=x_ref_ext, input_ref=u_ref_0, t_0=0)
 
     # simulation results
-    x_measured = func_convert_planner2controller_state(
-        kb_state=x_ref.initial_point, vehicle_params=vehicle_params
-    )
+    x_measured = func_convert_planner2controller_state(kb_state=x_ref.initial_point, vehicle_params=vehicle_params)
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}
     traj_dict_no_noise = {0: x_disturbed}
@@ -469,9 +419,7 @@ def mpc_for_planner(
     for kk_sim in range(len(u_ref.steps)):
 
         # extract reference trajectory
-        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller
-        )
+        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(t=kk_sim * dt_controller)
 
         # convert initial state to kb
         x0_kb = func_convert_controller2planner_state(traj_dict_measured[kk_sim])
@@ -481,9 +429,7 @@ def mpc_for_planner(
         if kk_sim == 0:
             # at the initial step: iterate until convergence
             # afterwards: real-time iteration
-            mpc.ocp_solver.reset_ocp_parameters(
-                new_ocp_parameters=solver_parameters_rti
-            )
+            mpc.ocp_solver.reset_ocp_parameters(new_ocp_parameters=solver_parameters_rti)
 
         # u_now = kb_input.points[kk_sim]
         input_dict[kk_sim] = u_now

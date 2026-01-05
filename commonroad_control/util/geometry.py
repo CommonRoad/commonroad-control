@@ -22,10 +22,7 @@ def signed_distance_point_to_linestring(point: Point, linestring: LineString) ->
     for i in range(len(coords) - 1):
         seg_start = Point(coords[i])
         seg_end = Point(coords[i + 1])
-        if (
-            linestring.project(seg_start) <= arclength
-            and linestring.project(seg_end) >= arclength
-        ):
+        if linestring.project(seg_start) <= arclength and linestring.project(seg_end) >= arclength:
             point_before_line = seg_start
             break
 
@@ -33,12 +30,8 @@ def signed_distance_point_to_linestring(point: Point, linestring: LineString) ->
         logger.error("point before line is none")
         raise ValueError("point before line is none")
 
-    vector_line: np.ndarray = np.asarray(
-        [point_on_line.x - point_before_line.x, point_on_line.y - point_before_line.y]
-    )
-    vector_point: np.ndarray = np.asarray(
-        [point.x - point_on_line.x, point.y - point_on_line.y]
-    )
+    vector_line: np.ndarray = np.asarray([point_on_line.x - point_before_line.x, point_on_line.y - point_before_line.y])
+    vector_point: np.ndarray = np.asarray([point.x - point_on_line.x, point.y - point_on_line.y])
     cross_product = np.cross(vector_line, vector_point)
 
     return distance if cross_product >= 0.0 else -distance

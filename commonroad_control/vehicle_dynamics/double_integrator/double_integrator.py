@@ -27,9 +27,7 @@ class DoubleIntegrator(VehicleModelInterface):
     """
 
     @classmethod
-    def factory_method(
-        cls, params: VehicleParameters, delta_t: float
-    ) -> "DoubleIntegrator":
+    def factory_method(cls, params: VehicleParameters, delta_t: float) -> "DoubleIntegrator":
         """
         Factory method to generate class
         :param params: CommonRoad-Control vehicle params
@@ -81,13 +79,9 @@ class DoubleIntegrator(VehicleModelInterface):
         """
 
         # lower bound
-        u_lb = DIInput(
-            acceleration_long=-params.a_long_max, acceleration_lat=-params.a_lat_max
-        )
+        u_lb = DIInput(acceleration_long=-params.a_long_max, acceleration_lat=-params.a_lat_max)
         # upper bound
-        u_ub = DIInput(
-            acceleration_long=params.a_long_max, acceleration_lat=params.a_lat_max
-        )
+        u_ub = DIInput(acceleration_long=params.a_long_max, acceleration_lat=params.a_lat_max)
 
         return u_lb, u_ub
 
@@ -153,9 +147,7 @@ class DoubleIntegrator(VehicleModelInterface):
         # discrete-time dynamics
         xk = cas.SX.sym("xk", self._nx, 1)
         uk = cas.SX.sym("uk", self._nu, 1)
-        x_next = cas.Function(
-            "dynamics_dt", [xk, uk], [sys_mat_dt @ xk + input_mat_dt @ uk]
-        )
+        x_next = cas.Function("dynamics_dt", [xk, uk], [sys_mat_dt @ xk + input_mat_dt @ uk])
 
         # Jacobians of the discrete-time dynamics
         jac_x = cas.Function("jac_dynamics_dt_x", [xk, uk], [sys_mat_dt])

@@ -62,16 +62,10 @@ def visualize_trajectories(
         plt.cla()
 
         # get plot limits from reference idm_path
-        plot_limits: List[float] = obtain_plot_limits_from_reference_path(
-            planner_trajectory, margin=20
-        )
-        ratio_x_y = (plot_limits[1] - plot_limits[0]) / (
-            plot_limits[3] - plot_limits[2]
-        )
+        plot_limits: List[float] = obtain_plot_limits_from_reference_path(planner_trajectory, margin=20)
+        ratio_x_y = (plot_limits[1] - plot_limits[0]) / (plot_limits[3] - plot_limits[2])
 
-        renderer = MPRenderer(
-            plot_limits=plot_limits, figsize=(size_x, size_x / ratio_x_y)
-        )
+        renderer = MPRenderer(plot_limits=plot_limits, figsize=(size_x, size_x / ratio_x_y))
         renderer.draw_params.dynamic_obstacle.draw_icon = True
         renderer.draw_params.dynamic_obstacle.show_label = True
         renderer.draw_params.time_begin = step
@@ -94,9 +88,7 @@ def visualize_trajectories(
             vehicle_id=30000,
         )
         draw_params.dynamic_obstacle.draw_icon = use_icon_planned_traj
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = (
-            opacity_planning
-        )
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_planning
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#000000"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#808080"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 20
@@ -110,9 +102,7 @@ def visualize_trajectories(
             vehicle_id=30001,
         )
         draw_params.dynamic_obstacle.draw_icon = use_icon_controlled_traj
-        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = (
-            opacity_control
-        )
+        draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.opacity = opacity_control
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.facecolor = "#E37222"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.edgecolor = "#9C4100"
         draw_params.dynamic_obstacle.vehicle_shape.occupancy.shape.zorder = 50
@@ -124,26 +114,20 @@ def visualize_trajectories(
         plt.title(f"Time step = {step}")
 
         if save_img:
-            save_file: str = os.path.join(
-                save_path, str(scenario.scenario_id) + "_" + str(step) + ".png"
-            )
+            save_file: str = os.path.join(save_path, str(scenario.scenario_id) + "_" + str(step) + ".png")
             os.makedirs(save_path, exist_ok=True)  # Ensure the directory exists
             plt.savefig(save_file, format="png")
         else:
             plt.show()
 
 
-def obtain_plot_limits_from_reference_path(
-    trajectory: TrajectoryInterface, margin: float = 10.0
-) -> List[int]:
+def obtain_plot_limits_from_reference_path(trajectory: TrajectoryInterface, margin: float = 10.0) -> List[int]:
     """
     Obtains plot limits from a given trajectory
     :param trajectory: trajectory for extracting plot limits
     :return: list [xmin, xmax, ymin, xmax] of plot limits
     """
-    arr = np.asarray(
-        [[point.position_x, point.position_y] for point in trajectory.points.values()]
-    )
+    arr = np.asarray([[point.position_x, point.position_y] for point in trajectory.points.values()])
 
     x_min = min(arr[:, 0])
     x_max = max(arr[:, 0])
@@ -170,17 +154,9 @@ def make_gif(
     :param abort_img_threshold: Safety threshold of number of images in folder, above which execution is aborted
     """
 
-    if (
-        not os.path.exists(path_to_img_dir)
-        or not os.path.isdir(path_to_img_dir)
-        or not os.path.isabs(path_to_img_dir)
-    ):
-        logger.error(
-            f"image dir {path_to_img_dir} must exist, be a directory and be absolute"
-        )
-        raise FileNotFoundError(
-            f"image dir {path_to_img_dir} must exist, be a directory and be absolute"
-        )
+    if not os.path.exists(path_to_img_dir) or not os.path.isdir(path_to_img_dir) or not os.path.isabs(path_to_img_dir):
+        logger.error(f"image dir {path_to_img_dir} must exist, be a directory and be absolute")
+        raise FileNotFoundError(f"image dir {path_to_img_dir} must exist, be a directory and be absolute")
 
     # get all files in dir
     imgs = sorted(

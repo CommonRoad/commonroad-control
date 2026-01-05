@@ -29,9 +29,7 @@ class VehicleModelInterface(ABC):
         """
         pass
 
-    def __init__(
-        self, params: VehicleParameters, nx: int, nu: int, nw: int, delta_t: float
-    ):
+    def __init__(self, params: VehicleParameters, nx: int, nu: int, nw: int, delta_t: float):
         """
         Initialize abstract baseclass.
         :param params: CommonRoad-Control vehicle parameters
@@ -49,9 +47,7 @@ class VehicleModelInterface(ABC):
         self._u_lb, self._u_ub = self._set_input_bounds(params)
 
         # discretize (nominal) vehicle model
-        self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = (
-            self._discretize_nominal()
-        )
+        self._dynamics_dt, self._jac_dynamics_dt_x, self._jac_dynamics_dt_u = self._discretize_nominal()
 
         # differentiate acceleration constraint functions
         (
@@ -191,12 +187,8 @@ class VehicleModelInterface(ABC):
         )
 
         # compute Jacobian of discretized dynamics
-        jac_x = cas.Function(
-            "jac_dynamics_dt", [xk, uk], [cas.jacobian(x_next(xk, uk), xk)]
-        )
-        jac_u = cas.Function(
-            "jac_dynamics_dt", [xk, uk], [cas.jacobian(x_next(xk, uk), uk)]
-        )
+        jac_x = cas.Function("jac_dynamics_dt", [xk, uk], [cas.jacobian(x_next(xk, uk), xk)])
+        jac_u = cas.Function("jac_dynamics_dt", [xk, uk], [cas.jacobian(x_next(xk, uk), uk)])
         return x_next, jac_x, jac_u
 
     @abstractmethod
@@ -271,20 +263,12 @@ class VehicleModelInterface(ABC):
         )
 
         # compute Jacobian of normalized longitudinal acceleration
-        jac_a_long_x = cas.Function(
-            "jac_a_long_x", [xk, uk], [cas.jacobian(a_norm(xk, uk)[0], xk)]
-        )
-        jac_a_long_u = cas.Function(
-            "jac_a_long_u", [xk, uk], [cas.jacobian(a_norm(xk, uk)[0], uk)]
-        )
+        jac_a_long_x = cas.Function("jac_a_long_x", [xk, uk], [cas.jacobian(a_norm(xk, uk)[0], xk)])
+        jac_a_long_u = cas.Function("jac_a_long_u", [xk, uk], [cas.jacobian(a_norm(xk, uk)[0], uk)])
 
         # compute Jacobian of normalized lateral acceleration
-        jac_a_lat_x = cas.Function(
-            "jac_a_lat_x", [xk, uk], [cas.jacobian(a_norm(xk, uk)[1], xk)]
-        )
-        jac_a_lat_u = cas.Function(
-            "jac_a_lat_u", [xk, uk], [cas.jacobian(a_norm(xk, uk)[1], uk)]
-        )
+        jac_a_lat_x = cas.Function("jac_a_lat_x", [xk, uk], [cas.jacobian(a_norm(xk, uk)[1], xk)])
+        jac_a_lat_u = cas.Function("jac_a_lat_u", [xk, uk], [cas.jacobian(a_norm(xk, uk)[1], uk)])
 
         return a_norm, jac_a_long_x, jac_a_long_u, jac_a_lat_x, jac_a_lat_u
 

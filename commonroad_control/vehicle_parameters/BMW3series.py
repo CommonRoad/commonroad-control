@@ -20,9 +20,6 @@ class BMW3seriesParams(VehicleParameters):
     Vehicle parameters are taken from: "CommonRoad Vehicle Models and Cost Functions" (vehicle ID: 2)
     " M. Althoff, M. Koschi and S. Manzinger, "CommonRoad: Composable benchmarks for motion planning on roads,"
     IEEE Intelligent Vehicles Symposium, 2017, pp. 719-726"
-
-    Parameters of the Gaussian disturbances and noises are taken from:
-
     """
 
     l_wb: float = 2.578

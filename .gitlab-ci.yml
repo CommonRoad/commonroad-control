@@ -86,22 +86,22 @@ black:
     - master
     - release
   script:
-    - black --check --verbose --diff --color commonroad_control/
+    - black --check --verbose --diff --color --line-length 120  commonroad_control/
 
-mdformat:
-  stage: style
-  needs: []
-  allow_failure: true
-  image: python:3.10
-  before_script: []
-  cache: []
-  only:
-    - develop
-    - master
-    - release
-  script:
-    - pip install "mdformat[black]"
-    - mdformat --check docs/
+#mdformat:
+#  stage: style
+#  needs: []
+#  allow_failure: true
+#  image: python:3.10
+#  before_script: []
+#  cache: []
+#  only:
+#    - develop
+#    - master
+#    - release
+#  script:
+#    - pip install "mdformat[black]"
+#    - mdformat --check docs/
 
 
 ################# Deploy ##########
@@ -132,7 +132,7 @@ pages:
       - site
   environment:
     name: Gitlab Pages
-    url: https://cps.pages.gitlab.lrz.de/commonroad/cr_control/
+    url: https://cps.pages.gitlab.lrz.de/commonroad/commonroad-control/
 
 # deploy to external pypy-test from master
 push_to_external_pipy_test_registry:
@@ -157,4 +157,4 @@ publish_pypi:
     - poetry publish -u __token__ -p ${CR_PYPI_RELEASE_API_TOKEN}
   environment:
     name: production
-    url: https://pypi.org/project/cr_control
+    url: https://pypi.org/project/commonroad-control

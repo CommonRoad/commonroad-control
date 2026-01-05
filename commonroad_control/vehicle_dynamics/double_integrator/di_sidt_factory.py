@@ -59,18 +59,14 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def input_from_args(
-        cls, acceleration_long: float, acceleration_lat: float
-    ) -> Union["DIInput"]:
+    def input_from_args(cls, acceleration_long: float, acceleration_lat: float) -> Union["DIInput"]:
         """
         Create Input from args
         :param acceleration_long: longitudinal acceleration
         :param acceleration_lat: lateral acceleration
         :return: DIInput
         """
-        return DIInput(
-            acceleration_long=acceleration_long, acceleration_lat=acceleration_lat
-        )
+        return DIInput(acceleration_long=acceleration_long, acceleration_lat=acceleration_lat)
 
     @classmethod
     def disturbance_from_args(
@@ -96,9 +92,7 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def state_from_numpy_array(
-        cls, x_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union["DIState"]:
+    def state_from_numpy_array(cls, x_np: np.ndarray[tuple[float], np.dtype[np.float64]]) -> Union["DIState"]:
         """
         Create State from numpy array
         :param x_np: state vector - array of dimension (cls.state_dimension,)
@@ -106,12 +100,8 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if x_np.ndim > 1 or x_np.shape[0] != cls.state_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
-            )
+            logger.error(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
+            raise ValueError(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
 
         return DIState(
             position_long=x_np[DIStateIndices.position_long],
@@ -121,9 +111,7 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def input_from_numpy_array(
-        cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union["DIInput"]:
+    def input_from_numpy_array(cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]) -> Union["DIInput"]:
         """
         Create Input from numpy array
         :param u_np: control input - array of dimension (cls.input_dimension,)
@@ -131,12 +119,8 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if u_np.ndim > 1 or u_np.shape[0] != cls.input_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
-            )
+            logger.error(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
+            raise ValueError(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
 
         return DIInput(
             acceleration_long=u_np[DIInputIndices.acceleration_long],
@@ -154,12 +138,8 @@ class DISIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.ndim > 1 or w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
-            )
+            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
 
         return DIDisturbance(
             position_long=w_np[DIDisturbanceIndices.position_long],
