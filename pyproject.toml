@@ -17,7 +17,7 @@ classifiers = [
 
 packages = [{include = "commonroad_control"}]
 
-requires-python = "^3.10"
+requires-python = ">=3.10, <3.12"
 dynamic = ["dependencies"]
 
 # Dependencies

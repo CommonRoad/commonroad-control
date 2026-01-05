@@ -21,7 +21,7 @@ pip install commonroad-control
 
 If you want to also install supported motion planners, install them manually using, e.g., 
 ```bash
-pip install commonroad-reactive planner
+pip install commonroad-reactive-planner
 ```
 
 or clone CommonRoad-control from source and:
