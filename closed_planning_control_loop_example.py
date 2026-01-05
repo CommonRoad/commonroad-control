@@ -52,19 +52,21 @@ def main(
     planner_config_yaml: Union[str, Path],
     planning_cycle_steps: int,
     max_replanning_iterations: int,
-    planner_func: Callable,
+    controller_func: Callable,
     img_save_path: Optional[Path] = None,
     save_imgs: bool = False,
     create_scenario: bool = True,
 ) -> None:
     """
-    Example function for closing the planning-control loop with a PID controller and the reactive planner.
-    :param scenario_file: Path to scenario file
-    :param scenario_name: Scenario name
-    :param img_save_path: Path to save images to
-    :param planner_config_path: Reactive planner config
-    :param save_imgs: If true and img_save_path is valid, save imgs to this path
-    :param create_scenario: Needs to be true for any visualization to happen
+    Example how to close the planning-control loop.
+    :param scenario_xml: path to CommonRoad scenario
+    :param planner_config_yaml: path to planner config
+    :param planning_cycle_steps: Length of one cycle of the planning-control loop
+    :param max_replanning_iterations: Maximum numer of cycles in the planning-control loop
+    :param controller_func: Callable for the controller execution
+    :param img_save_path: path to save the images etc. to
+    :param save_imgs: If True and img_sage_path is given and create_scenario is true, save imgs
+    :param create_scenario: If True to create outputs
     """
     scenario_name = str(scenario_xml).split(".")[0]
     scenario, planning_problem_set = CommonRoadFileReader(scenario_xml).open()
@@ -116,7 +118,7 @@ def main(
         # solve parts of the planning problem in each iteration
         logger.debug("run controller")
         noisy_traj, disturbed_traj, input_traj = (
-            planner_func(
+            controller_func(
                 scenario=scenario,
                 planning_problem=planning_problem,
                 reactive_planner_state_trajectory=time_shifted_rp_states[
@@ -226,13 +228,13 @@ if __name__ == "__main__":
     max_replanning_iterations: int = 6
 
     # You can hand over other planner functions or write your own
-    pid_planner_func = pid_with_lookahead_for_reactive_planner
-    mpc_planner_func = mpc_for_reactive_planner
+    pid_func = pid_with_lookahead_for_reactive_planner
+    mpc_func = mpc_for_reactive_planner
 
     main(
         scenario_xml=scenario_file,
         planner_config_yaml=planner_config_path,
-        planner_func=pid_planner_func,
+        controller_func=pid_func,
         planning_cycle_steps=planning_cycle_steps,
         max_replanning_iterations=max_replanning_iterations,
         img_save_path=img_save_path,

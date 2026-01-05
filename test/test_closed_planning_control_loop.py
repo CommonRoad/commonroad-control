@@ -51,7 +51,7 @@ class TestPlanningControlLoop(unittest.TestCase):
                 main(
                     scenario_xml=scenario_file,
                     planner_config_yaml=planner_config_path,
-                    planner_func=pid_with_lookahead_for_reactive_planner,
+                    controller_func=pid_with_lookahead_for_reactive_planner,
                     planning_cycle_steps=planning_cycle_steps,
                     max_replanning_iterations=max_replanning_iterations,
                     img_save_path=None,
@@ -94,7 +94,7 @@ class TestPlanningControlLoop(unittest.TestCase):
                 main(
                     scenario_xml=scenario_file,
                     planner_config_yaml=planner_config_path,
-                    planner_func=mpc_for_reactive_planner,
+                    controller_func=mpc_for_reactive_planner,
                     planning_cycle_steps=planning_cycle_steps,
                     max_replanning_iterations=max_replanning_iterations,
                     img_save_path=None,
