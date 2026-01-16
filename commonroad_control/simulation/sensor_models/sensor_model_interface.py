@@ -22,7 +22,9 @@ class SensorModelInterface(ABC):
     def __init__(
         self,
         noise_model: UncertaintyModelInterface,
-        state_output_factory: Union[StateInputDisturbanceTrajectoryFactoryInterface, Any],
+        state_output_factory: Union[
+            StateInputDisturbanceTrajectoryFactoryInterface, Any
+        ],
         dim: int,
         state_dimension: int,
         input_dimension: int,
@@ -36,7 +38,9 @@ class SensorModelInterface(ABC):
         :param input_dimension: input dimension - int
         """
         self._noise_model: UncertaintyModelInterface = noise_model
-        self._state_output_factory: Union[StateInputDisturbanceTrajectoryFactoryInterface, Any] = state_output_factory
+        self._state_output_factory: Union[
+            StateInputDisturbanceTrajectoryFactoryInterface, Any
+        ] = state_output_factory
         self._dim: int = dim
         self._state_dimension: int = state_dimension
         self._input_dimension: int = input_dimension
@@ -44,7 +48,9 @@ class SensorModelInterface(ABC):
         # setup casadi function wrapping the nominal output function
         xk = cas.SX.sym("xk", state_output_factory.state_dimension, 1)
         uk = cas.SX.sym("uk", state_output_factory.input_dimension, 1)
-        self._output_function = cas.Function("output_function", [xk, uk], [self._output_function_cas(xk, uk)])
+        self._output_function = cas.Function(
+            "output_function", [xk, uk], [self._output_function_cas(xk, uk)]
+        )
 
     @property
     def noise_model(self) -> UncertaintyModelInterface:
@@ -86,7 +92,9 @@ class SensorModelInterface(ABC):
         """
         pass
 
-    def nominal_output(self, x: Union[StateInterface, np.array], u: Union[StateInterface, np.array]) -> np.ndarray:
+    def nominal_output(
+        self, x: Union[StateInterface, np.array], u: Union[StateInterface, np.array]
+    ) -> np.ndarray:
         """
         Evaluates the nominal output value given a state and corresponding control input.
         :param x: state
@@ -111,7 +119,9 @@ class SensorModelInterface(ABC):
         return x_next.squeeze()
 
     @abstractmethod
-    def measure(self, x: StateInterface, u: InputInterface, rand_noise: bool = True) -> Union[StateInterface, Any]:
+    def measure(
+        self, x: StateInterface, u: InputInterface, rand_noise: bool = True
+    ) -> Union[StateInterface, Any]:
         """
         Evaluates the output function and applies (random) noise to the output.
         :param x: state

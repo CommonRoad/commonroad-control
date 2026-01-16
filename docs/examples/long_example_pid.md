@@ -64,14 +64,15 @@ def main(
     :param save_imgs: If true and img_save_path is valid, save imgs to this path
     :param create_scenario: Needs to be true for any visualization to happen
     """
-    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
-    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 ```
 
 First, we solve the scenario using the reactive planner.
 The output of the reactive planner serves as the reference trajectory for the controller.
 
 ```Python3
+    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
+    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+
     logger.info(f"solving scenario {str(scenario.scenario_id)}")
 
     # run planner
@@ -100,17 +101,17 @@ To obtain more realistic results, we include disturbances to account for unmodel
 Both uncertainties are assumed to follow a Gaussian distribution.
 
 ```Python3
-    logger.info("initialize params")
-    # controller
-    dt_controller = 0.1
-    t_look_ahead = 0.5
+    logger.info("run controller")
 
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
+    
+    # controller parameters
+    dt_controller = 0.05
 
     # simulation
     # ... vehicle model
-    sit_factory_sim = DBSIDTFactory()
+    sidt_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     # ... disturbances
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
@@ -127,14 +128,14 @@ Both uncertainties are assumed to follow a Gaussian distribution.
     # ... sensor model
     sensor_model: SensorModelInterface = FullStateFeedback(
         noise_model=sim_noise_model,
-        state_output_factory=sit_factory_sim,
-        state_dimension=sit_factory_sim.state_dimension,
-        input_dimension=sit_factory_sim.input_dimension
+        state_output_factory=sidt_factory_sim,
+        state_dimension=sidt_factory_sim.state_dimension,
+        input_dimension=sidt_factory_sim.input_dimension
     )
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        sidt_factory=sit_factory_sim,
+        sidt_factory=sidt_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -143,16 +144,17 @@ Both uncertainties are assumed to follow a Gaussian distribution.
     )
 ```
 
-When using a simple controller like the PID controller, it can be beneficial to include a look-ahead `t_look_ahead`: instead of
+When using a simple controller like the PID controller, it can be beneficial to include a look-ahead with horizon `t_look_ahead`: instead of
 tracking the output at time t, the controller uses the reference state and the predicted state at t+`t_look_ahead`.
 Thus, we need a second simulation module (herein called look-ahead simulation module) for predicting the state at t+`t_look_ahead`.
 
 ```Python3
-    # Lookahead
+    # lookahead
+    t_look_ahead = 0.5
     # ... simulation
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        sidt_factory=sit_factory_sim,
+        sidt_factory=sidt_factory_sim,
     )
 ```
 
@@ -163,12 +165,12 @@ Therefore, we extend the reference trajectory along the centerline of the lane t
     # extend reference trajectory
     extended_horizon_steps = ceil(t_look_ahead/dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
-        x_ref=copy.copy(x_ref),
-        u_ref=copy.copy(u_ref),
+        x_ref=copy.deepcopy(x_ref),
+        u_ref=copy.deepcopy(u_ref),
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=extended_horizon_steps)
+        horizon=extended_horizon_steps+1)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sidt_factory=KBSIDTFactory(),
@@ -177,7 +179,7 @@ Therefore, we extend the reference trajectory along the centerline of the lane t
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
         input_ref=u_ref_ext,
-        t_0=0
+        t_0=0.0
     )
     ref_path: LineString = LineString(
         [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
@@ -187,7 +189,7 @@ Therefore, we extend the reference trajectory along the centerline of the lane t
 As the last step before actually simulating the controller and the vehicle model, we setup the decoupled longitudinal-lateral PID controller.
 
 ```Python3
-    # Controller
+    # instantiate pid controllers
     pid_controller: PIDLongLat = PIDLongLat(
         kp_long=1.0,
         ki_long=0.0,
@@ -197,7 +199,6 @@ As the last step before actually simulating the controller and the vehicle model
         kd_lat=0.1,
         delta_t=dt_controller,
     )
-    logger.info("run controller")
 ```
 
 For simulation, the initial state of the planned trajectory (kinematic bicycle model) is converted to a state of the dynamic bicycle model (which abstracts the dynamics of the original vehicle in our example).
@@ -218,61 +219,71 @@ Now we are ready for closed-loop simulation.
 Subsequently, we present the steps executed at each time step.
 
 ```Python3
-    for kk_sim in range(len(u_ref.steps)):
+    t_sim = x_ref.t_0
+    kk_sim: int = 0
+
+    while t_sim < x_ref.t_final:
 ```
+Due to the look-ahead, we require a future state of the vehicle to evaluate the control law. 
+Therefore, we simulate the look-ahead simulation module to predict the vehicle state. 
+We use the reference control inputs at the current time `t_sim` for prediction.
+Since one of our controlled outputs is the lateral offset, we convert the predicted position to the curvilinear coordinate system.
+
+```Python3
+        # look-ahead simulation
+        # ... extract reference input for simulation
+        _, u_ff = reference_trajectory.get_reference_trajectory_at_time(
+            t=t_sim,
+            consider_look_ahead=False
+        )
+        u_ff = u_ff.initial_point
+        # ... simulate
+        _, _, x_exp_look_ahead = look_ahead_sim.simulate(
+            x0=traj_dict_measured[kk_sim],
+            u=u_ff,
+            t_final=t_look_ahead
+        )
+        x_exp_look_ahead = x_exp_look_ahead.final_point
+        # ... lateral offset
+        lateral_offset_lookahead = signed_distance_point_to_linestring(
+            point=Point(x_exp_look_ahead.position_x, x_exp_look_ahead.position_y),
+            linestring=ref_path
+        )
+```
+
 
 Extract the reference state at time t=`kk_sim`*`dt_controller`+`t_look_ahead`. 
 Remember that the reference trajectory factory accounts for the look-ahead.
 
 ```Python3
-        # extract reference trajectory
-        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller
+        # compute control input
+        # ... extract reference trajectory (to be tracked)
+        tmp_x_ref, _ = reference_trajectory.get_reference_trajectory_at_time(
+            t=t_sim,
+            consider_look_ahead=True
         )
 ```
 
-Due to the look-ahead, we require a future state of the vehicle to evaluate the control law. 
-Therefore, we simulate the look-ahead simulation module to predict the vehicle state. 
-We use the reference control inputs at time `kk_sim`*`dt_controller` for prediction.
-
-```Python3
-
-        u_look_ahead_sim = sit_factory_sim.input_from_args(
-            acceleration=u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
-        )
-        _, _, x_look_ahead = look_ahead_sim.simulate(
-            x0=traj_dict_measured[kk_sim],
-            u=u_look_ahead_sim,
-            t_final=t_look_ahead
-        )
-```
 
 Evaluation of the control law.
 
 ```Python3
-
-        # convert simulated forward step state back to KB for control
-        x0_kb = convert_state_db2kb(x_look_ahead.final_point)
-        lateral_offset_lookahead = signed_distance_point_to_linestring(
-            point=Point(x0_kb.position_x, x0_kb.position_y),
-            linestring=ref_path
-        )
-
+        # ... compute feedback input (to compensate for the tracking error)
         u_vel, u_steer = pid_controller.compute_control_input(
-            measured_v_long=x0_kb.velocity,
-            reference_v_long=tmp_x_ref.points[0].velocity,
+            measured_v_long=x_exp_look_ahead.velocity,
+            reference_v_long=tmp_x_ref.initial_point.velocity,
             measured_lat_offset=lateral_offset_lookahead,
             reference_lat_offset=0.0
         )
 ```
 
-Since the controller only returns the control input offset to compensate for the error between the reference trajectory and the measured trajectory, the controller output is added to the reference control input.
+Since the controller only returns the control input offset to compensate for the error between the reference trajectory and the measured trajectory, the controller output is added to the feedforward input we used to predicte the vehicle state.
 
 ```Python3
-        u_now = sit_factory_sim.input_from_args(
-            acceleration=u_vel + u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_steer + u_ref.points[kk_sim].steering_angle_velocity
+        # ... combine feedforward and feedback input
+        u_now = sidt_factory_sim.input_from_args(
+            acceleration=u_vel + u_ff.acceleration,
+            steering_angle_velocity=u_steer + u_ff.steering_angle_velocity
         )
 ```
 
@@ -285,31 +296,40 @@ Simulation of the dynamic bicycle model for one time step (duration `dt_controll
             u=u_now,
             t_final=dt_controller
         )
-
-        # update dicts
         input_dict[kk_sim] = u_now
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
+
+        # update simulation time
+        kk_sim += 1
+        t_sim: float = x_ref.t_0 + kk_sim * dt_controller
 ```
 
 After the time horizon of the reference trajectory has expired, the simulation results are visualized.
+If the planner and the controller run at different sampling rates, we synchronize the planned and simulate trajectory for visualization (we only plot at the sampling times of the planner).
 
 ```Python3
+    # visualization
     logger.info(f"visualization")
-    simulated_traj = sit_factory_sim.trajectory_from_points(
+    simulated_traj = sidt_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
         delta_t=dt_controller
     )
-
+    # ... time-synchronize simulated and reference state trajectory for plotting
+    sync_simulated_traj = time_synchronize_trajectories(
+        reference_trajectory=x_ref,
+        asynchronous_trajectory=simulated_traj,
+        sidt_factory=DBSIDTFactory()
+    )
 
     if create_scenario:
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,
             planner_trajectory=x_ref,
-            controller_trajectory=simulated_traj,
+            controller_trajectory=sync_simulated_traj,
             save_path=img_save_path,
             save_img=save_imgs
         )
@@ -321,13 +341,13 @@ After the time horizon of the reference trajectory has expired, the simulation r
                 num_imgs=len(x_ref.points.values())
             )
 
-    visualize_reference_vs_actual_states(
-        reference_trajectory=x_ref,
-        actual_trajectory=simulated_traj,
-        time_steps=list(simulated_traj.points.keys()),
-        save_img=save_imgs,
-        save_path=img_save_path
-    )
+        visualize_reference_vs_actual_states(
+            reference_trajectory=x_ref,
+            actual_trajectory=sync_simulated_traj,
+            time_steps=list(x_ref.steps),
+            save_img=save_imgs,
+            save_path=img_save_path
+        )
 
 if __name__ == "__main__":
     scenario_name = "C-DEU_B471-2_1"

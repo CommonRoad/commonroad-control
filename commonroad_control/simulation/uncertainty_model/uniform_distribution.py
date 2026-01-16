@@ -77,7 +77,9 @@ class UniformDistribution(UncertaintyModelInterface):
             logger.error("Upper bound must be greater than lower bound.")
             raise ValueError("Upper bound must be greater than lower bound.")
         # check nominal value (must be between bounds)
-        if any(self._nominal_value < self._lower_bound) or any(self._upper_bound < self._nominal_value):
+        if any(self._nominal_value < self._lower_bound) or any(
+            self._upper_bound < self._nominal_value
+        ):
             logger.error("Nominal value must be contained within bounds.")
             raise ValueError("Nominal value must be contained within bounds.")
 

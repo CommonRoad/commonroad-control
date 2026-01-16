@@ -32,9 +32,13 @@ class PIDLongLat(ControllerInterface):
         :param delta_t: controller sampling time in seconds
         """
         super().__init__()
-        self._v_long_pid: PIDControl = PIDControl(kp=kp_long, ki=ki_long, kd=kd_long, delta_t=delta_t)
+        self._v_long_pid: PIDControl = PIDControl(
+            kp=kp_long, ki=ki_long, kd=kd_long, delta_t=delta_t
+        )
 
-        self._steer_pid_offset: PIDControl = PIDControl(kp=kp_lat, ki=ki_lat, kd=kd_lat, delta_t=delta_t)
+        self._steer_pid_offset: PIDControl = PIDControl(
+            kp=kp_lat, ki=ki_lat, kd=kd_lat, delta_t=delta_t
+        )
         self._delta_t: float = delta_t
 
     @property

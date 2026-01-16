@@ -58,8 +58,10 @@ def extend_ref_path_with_route_planner(
         goal_region=goal_region,
     )
 
-    reference_path: ReferencePath = generate_reference_path_from_lanelet_network_and_planning_problem(
-        planning_problem=planning_problem, lanelet_network=lanelet_network
+    reference_path: ReferencePath = (
+        generate_reference_path_from_lanelet_network_and_planning_problem(
+            planning_problem=planning_problem, lanelet_network=lanelet_network
+        )
     )
 
     kd_tree: KDTree = KDTree(reference_path.reference_path)
@@ -68,7 +70,9 @@ def extend_ref_path_with_route_planner(
     clcs_line: np.ndarray = np.concatenate(
         (
             positional_trajectory,
-            reference_path.reference_path[min(reference_path.reference_path.shape[0] - 1, idx + 1) :],
+            reference_path.reference_path[
+                min(reference_path.reference_path.shape[0] - 1, idx + 1) :
+            ],
         )
     )
 
@@ -103,7 +107,9 @@ def extend_reference_trajectory_lane_following(
     :return: Curvilinear coordinate system object, (n,2) positions in cartesian coordinates, acceleration, heading, yaw_rate, steering angle, steering angle velocity,
     """
     # extend path with route planner
-    clcs_line = extend_ref_path_with_route_planner(positional_trajectory, lanelet_network)
+    clcs_line = extend_ref_path_with_route_planner(
+        positional_trajectory, lanelet_network
+    )
 
     # convert to curvilinear coordinate system
     clcs_traj_ext: CurvilinearCoordinateSystem = CurvilinearCoordinateSystem(
@@ -112,7 +118,9 @@ def extend_reference_trajectory_lane_following(
 
     # sample states along path using velocity of final state
     v_ref = final_state.velocity
-    position_s_0, _ = clcs_traj_ext.convert_to_curvilinear_coords(x=final_state.position_x, y=final_state.position_y)
+    position_s_0, _ = clcs_traj_ext.convert_to_curvilinear_coords(
+        x=final_state.position_x, y=final_state.position_y
+    )
     position_xy = []
     velocity = [v_ref for _ in range(horizon)]
     heading = []
@@ -125,8 +133,12 @@ def extend_reference_trajectory_lane_following(
     elif hasattr(final_state, "velocity_y") and hasattr(final_state, "velocity_x"):
         heading_0 = atan2(final_state.velocity_y, final_state.velocity_x)
     else:
-        logger.error("Could not compute heading at the final state of the reference trajectory!")
-        raise Exception("Could not compute heading at the final state of the reference trajectory!")
+        logger.error(
+            "Could not compute heading at the final state of the reference trajectory!"
+        )
+        raise Exception(
+            "Could not compute heading at the final state of the reference trajectory!"
+        )
 
     if hasattr(final_state, "steering_angle"):
         steering_angle_0 = final_state.steering_angle
@@ -137,7 +149,9 @@ def extend_reference_trajectory_lane_following(
         position_s = position_s_0 + (kk + 1) * delta_t * v_ref
 
         # convert position to Cartesian coordinates
-        position_xy.append(clcs_traj_ext.convert_to_cartesian_coords(s=position_s, l=0.0))
+        position_xy.append(
+            clcs_traj_ext.convert_to_cartesian_coords(s=position_s, l=0.0)
+        )
 
         # orientation of reference trajectory at
         tangent = clcs_traj_ext.tangent(position_s)
@@ -153,7 +167,9 @@ def extend_reference_trajectory_lane_following(
         steering_angle.append(float(atan2(yaw_rate[kk] * l_wb, v_ref)))
 
         # compute steering angle velocity
-        steering_angle_velocity.append(float((steering_angle[kk] - steering_angle_0) / delta_t))
+        steering_angle_velocity.append(
+            float((steering_angle[kk] - steering_angle_0) / delta_t)
+        )
         steering_angle_0 = steering_angle[kk]
 
     return (
@@ -188,7 +204,9 @@ def extend_kb_reference_trajectory_lane_following(
     :return: Curvilinear coordinate system, extended state trajectory, extended input trajectory
     """
     # positional trajectory
-    positional_trajectory = np.asarray([[state.position_x, state.position_y] for state in x_ref.points.values()])
+    positional_trajectory = np.asarray(
+        [[state.position_x, state.position_y] for state in x_ref.points.values()]
+    )
 
     # extend trajectory
     (

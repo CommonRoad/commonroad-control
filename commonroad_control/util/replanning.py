@@ -84,9 +84,9 @@ def check_position_in_goal_region(
                 for pp_list in lanelet_ids:
                     for lanelet_id in pp_list:
                         lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
-                        is_in_goal = lanelet.polygon.shapely_object.buffer(goal_region_buffer).contains(
-                            Point([position_x, position_y])
-                        )
+                        is_in_goal = lanelet.polygon.shapely_object.buffer(
+                            goal_region_buffer
+                        ).contains(Point([position_x, position_y]))
                         if is_in_goal:
                             is_position_in_goal = True
                             break
@@ -97,9 +97,9 @@ def check_position_in_goal_region(
                 if hasattr(goal_state, "position"):
                     if hasattr(goal_state.position, "shapely_object"):
                         if goal_state.position.shapely_object is not None:
-                            is_in_goal = goal_state.position.shapely_object.buffer(goal_region_buffer).contains(
-                                Point([position_x, position_y])
-                            )
+                            is_in_goal = goal_state.position.shapely_object.buffer(
+                                goal_region_buffer
+                            ).contains(Point([position_x, position_y]))
                             if is_in_goal:
                                 is_position_in_goal = True
                                 break
@@ -108,7 +108,8 @@ def check_position_in_goal_region(
                         # use position with buffer directly
                         if (
                             np.linalg.norm(
-                                np.asarray(goal_state.position.center) - np.asarray([position_x, position_y])
+                                np.asarray(goal_state.position.center)
+                                - np.asarray([position_x, position_y])
                             )
                             < goal_region_buffer
                         ):

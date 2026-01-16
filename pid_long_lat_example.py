@@ -4,6 +4,8 @@ from pathlib import Path
 from math import ceil
 
 from commonroad.common.file_reader import CommonRoadFileReader
+
+
 from shapely.geometry import LineString, Point
 
 from commonroad_control.control.pid.pid_long_lat import PIDLongLat
@@ -26,9 +28,10 @@ from commonroad_control.simulation.sensor_models.full_state_feedback.full_state_
 from commonroad_control.util.geometry import signed_distance_point_to_linestring
 from commonroad_control.util.planner_execution_util.reactive_planner_exec_util import run_reactive_planner
 from commonroad_control.util.clcs_control_util import extend_kb_reference_trajectory_lane_following
-from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
+from commonroad_control.util.state_conversion import convert_state_kb2db
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
+from commonroad_control.util.visualization.visualization_util import time_synchronize_trajectories
 from commonroad_control.util.cr_logging_utils import configure_toolbox_logging
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
@@ -59,6 +62,7 @@ def main(
     :param save_imgs: If true and img_save_path is valid, save imgs to this path
     :param create_scenario: Needs to be true for any visualization to happen
     """
+
     scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
     planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
@@ -83,17 +87,17 @@ def main(
         mode=TrajectoryMode.Input
     )
 
-    logger.info("initialize params")
-    # controller
-    dt_controller = 0.1
-    t_look_ahead = 0.5
+    logger.info("run controller")
 
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
 
+    # controller parameters
+    dt_controller = 0.05
+
     # simulation
     # ... vehicle model
-    sit_factory_sim = DBSIDTFactory()
+    sidt_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     # ... disturbances
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
@@ -110,14 +114,14 @@ def main(
     # ... sensor model
     sensor_model: SensorModelInterface = FullStateFeedback(
         noise_model=sim_noise_model,
-        state_output_factory=sit_factory_sim,
-        state_dimension=sit_factory_sim.state_dimension,
-        input_dimension=sit_factory_sim.input_dimension
+        state_output_factory=sidt_factory_sim,
+        state_dimension=sidt_factory_sim.state_dimension,
+        input_dimension=sidt_factory_sim.input_dimension
     )
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        sidt_factory=sit_factory_sim,
+        sidt_factory=sidt_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -125,22 +129,23 @@ def main(
         delta_t_w=dt_controller
     )
 
-    # Lookahead
+    # lookahead
+    t_look_ahead = 0.5
     # ... simulation
     look_ahead_sim: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        sidt_factory=sit_factory_sim,
+        sidt_factory=sidt_factory_sim,
     )
 
     # extend reference trajectory
     extended_horizon_steps = ceil(t_look_ahead/dt_controller)
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
-        x_ref=copy.copy(x_ref),
-        u_ref=copy.copy(u_ref),
+        x_ref=copy.deepcopy(x_ref),
+        u_ref=copy.deepcopy(u_ref),
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=extended_horizon_steps)
+        horizon=extended_horizon_steps+1)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sidt_factory=KBSIDTFactory(),
@@ -149,13 +154,13 @@ def main(
     reference_trajectory.set_reference_trajectory(
         state_ref=x_ref_ext,
         input_ref=u_ref_ext,
-        t_0=0
+        t_0=0.0
     )
     ref_path: LineString = LineString(
         [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
     )
 
-    # Controller
+    # instantiate pid controllers
     pid_controller: PIDLongLat = PIDLongLat(
         kp_long=1.0,
         ki_long=0.0,
@@ -165,7 +170,6 @@ def main(
         kd_lat=0.1,
         delta_t=dt_controller,
     )
-    logger.info("run controller")
 
     # simulation results
     x_measured = convert_state_kb2db(
@@ -177,40 +181,47 @@ def main(
     traj_dict_no_noise = {0: x_disturbed}
     input_dict = {}
 
+    t_sim = x_ref.t_0
+    kk_sim: int = 0
 
-    for kk_sim in range(len(u_ref.steps)):
-        # extract reference trajectory
-        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=kk_sim * dt_controller
+    while t_sim < x_ref.t_final:
+        # look-ahead simulation
+        # ... extract reference input for simulation
+        _, u_ff = reference_trajectory.get_reference_trajectory_at_time(
+            t=t_sim,
+            consider_look_ahead=False
         )
-
-        u_look_ahead_sim = sit_factory_sim.input_from_args(
-            acceleration=u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_ref.points[kk_sim].steering_angle_velocity
-        )
-        _, _, x_look_ahead = look_ahead_sim.simulate(
+        u_ff = u_ff.initial_point
+        # ... simulate
+        _, _, x_exp_look_ahead = look_ahead_sim.simulate(
             x0=traj_dict_measured[kk_sim],
-            u=u_look_ahead_sim,
+            u=u_ff,
             t_final=t_look_ahead
         )
-
-        # convert simulated forward step state back to KB for control
-        x0_kb = convert_state_db2kb(x_look_ahead.final_point)
+        x_exp_look_ahead = x_exp_look_ahead.final_point
+        # ... lateral offset
         lateral_offset_lookahead = signed_distance_point_to_linestring(
-            point=Point(x0_kb.position_x, x0_kb.position_y),
+            point=Point(x_exp_look_ahead.position_x, x_exp_look_ahead.position_y),
             linestring=ref_path
         )
 
+        # compute control input
+        # ... extract reference trajectory (to be tracked)
+        tmp_x_ref, _ = reference_trajectory.get_reference_trajectory_at_time(
+            t=t_sim,
+            consider_look_ahead=True
+        )
+        # ... compute feedback input (to compensate for the tracking error)
         u_vel, u_steer = pid_controller.compute_control_input(
-            measured_v_long=x0_kb.velocity,
-            reference_v_long=tmp_x_ref.points[0].velocity,
+            measured_v_long=x_exp_look_ahead.velocity,
+            reference_v_long=tmp_x_ref.initial_point.velocity,
             measured_lat_offset=lateral_offset_lookahead,
             reference_lat_offset=0.0
         )
-
-        u_now = sit_factory_sim.input_from_args(
-            acceleration=u_vel + u_ref.points[kk_sim].acceleration,
-            steering_angle_velocity=u_steer + u_ref.points[kk_sim].steering_angle_velocity
+        # ... combine feedforward and feedback input
+        u_now = sidt_factory_sim.input_from_args(
+            acceleration=u_vel + u_ff.acceleration,
+            steering_angle_velocity=u_steer + u_ff.steering_angle_velocity
         )
 
         # simulate
@@ -219,27 +230,35 @@ def main(
             u=u_now,
             t_final=dt_controller
         )
-
-        # update dicts
         input_dict[kk_sim] = u_now
         traj_dict_measured[kk_sim + 1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
 
+        # update simulation time
+        kk_sim += 1
+        t_sim: float = x_ref.t_0 + kk_sim * dt_controller
+
+    # visualization
     logger.info(f"visualization")
-    simulated_traj = sit_factory_sim.trajectory_from_points(
+    simulated_traj = sidt_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
         delta_t=dt_controller
     )
-
+    # ... time-synchronize simulated and reference state trajectory for plotting
+    sync_simulated_traj = time_synchronize_trajectories(
+        reference_trajectory=x_ref,
+        asynchronous_trajectory=simulated_traj,
+        sidt_factory=DBSIDTFactory()
+    )
 
     if create_scenario:
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,
             planner_trajectory=x_ref,
-            controller_trajectory=simulated_traj,
+            controller_trajectory=sync_simulated_traj,
             save_path=img_save_path,
             save_img=save_imgs
         )
@@ -253,8 +272,8 @@ def main(
 
         visualize_reference_vs_actual_states(
             reference_trajectory=x_ref,
-            actual_trajectory=simulated_traj,
-            time_steps=list(simulated_traj.points.keys()),
+            actual_trajectory=sync_simulated_traj,
+            time_steps=list(x_ref.steps),
             save_img=save_imgs,
             save_path=img_save_path
         )

@@ -27,7 +27,9 @@ class DynamicBicycle(VehicleModelInterface):
     """
 
     @classmethod
-    def factory_method(cls, params: VehicleParameters, delta_t: float) -> "DynamicBicycle":
+    def factory_method(
+        cls, params: VehicleParameters, delta_t: float
+    ) -> "DynamicBicycle":
         """
         Factory method to generate class
         :param params: CommonRoad-Control vehicle params
@@ -115,7 +117,9 @@ class DynamicBicycle(VehicleModelInterface):
         velocity_long_dot = psi_dot * v_by + a - (fc_f * cas.sin(delta)) / self._m
         velocity_lat_dot = -psi_dot * v_bx + (fc_f * cas.cos(delta) + fc_r) / self._m
         heading_dot = psi_dot
-        yaw_rate_dot = (self._l_f * fc_f * cas.cos(delta) - self._l_r * fc_r) / self._I_zz
+        yaw_rate_dot = (
+            self._l_f * fc_f * cas.cos(delta) - self._l_r * fc_r
+        ) / self._I_zz
         steering_angle_dot = delta_dot
 
         f = cas.vertcat(

@@ -48,7 +48,9 @@ def run_reactive_planner(
     :return: Tuple[list of reactive planner states, list of reactive planner inputs]
     """
 
-    config = ReactivePlannerConfiguration.load(reactive_planner_config_path, scenario_xml_file_name)
+    config = ReactivePlannerConfiguration.load(
+        reactive_planner_config_path, scenario_xml_file_name
+    )
     config.update(scenario=scenario, planning_problem=planning_problem)
     config.planning_problem_set = planning_problem_set
     config.debug.logging_level = logging_level
@@ -58,7 +60,9 @@ def run_reactive_planner(
     rp_logger = initialize_logger(config)
     rp_logger.setLevel(level=logger.getEffectiveLevel())
 
-    ref_path_orig = create_initial_ref_path(config.scenario.lanelet_network, config.planning_problem)
+    ref_path_orig = create_initial_ref_path(
+        config.scenario.lanelet_network, config.planning_problem
+    )
     rp_cosys: CoordinateSystem = create_coordinate_system(ref_path_orig)
 
     # initialize reactive planner
@@ -119,12 +123,18 @@ def run_reactive_planner(
             )
 
     if cnt >= maximum_iterations - 1:
-        logger.error(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
-        raise Exception(f"Reactive planner exceeded maximum number of iterations {maximum_iterations}")
+        logger.error(
+            f"Reactive planner exceeded maximum number of iterations {maximum_iterations}"
+        )
+        raise Exception(
+            f"Reactive planner exceeded maximum number of iterations {maximum_iterations}"
+        )
 
     # Evaluate results
     if evaluate_planner:
-        _, _ = run_evaluation(planner.config, planner.record_state_list, planner.record_input_list)
+        _, _ = run_evaluation(
+            planner.config, planner.record_state_list, planner.record_input_list
+        )
 
     # Move input up one time step so that the idx of the input correspond the state to which it is applied to to come
     # into the next state

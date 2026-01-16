@@ -19,7 +19,9 @@ class NoUncertainty(UncertaintyModelInterface):
         self,
         dim: int,
         *args,
-        nominal_value: Union[np.ndarray, List[float], UncertaintyInterface, None] = None,
+        nominal_value: Union[
+            np.ndarray, List[float], UncertaintyInterface, None
+        ] = None,
         **kwargs,
     ):
         """
