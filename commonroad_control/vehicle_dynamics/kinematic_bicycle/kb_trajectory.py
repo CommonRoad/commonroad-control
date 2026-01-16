@@ -49,15 +49,20 @@ class KBTrajectory(TrajectoryInterface):
 
         else:
             # convert to CR obstacle
-            initial_state: InitialState = self.initial_point.to_cr_initial_state(time_step=min(self.points.keys()))
+            initial_state: InitialState = self.initial_point.to_cr_initial_state(
+                time_step=min(self.points.keys())
+            )
             state_list: List[CustomState] = [
-                state.to_cr_custom_state(time_step=step) for step, state in self.points.items()
+                state.to_cr_custom_state(time_step=step)
+                for step, state in self.points.items()
             ]
 
             cr_trajectory = Trajectory(state_list[0].time_step, state_list)
             shape = Rectangle(width=vehicle_width, length=vehicle_length)
 
-            trajectory_prediction = TrajectoryPrediction(trajectory=cr_trajectory, shape=shape)
+            trajectory_prediction = TrajectoryPrediction(
+                trajectory=cr_trajectory, shape=shape
+            )
             # obstacle generation
             return DynamicObstacle(
                 obstacle_id=vehicle_id,

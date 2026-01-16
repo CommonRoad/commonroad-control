@@ -75,7 +75,9 @@ class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         :param steering_angle_velocity: steering angle velocity
         :return: KBInput
         """
-        return KBInput(acceleration=acceleration, steering_angle_velocity=steering_angle_velocity)
+        return KBInput(
+            acceleration=acceleration, steering_angle_velocity=steering_angle_velocity
+        )
 
     @staticmethod
     def disturbance_from_args(
@@ -114,8 +116,12 @@ class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if x_np.ndim > 1 or x_np.shape[0] != cls.state_dimension:
-            logger.error(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
-            raise ValueError(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
+            logger.error(
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
+            )
+            raise ValueError(
+                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
+            )
 
         return KBState(
             position_x=x_np[KBStateIndices.position_x],
@@ -126,7 +132,9 @@ class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def input_from_numpy_array(cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]) -> Union["KBInput"]:
+    def input_from_numpy_array(
+        cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
+    ) -> Union["KBInput"]:
         """
         Create Input from numpy array
         :param u_np: control input - array of dimension (cls.input_dimension,)
@@ -134,8 +142,12 @@ class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if u_np.ndim > 1 or u_np.shape[0] != cls.input_dimension:
-            logger.error(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
-            raise ValueError(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
+            logger.error(
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
+            )
+            raise ValueError(
+                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
+            )
 
         return KBInput(
             acceleration=u_np[KBInputIndices.acceleration],
@@ -153,8 +165,12 @@ class KBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.ndim > 1 or w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
-            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+            logger.error(
+                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
+            )
+            raise ValueError(
+                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
+            )
 
         return KBDisturbance(
             position_x=w_np[KBDisturbanceIndices.position_x],

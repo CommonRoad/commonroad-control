@@ -9,7 +9,9 @@ from commonroad_control.vehicle_dynamics.kinematic_bicycle.kb_state import KBSta
 from commonroad_control.vehicle_parameters.vehicle_parameters import VehicleParameters
 
 
-def convert_state_kb2db(kb_state: "KBState", vehicle_params: VehicleParameters) -> DBState:
+def convert_state_kb2db(
+    kb_state: "KBState", vehicle_params: VehicleParameters
+) -> DBState:
     """
     Converts kinematic bicycle state to dynamic bicycle state.
     :param kb_state: KB state
@@ -41,7 +43,9 @@ def convert_state_db2kb(db_state: "DBState") -> KBState:
     :param db_state: DB state
     :return: KB State
     """
-    v = compute_velocity_from_components(v_long=db_state.velocity_long, v_lat=db_state.velocity_lat)
+    v = compute_velocity_from_components(
+        v_long=db_state.velocity_long, v_lat=db_state.velocity_lat
+    )
 
     return KBState(
         position_x=db_state.position_x,

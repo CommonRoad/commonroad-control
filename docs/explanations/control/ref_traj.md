@@ -52,6 +52,6 @@ To extract the required snippet from the reference trajectory, only the current 
 Since the prediction horizon of the MPC or potential look-ahead times are provided upon initialization, the correct duration and initial time of the snippet are determined internally.
 
 - For `delta_t_controller = 0.1` and `mpc_horizon = 20`, `x_ref` and `u_ref` are the snippet of `state_ref` and `input_ref` from `t_now` $\leq t \leq$ `t_now` $+ 2\text{s}$ (sampled every `delta_t_controller` seconds).
-- For a PID controller with look-ahead `t_look_ahead` $=0.5\text{s}$, `x_ref` and `u_ref` are the point of `state_ref` and `input_ref` at $t=$`t_now`$+ 0.5\text{s}$.
+- For a PID controller with look-ahead `t_look_ahead` $=0.5\text{s}$, `x_ref` and `u_ref` are the point of `state_ref` and `input_ref` at $t=$`t_now`$+ 0.5\text{s}$. If the reference at $t=$`t_now` is required, the factory can be forced to ignore the lookahead by adding the (optional) input argument `consider_look_ahead=False`.
 
 __

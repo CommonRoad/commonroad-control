@@ -276,7 +276,7 @@ class TestKinematicBicycle(unittest.TestCase):
             delta_t=1.0
         )
         # ... get point
-        desired_state = state_traj.get_point_at_time(time=0.5, factory=KBSIDTFactory())
+        desired_state = state_traj.get_point_at_time(time=0.5, sidt_factory=KBSIDTFactory())
         assert np.isclose(desired_state.convert_to_array(), 0.5*states[0].convert_to_array()+0.5*states[1].convert_to_array()).all()
         # ... convert to numpy array - no interpolation
         time = [0.25, 0.75]

@@ -31,6 +31,7 @@ from commonroad_control.util.clcs_control_util import extend_kb_reference_trajec
 from commonroad_control.util.state_conversion import convert_state_kb2db, convert_state_db2kb
 from commonroad_control.util.visualization.visualize_control_state import visualize_reference_vs_actual_states
 from commonroad_control.util.visualization.visualize_trajectories import visualize_trajectories, make_gif
+from commonroad_control.util.visualization.visualization_util import time_synchronize_trajectories
 
 from commonroad_control.vehicle_parameters.BMW3series import BMW3seriesParams
 
@@ -68,17 +69,17 @@ def main(
     :param save_imgs: If true and img_save_path is valid, save imgs to this path
     :param create_scenario: Needs to be true for any visualization to happen
     """
-    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
-    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
-
-    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
 ```
 
 First, we solve the scenario using the reactive planner.
 The output of the reactive planner serves as the reference trajectory for the controller.
 
 ```Python3
+    scenario, planning_problem_set = CommonRoadFileReader(scenario_file).open()
+    planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
+    logger.info(f"solving scnenario {str(scenario.scenario_id)}")
+    
     # run planner
     logger.info("run planner")
     rp_states, rp_inputs = run_reactive_planner(
@@ -107,15 +108,16 @@ We assume that the entire state of the vehicle can be measured and, thus, use th
 
 ```Python3
     logger.info("run controller")
+
     # vehicle parameters
     vehicle_params = BMW3seriesParams()
 
-     # controller parameters
+    # controller parameters
     dt_controller = 0.1
-
+    
     # simulation
     # ... disturbance model
-    sit_factory_sim = DBSIDTFactory()
+    sidt_factory_sim = DBSIDTFactory()
     vehicle_model_sim = DynamicBicycle(params=vehicle_params, delta_t=dt_controller)
     sim_disturbance_model: UncertaintyModelInterface = GaussianDistribution(
         dim=vehicle_model_sim.state_dimension,
@@ -131,14 +133,14 @@ We assume that the entire state of the vehicle can be measured and, thus, use th
     # ... sensor model
     sensor_model: SensorModelInterface = FullStateFeedback(
         noise_model=sim_noise_model,
-        state_output_factory=sit_factory_sim,
-        state_dimension=sit_factory_sim.state_dimension,
-        input_dimension=sit_factory_sim.input_dimension
+        state_output_factory=sidt_factory_sim,
+        state_dimension=sidt_factory_sim.state_dimension,
+        input_dimension=sidt_factory_sim.input_dimension
     )
     # ... simulation
     simulation: Simulation = Simulation(
         vehicle_model=vehicle_model_sim,
-        sidt_factory=sit_factory_sim,
+        sidt_factory=sidt_factory_sim,
         disturbance_model=sim_disturbance_model,
         random_disturbance=True,
         sensor_model=sensor_model,
@@ -153,11 +155,12 @@ Here, we choose the more simple kinematic bicycle model, which - compared to the
 
 ```Python3
     # optimal control solver
+    horizon_ocp = 25
     # ... vehicle model for prediction
     vehicle_model_ctrl = KinematicBicycle(
         params=vehicle_params,
         delta_t=dt_controller)
-    sit_factory_ctrl = KBSIDTFactory()
+    sidt_factory_ctrl = KBSIDTFactory()
 ```
 
 For the cost function of the OCP, we choose simple diagonal weighting matrices.
@@ -180,10 +183,9 @@ To obtain a good initial guess, we solve the OCP to optimality at the initial ti
     # ... solver parameters for real time iteration -> only one iteration per time step
     solver_parameters_rti = SCvxParameters(max_iterations=1)
     # ... ocp solver (initial parameters)
-    horizon_ocp = 25
     scvx_solver = OptimalControlSCvx(
         vehicle_model=vehicle_model_ctrl,
-        sidt_factory=sit_factory_ctrl,
+        sidt_factory=sidt_factory_ctrl,
         horizon=horizon_ocp,
         delta_t=dt_controller,
         cost_xx=cost_xx,
@@ -209,12 +211,12 @@ Instead, we set the reference control inputs to zero.
 ```Python3
     # extend reference trajectory
     clcs_traj, x_ref_ext, u_ref_ext = extend_kb_reference_trajectory_lane_following(
-        x_ref=copy.copy(x_ref),
-        u_ref=copy.copy(u_ref),
+        x_ref=copy.deepcopy(x_ref),
+        u_ref=copy.deepcopy(u_ref),
         lanelet_network=scenario.lanelet_network,
         vehicle_params=vehicle_params,
         delta_t=dt_controller,
-        horizon=mpc.horizon)
+        horizon=mpc.horizon+1)
     reference_trajectory = ReferenceTrajectoryFactory(
         delta_t_controller=dt_controller,
         sidt_factory=KBSIDTFactory(),
@@ -222,7 +224,7 @@ Instead, we set the reference control inputs to zero.
     )
     # ... dummy reference trajectory: all inputs set to zero
     u_np = np.zeros((u_ref_ext.dim,len(u_ref_ext.steps)))
-    u_ref_0 = sit_factory_ctrl.trajectory_from_numpy_array(
+    u_ref_0 = sidt_factory_ctrl.trajectory_from_numpy_array(
         traj_np=u_np,
         mode=TrajectoryMode.Input,
         time_steps=u_ref_ext.steps,
@@ -239,7 +241,6 @@ Instead, we set the reference control inputs to zero.
 For simulation, the initial state of the planned trajectory (kinematic bicycle model) is converted to a state of the dynamic bicycle model (which abstracts the dynamics of the original vehicle in our example).
 
 ```Python3
-
     # simulation results
     x_measured = convert_state_kb2db(
         kb_state=x_ref.initial_point,
@@ -255,8 +256,12 @@ Now we are ready for closed-loop simulation.
 Subsequently, we present the steps executed at each time step.
 
 ```Python3
-    for kk_sim in range(len(u_ref.steps)):
+    t_sim = x_ref.t_0
+    kk_sim: int = 0
+
+    while t_sim < x_ref.t_final:
 ```
+
 Extract the reference state trajectory snippet starting at time t=`kk_sim`*`dt_controller`. 
 Remember that the reference trajectory factory determines the length of the snippet internally.
 
@@ -285,13 +290,11 @@ Afterwards, the solution from the previous time step is used for initialization.
             x_ref=tmp_x_ref,
             u_ref=tmp_u_ref
         )
-        input_dict[kk_sim] = u_now
 ```
 
 As described above, we switch to the real-time iteration scheme after the initial time step.
 
 ```Python3
-
         if kk_sim == 0:
             # at the initial step: iterate until convergence
             # afterwards: real-time iteration
@@ -309,28 +312,39 @@ Simulation of the dynamic bicycle model for one time step (duration `dt_controll
             u=u_now,
             t_final=dt_controller
         )
+        input_dict[kk_sim] = u_now
         traj_dict_measured[kk_sim+1] = x_measured
         traj_dict_no_noise[kk_sim + 1] = x_disturbed.final_point
+
+        # update simulation time
+        kk_sim += 1
+        t_sim: float = x_ref.t_0 + kk_sim * dt_controller
 ```
 
 After the time horizon of the reference trajectory has expired, the simulation results are visualized.
-
+If the planner and the controller run at different sampling rates, we synchronize the planned and simulate trajectory for visualization (we only plot at the sampling times of the planner).
 ```Python3
+    # visualization
     logger.info(f"visualization")
-    simulated_traj = sit_factory_sim.trajectory_from_points(
+    simulated_traj = sidt_factory_sim.trajectory_from_points(
         trajectory_dict=traj_dict_measured,
         mode=TrajectoryMode.State,
         t_0=0,
         delta_t=dt_controller
     )
-
+    # ... time-synchronize simulated and reference state trajectory for plotting
+    sync_simulated_traj = time_synchronize_trajectories(
+        reference_trajectory=x_ref,
+        asynchronous_trajectory=simulated_traj,
+        sidt_factory=DBSIDTFactory()
+    )
 
     if create_scenario:
         visualize_trajectories(
             scenario=scenario,
             planning_problem=planning_problem,
             planner_trajectory=x_ref,
-            controller_trajectory=simulated_traj,
+            controller_trajectory=sync_simulated_traj,
             save_path=img_save_path,
             save_img=save_imgs,
         )
@@ -342,13 +356,14 @@ After the time horizon of the reference trajectory has expired, the simulation r
                 num_imgs=len(x_ref.points.values())
             )
 
-    visualize_reference_vs_actual_states(
-        reference_trajectory=x_ref_ext,
-        actual_trajectory=simulated_traj,
-        time_steps=list(simulated_traj.points.keys()),
-        save_img=save_imgs,
-        save_path=img_save_path
-    )
+        visualize_reference_vs_actual_states(
+            reference_trajectory=x_ref,
+            actual_trajectory=sync_simulated_traj,
+            time_steps=list(x_ref.steps),
+            save_img=save_imgs,
+            save_path=img_save_path
+        )
+
 
 
 if __name__ == "__main__":

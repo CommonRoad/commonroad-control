@@ -27,4 +27,6 @@ class DITrajectory(TrajectoryInterface):
         :param vehicle_id: vehicle id
         :return: CommonRoad dynamic obstacle
         """
-        raise NotImplementedError("to_cr_dynamic_obstacle() has not been implemented yet.")
+        raise NotImplementedError(
+            "to_cr_dynamic_obstacle() has not been implemented yet."
+        )

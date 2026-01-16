@@ -162,10 +162,9 @@ class TestDoubleIntegrator(unittest.TestCase):
         # trajectory from points
         states = {0: DIState(
             position_long=1, position_lat=2, velocity_long=3, velocity_lat=4
-        ),
-                  1: DIState(
-                      position_long=1, position_lat=2, velocity_long=3, velocity_lat=4
-                  )
+        ), 1: DIState(
+            position_long=1, position_lat=2, velocity_long=3, velocity_lat=4
+        )
         }
         state_traj = DISIDTFactory.trajectory_from_points(
             trajectory_dict=states,
@@ -229,7 +228,7 @@ class TestDoubleIntegrator(unittest.TestCase):
             delta_t=1.0
         )
         # ... get point
-        desired_state = state_traj.get_point_at_time(time=0.5, factory=DISIDTFactory())
+        desired_state = state_traj.get_point_at_time(time=0.5, sidt_factory=DISIDTFactory())
         assert np.isclose(desired_state.convert_to_array(), 0.5*states[0].convert_to_array()+0.5*states[1].convert_to_array()).all()
         # ... convert to numpy array - no interpolation
         time = [0.25, 0.75]

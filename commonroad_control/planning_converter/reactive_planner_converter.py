@@ -83,8 +83,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         """
         kb_dict: Dict[int, Union[KBState, KBInput]] = dict()
         for kb_point in planner_traj:
-            kb_dict[kb_point.time_step] = self.sample_p2c_kb(planner_state=kb_point, mode=mode)
-        return self._kb_factory.trajectory_from_points(trajectory_dict=kb_dict, mode=mode, t_0=t_0, delta_t=dt)
+            kb_dict[kb_point.time_step] = self.sample_p2c_kb(
+                planner_state=kb_point, mode=mode
+            )
+        return self._kb_factory.trajectory_from_points(
+            trajectory_dict=kb_dict, mode=mode, t_0=t_0, delta_t=dt
+        )
 
     def sample_p2c_kb(
         self,
@@ -213,8 +217,12 @@ class ReactivePlannerConverter(PlanningConverterInterface):
         """
         db_dict: Dict[int, Union[DBState, DBInput]] = dict()
         for db_point in planner_traj:
-            db_dict[db_point.time_step] = self.sample_p2c_db(planner_state=db_point, mode=mode)
-        return self._db_factory.trajectory_from_points(trajectory_dict=db_dict, mode=mode, t_0=t_0, delta_t=dt)
+            db_dict[db_point.time_step] = self.sample_p2c_db(
+                planner_state=db_point, mode=mode
+            )
+        return self._db_factory.trajectory_from_points(
+            trajectory_dict=db_dict, mode=mode, t_0=t_0, delta_t=dt
+        )
 
     def sample_p2c_db(
         self,
@@ -235,11 +243,13 @@ class ReactivePlannerConverter(PlanningConverterInterface):
                 velocity_ra=planner_state.velocity,
                 steering_angle=planner_state.steering_angle,
             )
-            v_cog_lon, v_cog_lat = compute_velocity_components_from_steering_angle_in_cog(
-                steering_angle=planner_state.steering_angle,
-                velocity_cog=v_cog,
-                l_wb=self.vehicle_params.l_wb,
-                l_r=self.vehicle_params.l_r,
+            v_cog_lon, v_cog_lat = (
+                compute_velocity_components_from_steering_angle_in_cog(
+                    steering_angle=planner_state.steering_angle,
+                    velocity_cog=v_cog,
+                    l_wb=self.vehicle_params.l_wb,
+                    l_r=self.vehicle_params.l_r,
+                )
             )
             # compute position of the center of gravity
             position_x_cog, position_y_cog = compute_position_of_cog_from_ra_cc(
@@ -296,7 +306,9 @@ class ReactivePlannerConverter(PlanningConverterInterface):
             retval: ReactivePlannerState = ReactivePlannerState(
                 time_step=time_step,
                 position=np.asarray([db_state.position_x, db_state.position_y]),
-                velocity=compute_velocity_from_components(db_state.velocity_long, db_state.velocity_lat),
+                velocity=compute_velocity_from_components(
+                    db_state.velocity_long, db_state.velocity_lat
+                ),
                 orientation=db_state.heading,
                 steering_angle=db_state.steering_angle,
                 yaw_rate=db_state.yaw_rate,
