@@ -91,14 +91,10 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     dt_controller: float = 0.1,
     t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
-    planner_converter: Optional[
-        PlanningConverterInterface
-    ] = ReactivePlannerConverter(),
+    planner_converter: Optional[PlanningConverterInterface] = ReactivePlannerConverter(),
     sidt_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
@@ -107,9 +103,7 @@ def pid_with_lookahead_for_reactive_planner_no_uncertainty(
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Decoupled longitudinal-lateral PID controller with look-ahead for the CommonRoad reactive planner using no noises or disturbances.
     Longitudinal velocity and lateral offset are calculated with respect to the lookahead time given a reactive planner
@@ -182,16 +176,12 @@ def pid_with_lookahead_for_reactive_planner(
     dt_controller: float = 0.1,
     look_ahead_s: float = 0.5,
     vehicle_params=BMW3seriesParams(),
-    planner_converter: Union[
-        PlanningConverterInterface, ReactivePlannerConverter
-    ] = ReactivePlannerConverter(),
+    planner_converter: Union[PlanningConverterInterface, ReactivePlannerConverter] = ReactivePlannerConverter(),
     disturbance_model_typename: Type[UncertaintyModelInterface] = GaussianDistribution,
     noise_model_typename: Type[UncertaintyModelInterface] = GaussianDistribution,
     sidt_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
@@ -200,9 +190,7 @@ def pid_with_lookahead_for_reactive_planner(
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Decoupled longitudinal-lateral PID controller with look-ahead for the CommonRoad reactive planner. Longitudinal velocity and lateral offset are
     calculated with respect to the lookahead time given a reactive planner trajectory. Wrapper around pid_with_lookahead_for_planner().
@@ -278,17 +266,11 @@ def pid_with_lookahead_for_planner(
     dt_controller: float = 0.1,
     t_look_ahead: float = 0.5,
     vehicle_params=BMW3seriesParams(),
-    disturbance_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
-    noise_model_typename: Type[
-        Union[UncertaintyModelInterface, GaussianDistribution]
-    ] = GaussianDistribution,
+    disturbance_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
+    noise_model_typename: Type[Union[UncertaintyModelInterface, GaussianDistribution]] = GaussianDistribution,
     sidt_factory_sim: StateInputDisturbanceTrajectoryFactoryInterface = DBSIDTFactory(),
     vehicle_model_typename: Type[VehicleModelInterface] = DynamicBicycle,
-    sensor_model_typename: Type[
-        Union[SensorModelInterface, FullStateFeedback]
-    ] = FullStateFeedback,
+    sensor_model_typename: Type[Union[SensorModelInterface, FullStateFeedback]] = FullStateFeedback,
     func_convert_planner2controller_state: Callable[
         [StateInterface, VehicleParameters], StateInterface
     ] = convert_state_kb2db,
@@ -297,9 +279,7 @@ def pid_with_lookahead_for_planner(
     visualize_control: bool = False,
     save_imgs: bool = False,
     img_saving_path: Union[Path, str] = None,
-) -> Tuple[
-    Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]
-]:
+) -> Tuple[Dict[int, StateInterface], Dict[int, StateInterface], Dict[int, InputInterface]]:
     """
     Decoupled longitudinal-lateral PID controller with look-ahead for a planner. Longitudinal velocity and lateral offset are
     calculated with respect to the lookahead time given a planner trajectory.
@@ -330,20 +310,14 @@ def pid_with_lookahead_for_planner(
     :param img_saving_path: If given and save_imgs=true, saves visualizations instead of displaying them
     :return: measured trajectory, trajectory without noise, trajectory without noise and without disturbance
     """
-    x_ref = planner_converter.trajectory_p2c_kb(
-        planner_traj=state_trajectory, mode=TrajectoryMode.State
-    )
-    u_ref = planner_converter.trajectory_p2c_kb(
-        planner_traj=input_trajectory, mode=TrajectoryMode.Input
-    )
+    x_ref = planner_converter.trajectory_p2c_kb(planner_traj=state_trajectory, mode=TrajectoryMode.State)
+    u_ref = planner_converter.trajectory_p2c_kb(planner_traj=input_trajectory, mode=TrajectoryMode.Input)
 
     logger.debug("run controller")
 
     # simulation
     # ... vehicle model
-    vehicle_model_sim = vehicle_model_typename(
-        params=vehicle_params, delta_t=dt_controller
-    )
+    vehicle_model_sim = vehicle_model_typename(params=vehicle_params, delta_t=dt_controller)
     # ... disturbances
     sim_disturbance_model = disturbance_model_typename(
         dim=vehicle_model_sim.disturbance_dimension,
@@ -396,14 +370,9 @@ def pid_with_lookahead_for_planner(
         sidt_factory=KBSIDTFactory(),
         t_look_ahead=t_look_ahead,
     )
-    reference_trajectory.set_reference_trajectory(
-        state_ref=x_ref_ext, input_ref=u_ref_ext, t_0=0.0
-    )
+    reference_trajectory.set_reference_trajectory(state_ref=x_ref_ext, input_ref=u_ref_ext, t_0=0.0)
     ref_path: LineString = LineString(
-        [
-            (p.position_x, p.position_y)
-            for p in reference_trajectory.state_trajectory.points.values()
-        ]
+        [(p.position_x, p.position_y) for p in reference_trajectory.state_trajectory.points.values()]
     )
 
     # Controller
@@ -417,9 +386,7 @@ def pid_with_lookahead_for_planner(
         delta_t=dt_controller,
     )
 
-    x_measured = func_convert_planner2controller_state(
-        kb_state=x_ref.initial_point, vehicle_params=vehicle_params
-    )
+    x_measured = func_convert_planner2controller_state(kb_state=x_ref.initial_point, vehicle_params=vehicle_params)
 
     x_disturbed = copy.copy(x_measured)
     traj_dict_measured = {0: x_measured}
@@ -436,14 +403,10 @@ def pid_with_lookahead_for_planner(
 
         # look-ahead simulation
         # ... extract reference input for simu    while t_sim < x_ref.t_final:    while t_sim < x_ref.t_final:lation
-        _, u_ff = reference_trajectory.get_reference_trajectory_at_time(
-            t=t_sim, consider_look_ahead=False
-        )
+        _, u_ff = reference_trajectory.get_reference_trajectory_at_time(t=t_sim, consider_look_ahead=False)
         u_ff = u_ff.initial_point
         # ... simulate
-        _, _, x_exp_look_ahead = look_ahead_sim.simulate(
-            x0=traj_dict_measured[kk_sim], u=u_ff, t_final=t_look_ahead
-        )
+        _, _, x_exp_look_ahead = look_ahead_sim.simulate(x0=traj_dict_measured[kk_sim], u=u_ff, t_final=t_look_ahead)
         x_exp_look_ahead = x_exp_look_ahead.final_point
 
         # compute control input
@@ -453,9 +416,7 @@ def pid_with_lookahead_for_planner(
             linestring=ref_path,
         )
         # ... extract reference trajectory (to be tracked)
-        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(
-            t=t_sim, consider_look_ahead=True
-        )
+        tmp_x_ref, tmp_u_ref = reference_trajectory.get_reference_trajectory_at_time(t=t_sim, consider_look_ahead=True)
         # ... compute feedback input (to compensate for the tracking error)
         u_vel, u_steer = pid_controller.compute_control_input(
             measured_v_long=x_exp_look_ahead.velocity,

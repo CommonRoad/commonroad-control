@@ -28,9 +28,7 @@ class SCvxParameters(OCPSolverParameters):
     Parameters for the Successive Convexification algorithm.
     """
 
-    penalty_weight: float = (
-        1000.0  # weight for the (exact) penalty of non-zero values of slack variables
-    )
+    penalty_weight: float = 1000.0  # weight for the (exact) penalty of non-zero values of slack variables
     max_iterations: int = 10  # maximum number of convex programming iterations
     soft_tr_penalty_weight: float = 0.001  # penalty for soft trust-region terms
     convergence_tolerance: float = 1e-3  # tolerance for convergence
@@ -153,9 +151,9 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
 
         for kk in range(self._horizon):
             # cost function
-            cost += cp.quad_form(
-                self._x[:, kk] - self._par_x_ref[:, kk], self._cost_xx
-            ) + cp.quad_form(self._u[:, kk] - self._par_u_ref[:, kk], self._cost_uu)
+            cost += cp.quad_form(self._x[:, kk] - self._par_x_ref[:, kk], self._cost_xx) + cp.quad_form(
+                self._u[:, kk] - self._par_u_ref[:, kk], self._cost_uu
+            )
 
             # dynamics constraint
             constraints += [
@@ -177,18 +175,14 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
             constraints += [
                 (
                     self._par_a_long[kk]
-                    + self._par_jac_a_long_x[kk, :]
-                    @ (self._x[:, kk] - self._par_x_lin[:, kk])
-                    + self._par_jac_a_long_u[kk, :]
-                    @ (self._u[:, kk] - self._par_u_lin[:, kk])
+                    + self._par_jac_a_long_x[kk, :] @ (self._x[:, kk] - self._par_x_lin[:, kk])
+                    + self._par_jac_a_long_u[kk, :] @ (self._u[:, kk] - self._par_u_lin[:, kk])
                 )
                 ** 2
                 + (
                     self._par_a_lat[kk]
-                    + self._par_jac_a_lat_x[kk, :]
-                    @ (self._x[:, kk] - self._par_x_lin[:, kk])
-                    + self._par_jac_a_lat_u[kk, :]
-                    @ (self._u[:, kk] - self._par_u_lin[:, kk])
+                    + self._par_jac_a_lat_x[kk, :] @ (self._x[:, kk] - self._par_x_lin[:, kk])
+                    + self._par_jac_a_lat_u[kk, :] @ (self._u[:, kk] - self._par_u_lin[:, kk])
                 )
                 ** 2
                 <= 1
@@ -202,18 +196,8 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
 
         # control input bounds
         u_lb, u_ub = self.vehicle_model.input_bounds()
-        constraints.append(
-            self._u
-            >= np.tile(
-                np.reshape(u_lb.convert_to_array(), (self._nu, 1)), (1, self._horizon)
-            )
-        )
-        constraints.append(
-            self._u
-            <= np.tile(
-                np.reshape(u_ub.convert_to_array(), (self._nu, 1)), (1, self._horizon)
-            )
-        )
+        constraints.append(self._u >= np.tile(np.reshape(u_lb.convert_to_array(), (self._nu, 1)), (1, self._horizon)))
+        constraints.append(self._u <= np.tile(np.reshape(u_ub.convert_to_array(), (self._nu, 1)), (1, self._horizon)))
 
         # # state bounds
         # x_mat_lb, x_lb, x_mat_ub, x_ub = self.vehicle_model.state_bounds()
@@ -246,9 +230,7 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
         u_ref: TrajectoryInterface,
         x_init: TrajectoryInterface,
         u_init: TrajectoryInterface,
-    ) -> Tuple[
-        TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]
-    ]:
+    ) -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
         """
         Solves an instance of the optimal control problem given an initial state, a reference trajectory to be tracked
         and an initial guess for the state and control inputs.
@@ -340,12 +322,8 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
 
             # check feasibility
             if "infeasible" in self._ocp.status or "unbounded" in self._ocp.status:
-                logger.error(
-                    f"SCvx convex programming solver failed. Status: {self._ocp.status}"
-                )
-                raise ValueError(
-                    f"SCvx convex programming solver failed. Status: {self._ocp.status}"
-                )
+                logger.error(f"SCvx convex programming solver failed. Status: {self._ocp.status}")
+                raise ValueError(f"SCvx convex programming solver failed. Status: {self._ocp.status}")
 
             # extract (candidate) solution
             x_sol = self._x.value
@@ -373,9 +351,7 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
         if (float(np.max(defect)) > self.ocp_parameters.feasibility_tolerance) and (
             self.ocp_parameters.max_iterations > 1
         ):
-            logger.debug(
-                "SCvx algorithm converged to a dynamically infeasible solution!"
-            )
+            logger.debug("SCvx algorithm converged to a dynamically infeasible solution!")
 
         x_sol = self.sidt_factory.trajectory_from_numpy_array(
             traj_np=x_sol,
@@ -403,10 +379,7 @@ class OptimalControlSCvx(OptimalControlSolverInterface):
         :return: array storing the defect at each time step - np.ndarray
         """
         err = x[:, 1 : self._horizon + 1] - np.column_stack(
-            [
-                self.vehicle_model.simulate_dt_nom(x[:, kk], u[:, kk])
-                for kk in range(self._horizon)
-            ]
+            [self.vehicle_model.simulate_dt_nom(x[:, kk], u[:, kk]) for kk in range(self._horizon)]
         )
         return np.linalg.norm(err, axis=0)
 

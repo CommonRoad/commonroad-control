@@ -55,9 +55,7 @@ class DBState(StateInterface):
         """
         :return: absolute value of velocity of the vehicle
         """
-        return compute_velocity_from_components(
-            v_long=self.velocity_long, v_lat=self.velocity_lat
-        )
+        return compute_velocity_from_components(v_long=self.velocity_long, v_lat=self.velocity_lat)
 
     def convert_to_array(self) -> np.ndarray:
         """
@@ -84,15 +82,11 @@ class DBState(StateInterface):
         """
         return InitialState(
             position=np.asarray([self.position_x, self.position_y]),
-            velocity=compute_velocity_from_components(
-                v_long=self.velocity_long, v_lat=self.velocity_lat
-            ),
+            velocity=compute_velocity_from_components(v_long=self.velocity_long, v_lat=self.velocity_lat),
             orientation=self.heading,
             acceleration=0,
             yaw_rate=self.yaw_rate,
-            slip_angle=compute_slip_angle_from_velocity_components(
-                self.velocity_long, self.velocity_lat
-            ),
+            slip_angle=compute_slip_angle_from_velocity_components(self.velocity_long, self.velocity_lat),
             time_step=time_step,
         )
 
@@ -104,14 +98,10 @@ class DBState(StateInterface):
         """
         return CustomState(
             position=np.asarray([self.position_x, self.position_y]),
-            velocity=compute_velocity_from_components(
-                v_long=self.velocity_long, v_lat=self.velocity_lat
-            ),
+            velocity=compute_velocity_from_components(v_long=self.velocity_long, v_lat=self.velocity_lat),
             orientation=self.heading,
             acceleration=0,
             yaw_rate=0,
-            slip_angle=compute_slip_angle_from_velocity_components(
-                self.velocity_long, self.velocity_lat
-            ),
+            slip_angle=compute_slip_angle_from_velocity_components(self.velocity_long, self.velocity_lat),
             time_step=time_step,
         )

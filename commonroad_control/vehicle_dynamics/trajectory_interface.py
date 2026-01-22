@@ -75,9 +75,7 @@ class TrajectoryInterface(ABC):
         self,
         time: List[float],
         linear_interpolate: bool = False,
-        sidt_factory: Optional[
-            "StateInputDisturbanceTrajectoryFactoryInterface"
-        ] = None,
+        sidt_factory: Optional["StateInputDisturbanceTrajectoryFactoryInterface"] = None,
     ) -> np.ndarray:
         """
         Extracts the trajectory points at given points in time and stores the point variables in an array.
@@ -94,18 +92,12 @@ class TrajectoryInterface(ABC):
             if linear_interpolate:
                 y_ii = self.get_point_at_time(time=time[ii], sidt_factory=sidt_factory)
             else:
-                y_ii = self.get_point_at_time_step(
-                    time_step=round((time[ii] - self.t_0) / self.delta_t)
-                )
-            traj_np.append(
-                np.reshape(y_ii.convert_to_array(), (y_ii.dim, 1), order="F")
-            )
+                y_ii = self.get_point_at_time_step(time_step=round((time[ii] - self.t_0) / self.delta_t))
+            traj_np.append(np.reshape(y_ii.convert_to_array(), (y_ii.dim, 1), order="F"))
 
         return np.hstack(traj_np)
 
-    def get_point_at_time_step(
-        self, time_step: int
-    ) -> Union[StateInterface, InputInterface, None]:
+    def get_point_at_time_step(self, time_step: int) -> Union[StateInterface, InputInterface, None]:
         """
         Returns the trajectory point at a given (discrete) time step or None if not existing.
         :param time_step: time step - int
@@ -122,26 +114,16 @@ class TrajectoryInterface(ABC):
         """
         if lt_tol(time, self.t_0):
             logger.error(f"Time {time} is before trajectory initial time {self.t_0}")
-            raise ValueError(
-                f"Time {time} is before trajectory initial time {self.t_0}"
-            )
+            raise ValueError(f"Time {time} is before trajectory initial time {self.t_0}")
         if gt_tol(time, self.t_final):
             logger.error(f"Time {time} is after trajectory final time {self.t_final}")
-            raise ValueError(
-                f"Time {time} is after trajectory final time {self.t_final}"
-            )
-        idx_lower: int = min(
-            math.floor((time - self.t_0) / self.delta_t), max(self.points.keys())
-        )
-        idx_upper: int = min(
-            math.ceil((time - self.t_0) / self.delta_t), max(self.points.keys())
-        )
+            raise ValueError(f"Time {time} is after trajectory final time {self.t_final}")
+        idx_lower: int = min(math.floor((time - self.t_0) / self.delta_t), max(self.points.keys()))
+        idx_upper: int = min(math.ceil((time - self.t_0) / self.delta_t), max(self.points.keys()))
 
         return self.points[idx_lower], self.points[idx_upper], idx_lower, idx_upper
 
-    def append_point(
-        self, next_point: Union[StateInterface, InputInterface, DisturbanceInterface]
-    ) -> None:
+    def append_point(self, next_point: Union[StateInterface, InputInterface, DisturbanceInterface]) -> None:
         """
         Appends a point to the trajectory.
         :param next_point: point to be appended
@@ -150,18 +132,10 @@ class TrajectoryInterface(ABC):
             self.points[self.steps[-1] + 1] = next_point
             self.__post_init__()
         else:
-            logger.error(
-                f"Expected point of type {type(self.final_point)}, "
-                f"got {type(next_point)}instead"
-            )
-            raise TypeError(
-                f"Expected point of type {type(self.final_point)}, "
-                f"got {type(next_point)}instead"
-            )
+            logger.error(f"Expected point of type {type(self.final_point)}, " f"got {type(next_point)}instead")
+            raise TypeError(f"Expected point of type {type(self.final_point)}, " f"got {type(next_point)}instead")
 
-    def check_goal_reached(
-        self, planning_problem: PlanningProblem, lanelet_network: LaneletNetwork
-    ) -> bool:
+    def check_goal_reached(self, planning_problem: PlanningProblem, lanelet_network: LaneletNetwork) -> bool:
         """
         Returns true if one of the states is within the goal state.
         Always returns False for input trajectories.
@@ -204,9 +178,7 @@ class TrajectoryInterface(ABC):
         :return: StateInterface/InputInterface/DisturbanceInterface
         """
 
-        lower_point, upper_point, lower_idx, upper_idx = (
-            self.get_point_before_and_after_time(time=time)
-        )
+        lower_point, upper_point, lower_idx, upper_idx = self.get_point_before_and_after_time(time=time)
         if lower_idx == upper_idx:
             new_point = lower_point
         else:
@@ -215,23 +187,13 @@ class TrajectoryInterface(ABC):
                 1 - alpha
             ) * upper_point.convert_to_array() + alpha * lower_point.convert_to_array()
             if self.mode is TrajectoryMode.State:
-                new_point: StateInterface = sidt_factory.state_from_numpy_array(
-                    new_point_array
-                )
+                new_point: StateInterface = sidt_factory.state_from_numpy_array(new_point_array)
             elif self.mode is TrajectoryMode.Input:
-                new_point: InputInterface = sidt_factory.input_from_numpy_array(
-                    new_point_array
-                )
+                new_point: InputInterface = sidt_factory.input_from_numpy_array(new_point_array)
             elif self.mode is TrajectoryMode.Disturbance:
-                new_point: DisturbanceInterface = (
-                    sidt_factory.disturbance_from_numpy_array(new_point_array)
-                )
+                new_point: DisturbanceInterface = sidt_factory.disturbance_from_numpy_array(new_point_array)
             else:
-                logger.error(
-                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
-                )
-                raise TypeError(
-                    f"Instantiation of new point not implemented for trajectory mode {self.mode}"
-                )
+                logger.error(f"Instantiation of new point not implemented for trajectory mode {self.mode}")
+                raise TypeError(f"Instantiation of new point not implemented for trajectory mode {self.mode}")
 
         return new_point

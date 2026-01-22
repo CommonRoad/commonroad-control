@@ -68,18 +68,14 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def input_from_args(
-        cls, acceleration: float, steering_angle_velocity: float
-    ) -> Union["DBInput"]:
+    def input_from_args(cls, acceleration: float, steering_angle_velocity: float) -> Union["DBInput"]:
         """
         Create Input from args
         :param acceleration: longitudinal acceleration
         :param steering_angle_velocity: lateral acceleration
         :return: DBInput
         """
-        return DBInput(
-            acceleration=acceleration, steering_angle_velocity=steering_angle_velocity
-        )
+        return DBInput(acceleration=acceleration, steering_angle_velocity=steering_angle_velocity)
 
     @classmethod
     def disturbance_from_args(
@@ -125,12 +121,8 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if x_np.ndim > 1 or x_np.shape[0] != cls.state_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}"
-            )
+            logger.error(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
+            raise ValueError(f"Size of np_array should be ({cls.state_dimension},) but is {x_np.ndim}")
 
         return DBState(
             position_x=x_np[DBStateIndices.position_x],
@@ -143,9 +135,7 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         )
 
     @classmethod
-    def input_from_numpy_array(
-        cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]
-    ) -> Union["DBInput"]:
+    def input_from_numpy_array(cls, u_np: np.ndarray[tuple[float], np.dtype[np.float64]]) -> Union["DBInput"]:
         """
         Create Input from numpy array
         :param u_np: control input - array of dimension (cls.input_dimension,)
@@ -153,12 +143,8 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if u_np.ndim > 1 or u_np.shape[0] != cls.input_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}"
-            )
+            logger.error(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
+            raise ValueError(f"Size of np_array should be ({cls.input_dimension},) but is {u_np.ndim}")
 
         return DBInput(
             acceleration=u_np[DBInputIndices.acceleration],
@@ -176,12 +162,8 @@ class DBSIDTFactory(StateInputDisturbanceTrajectoryFactoryInterface):
         """
 
         if w_np.ndim > 1 or w_np.shape[0] != cls.disturbance_dimension:
-            logger.error(
-                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
-            )
-            raise ValueError(
-                f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}"
-            )
+            logger.error(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
+            raise ValueError(f"Size of np_array should be ({cls.disturbance_dimension},) but is {w_np.shape}")
 
         return DBDisturbance(
             position_x=w_np[DBDisturbanceIndices.position_x],

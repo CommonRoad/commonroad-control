@@ -24,9 +24,7 @@ class GaussianDistribution(UncertaintyModelInterface):
         mean: Union[np.ndarray, List[float], UncertaintyInterface],
         std_deviation: Union[np.ndarray, List[float], UncertaintyInterface],
         *args,
-        nominal_value: Union[
-            np.ndarray, List[float], UncertaintyInterface, None
-        ] = None,
+        nominal_value: Union[np.ndarray, List[float], UncertaintyInterface, None] = None,
         **kwargs,
     ) -> None:
         """
@@ -101,6 +99,4 @@ class GaussianDistribution(UncertaintyModelInterface):
         Generates a random sample from the Gaussian distribution.
         :return: np.ndarray of dimension (self.dim,)
         """
-        return np.random.normal(
-            loc=self._mean, scale=self._std_deviation, size=self._dim
-        )
+        return np.random.normal(loc=self._mean, scale=self._std_deviation, size=self._dim)

@@ -20,9 +20,7 @@ def time_synchronize_trajectories(
     """
 
     if reference_trajectory.mode != asynchronous_trajectory.mode:
-        raise ValueError(
-            "Reference and asynchronous trajectories must have the same mode"
-        )
+        raise ValueError("Reference and asynchronous trajectories must have the same mode")
 
     resampled_points: Dict[int, Any] = {}
 
@@ -35,9 +33,7 @@ def time_synchronize_trajectories(
         elif t > asynchronous_trajectory.t_final:
             point = asynchronous_trajectory.final_point
         else:
-            point = asynchronous_trajectory.get_point_at_time(
-                time=t, sidt_factory=sidt_factory
-            )
+            point = asynchronous_trajectory.get_point_at_time(time=t, sidt_factory=sidt_factory)
 
         resampled_points[step] = point
 

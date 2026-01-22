@@ -27,9 +27,7 @@ class KinematicBicycle(VehicleModelInterface):
     """
 
     @classmethod
-    def factory_method(
-        cls, params: VehicleParameters, delta_t: float
-    ) -> "KinematicBicycle":
+    def factory_method(cls, params: VehicleParameters, delta_t: float) -> "KinematicBicycle":
         """
         Factory method to generate class
         :param params: CommonRoad-Control vehicle parameters

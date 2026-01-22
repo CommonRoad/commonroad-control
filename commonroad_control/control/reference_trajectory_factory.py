@@ -36,9 +36,7 @@ class ReferenceTrajectoryFactory:
         self._horizon: int = mpc_horizon
         self._dt_controller: float = delta_t_controller
         self._t_look_ahead: float = t_look_ahead
-        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
-            sidt_factory
-        )
+        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = sidt_factory
 
         self._x_ref: Union[TrajectoryInterface, None] = None
         self._u_ref: Union[TrajectoryInterface, None] = None
@@ -68,38 +66,20 @@ class ReferenceTrajectoryFactory:
 
         # consistency checks
         if state_ref.mode is not TrajectoryMode.State:
-            logger.error(
-                f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}"
-            )
-            raise TypeError(
-                f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}"
-            )
+            logger.error(f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}")
+            raise TypeError(f"Invalid mode of state reference trajectory: expected {TrajectoryMode.State}")
         if input_ref.mode is not TrajectoryMode.Input:
-            logger.error(
-                f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}"
-            )
-            raise TypeError(
-                f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}"
-            )
+            logger.error(f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}")
+            raise TypeError(f"Invalid mode of input reference trajectory: expected {TrajectoryMode.Input}")
         if abs(state_ref.t_0 - t_0) > 1e-12 or abs(input_ref.t_0 - t_0) > 1e-12:
-            logger.error(
-                "Inconsistent initial time for state and/or reference input trajectory"
-            )
-            raise ValueError(
-                "Inconsistent initial time for state and/or reference input trajectory"
-            )
+            logger.error("Inconsistent initial time for state and/or reference input trajectory")
+            raise ValueError("Inconsistent initial time for state and/or reference input trajectory")
         if (
-            t_0 + self._t_look_ahead + max(self._x_ref_steps) * self._dt_controller
-            > state_ref.t_final
-            or t_0 + self._t_look_ahead + max(self._u_ref_steps) * self._dt_controller
-            > input_ref.t_final
+            t_0 + self._t_look_ahead + max(self._x_ref_steps) * self._dt_controller > state_ref.t_final
+            or t_0 + self._t_look_ahead + max(self._u_ref_steps) * self._dt_controller > input_ref.t_final
         ):
-            logger.error(
-                "Prediction/look-ahead horizon exceeds the final time of the given reference trajectories"
-            )
-            raise ValueError(
-                "Prediction/look-ahead horizon exceeds the final time of the given reference trajectories"
-            )
+            logger.error("Prediction/look-ahead horizon exceeds the final time of the given reference trajectories")
+            raise ValueError("Prediction/look-ahead horizon exceeds the final time of the given reference trajectories")
 
         self._x_ref = state_ref
         self._u_ref = input_ref
@@ -118,9 +98,7 @@ class ReferenceTrajectoryFactory:
         # ... extract state reference trajectory
         t_0 = t + self._t_look_ahead if consider_look_ahead else t
         tmp_x_ref_points = [
-            self._x_ref.get_point_at_time(
-                time=t_0 + kk * self._dt_controller, sidt_factory=self._sidt_factory
-            )
+            self._x_ref.get_point_at_time(time=t_0 + kk * self._dt_controller, sidt_factory=self._sidt_factory)
             for kk in self._x_ref_steps
         ]
         x_ref = self._sidt_factory.trajectory_from_points(
@@ -131,9 +109,7 @@ class ReferenceTrajectoryFactory:
         )
         # ... extract input reference trajectory
         tmp_u_ref_points = [
-            self._u_ref.get_point_at_time(
-                time=t_0 + kk * self._dt_controller, sidt_factory=self._sidt_factory
-            )
+            self._u_ref.get_point_at_time(time=t_0 + kk * self._dt_controller, sidt_factory=self._sidt_factory)
             for kk in self._u_ref_steps
         ]
         u_ref = self._sidt_factory.trajectory_from_points(

@@ -60,20 +60,14 @@ class Simulation:
         """
 
         self._vehicle_model: VehicleModelInterface = vehicle_model
-        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
-            sidt_factory
-        )
+        self._sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = sidt_factory
         self._delta_t_w: Optional[float] = delta_t_w
 
         # set disturbance model
-        self._random_disturbance: bool = (
-            random_disturbance if disturbance_model is not None else False
-        )
+        self._random_disturbance: bool = random_disturbance if disturbance_model is not None else False
         # ... if none is provided, set default model (no uncertainty)
         if disturbance_model is None:
-            disturbance_model: UncertaintyModelInterface = NoUncertainty(
-                dim=self._vehicle_model.disturbance_dimension
-            )
+            disturbance_model: UncertaintyModelInterface = NoUncertainty(dim=self._vehicle_model.disturbance_dimension)
         self._disturbance_model: UncertaintyModelInterface = disturbance_model
 
         # set sensor model
@@ -137,9 +131,7 @@ class Simulation:
         u: InputInterface,
         t_final: float,
         ivp_method: Union[str, OdeSolver, None] = "RK45",
-    ) -> Tuple[
-        Union[StateInterface, OutputInterface], TrajectoryInterface, TrajectoryInterface
-    ]:
+    ) -> Tuple[Union[StateInterface, OutputInterface], TrajectoryInterface, TrajectoryInterface]:
         """
         Simulates the dynamical system starting from the initial state x0 until time t_final. The control input is kept
         constant for t in [0, t_final]. The default method for solving the initial value problem is RK45.
@@ -196,9 +188,7 @@ class Simulation:
         # compute output and apply noise
         # ... for causality, we pass the control input applied during simulation
         x_final = self._sidt_factory.state_from_numpy_array(x_sim_w[num_step_sim])
-        y_sim_noise: StateInterface = self._sensor_model.measure(
-            x_final, u, rand_noise=self._random_noise
-        )
+        y_sim_noise: StateInterface = self._sensor_model.measure(x_final, u, rand_noise=self._random_noise)
 
         # output arguments
         x_sim_nom: TrajectoryInterface = self._sidt_factory.trajectory_from_numpy_array(

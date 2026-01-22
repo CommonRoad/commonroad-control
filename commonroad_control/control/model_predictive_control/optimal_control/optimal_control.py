@@ -60,9 +60,7 @@ class OptimalControlSolverInterface(ABC):
         """
 
         self.vehicle_model: VehicleModelInterface = vehicle_model
-        self.sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = (
-            sidt_factory
-        )
+        self.sidt_factory: StateInputDisturbanceTrajectoryFactoryInterface = sidt_factory
         self._ocp_parameters: OCPSolverParameters = ocp_parameters
         self.delta_t = delta_t
 
@@ -79,9 +77,7 @@ class OptimalControlSolverInterface(ABC):
         u_ref: TrajectoryInterface,
         x_init: TrajectoryInterface,
         u_init: TrajectoryInterface,
-    ) -> Tuple[
-        TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]
-    ]:
+    ) -> Tuple[TrajectoryInterface, TrajectoryInterface, List[Tuple[np.array, np.array]]]:
         """
         Solves an instance of the optimal control problem given an initial state, a reference trajectory to be tacked and an initial guess for the state and control inputs.
         :param x0: initial state of the vehicle - StateInterface
