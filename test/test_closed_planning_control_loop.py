@@ -11,6 +11,10 @@ from commonroad_control.cr_control_easy_api.pid_for_dedicated_planner import (
 from commonroad_control.cr_control_easy_api.mpc_for_dedicated_planner import (
     mpc_for_reactive_planner
 )
+from commonroad_control.util.cr_ci_utils import (
+    CI_FULL_SCENARIO_TRIGGER,
+    NUM_SCENARIO_SMALL_TEST
+)
 
 logger_global = configure_toolbox_logging(level=logging.INFO)
 
@@ -34,7 +38,12 @@ class TestPlanningControlLoop(unittest.TestCase):
         }
 
         path_scenarios = Path(__file__).parents[1] / "scenarios"
-        for scenario_name_xml in [el for el in sorted(os.listdir(path_scenarios))]:
+
+        sorted_scenarios = sorted(os.listdir(path_scenarios))
+        if not os.getenv(CI_FULL_SCENARIO_TRIGGER):
+            sorted_scenarios = sorted_scenarios[:min(NUM_SCENARIO_SMALL_TEST, len(sorted_scenarios))]
+
+        for scenario_name_xml in sorted_scenarios:
             scenario_name = scenario_name_xml.split(".")[0]
 
             if scenario_name not in scenario_config_pid.keys():
@@ -77,7 +86,12 @@ class TestPlanningControlLoop(unittest.TestCase):
         }
 
         path_scenarios = Path(__file__).parents[1] / "scenarios"
-        for scenario_name_xml in [el for el in sorted(os.listdir(path_scenarios))]:
+
+        sorted_scenarios = sorted(os.listdir(path_scenarios))
+        if not os.getenv(CI_FULL_SCENARIO_TRIGGER):
+            sorted_scenarios = sorted_scenarios[:min(NUM_SCENARIO_SMALL_TEST, len(sorted_scenarios))]
+
+        for scenario_name_xml in sorted_scenarios:
             scenario_name = scenario_name_xml.split(".")[0]
 
             if scenario_name not in scenario_config_mpc.keys():
