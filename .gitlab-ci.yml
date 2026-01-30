@@ -18,7 +18,26 @@ before_script:
 ###### Test #########
 unittest:
   stage: test
+
+  rules:
+    # Run all scenarios on these branches
+    - if: '$CI_COMMIT_BRANCH =~ /^(develop|master|release)$/'
+      variables:
+        RUN_ALL_SCENARIOS: "1"
+
+    # Run all scenarios if commit message contains a marker
+    # (example marker: [full-scenarios])
+    - if: '$CI_COMMIT_MESSAGE =~ /\[RUN_ALL_SCENARIOS\]/'
+      variables:
+        RUN_ALL_SCENARIOS: "1"
+
+    # Otherwise: only first two scenarios
+    - when: on_success
+      variables:
+        RUN_ALL_SCENARIOS: "0"
+
   script:
+    - echo "RUN_ALL_SCENARIOS=$RUN_ALL_SCENARIOS"
     - coverage run --source=./commonroad_control -m unittest discover test
     - coverage report -m || true
     - coverage xml
